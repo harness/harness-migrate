@@ -1,16 +1,16 @@
+__Install__
 
-# Compile
-
+```term
+$ git clone https://github.com/harness/harness-migrate.git
+$ go install
 ```
-go build
-```
 
-# Usage
+__Usage__
 
 Export data from circle:
 
-```sh
-./harness-migrate cirlce export \
+```term
+$ harness-migrate cirlce export \
   --org=${CIRCLE_ORG} \
   --token=${CIRCLE_TOKEN} \
   --out=/tmp/circle.json
@@ -18,8 +18,8 @@ Export data from circle:
 
 Import data from circle:
 
-```sh
-./harness-migrate cirlce import /tmp/circle.json \
+```term
+$ harness-migrate cirlce import /tmp/circle.json \
   --harness-account=${HARNESS_ACCOUNT} \
   --harness-org=${HARNESS_ORG} \
   --harness-token=${HARNESS_TOKEN} \
@@ -28,6 +28,6 @@ Import data from circle:
 
 Convert a circle pipeline:
 
-```sh
-./harness-migrate circle convert /path/to/.circle/config.yml
+```term
+$ harness-migrate circle convert /path/to/.circle/config.yml
 ```

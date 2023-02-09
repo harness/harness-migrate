@@ -9,12 +9,14 @@ import (
 
 	"github.com/harness/harness-migrate/internal/migrate/circle"
 	"github.com/harness/harness-migrate/internal/migrate/circle/client"
+	"github.com/harness/harness-migrate/internal/tracer"
 
 	"github.com/alecthomas/kingpin/v2"
 )
 
 type migrateCommand struct {
 	debug bool
+	trace bool
 
 	circleToken string
 	circleOrg   string
@@ -38,12 +40,19 @@ func (c *migrateCommand) run(*kingpin.ParseContext) error {
 	ctx = slog.NewContext(ctx, log)
 
 	// create the circle client (url, token, org)
-	client := client.New(c.circleToken)
+	client := client.New(c.circleToken,
+		client.WithTracing(c.trace),
+	)
+
+	// create the tracer
+	tracer_ := tracer.New()
+	defer tracer_.Close()
 
 	// extract the data
 	exporter := circle.Exporter{
 		Circle:    client,
 		CircleOrg: c.circleOrg,
+		Tracer:    tracer_,
 	}
 	org, err := exporter.Export(ctx)
 	if err != nil {
@@ -59,6 +68,7 @@ func (c *migrateCommand) run(*kingpin.ParseContext) error {
 		c.gitlabToken,
 		c.bitbucketToken,
 	)
+	importer.Tracer = tracer_
 
 	// create an scm cient to verify the token
 	// and retrieve the user id.
@@ -134,4 +144,7 @@ func registerMigrate(app *kingpin.CmdClause) {
 
 	cmd.Flag("debug", "enable debug logging").
 		BoolVar(&c.debug)
+
+	cmd.Flag("trace", "enable trace logging").
+		BoolVar(&c.trace)
 }

@@ -11,6 +11,7 @@ import (
 
 	"github.com/alecthomas/kingpin/v2"
 
+	"github.com/harness/harness-migrate/internal/tracer"
 	"github.com/harness/harness-migrate/internal/types"
 )
 
@@ -50,6 +51,10 @@ func (c *importCommand) run(*kingpin.ParseContext) error {
 		return err
 	}
 
+	// create the tracer
+	tracer_ := tracer.New()
+	defer tracer_.Close()
+
 	// create the importer
 	importer := createImporter(
 		c.harnessAccount,
@@ -59,6 +64,10 @@ func (c *importCommand) run(*kingpin.ParseContext) error {
 		c.gitlabToken,
 		c.bitbucketToken,
 	)
+	importer.Tracer = tracer_
+
+	// ensure the tracer is closed
+	defer importer.Tracer.Close()
 
 	// create an scm cient to verify the token
 	// and retrieve the user id.

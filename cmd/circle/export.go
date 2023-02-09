@@ -13,6 +13,7 @@ import (
 	"github.com/alecthomas/kingpin/v2"
 	"github.com/harness/harness-migrate/internal/migrate/circle"
 	"github.com/harness/harness-migrate/internal/migrate/circle/client"
+	"github.com/harness/harness-migrate/internal/tracer"
 )
 
 type exportCommand struct {
@@ -35,13 +36,18 @@ func (c *exportCommand) run(*kingpin.ParseContext) error {
 
 	// create the circle client (url, token, org)
 	client := client.New(c.circleToken,
-		client.WithTracing(true),
+		client.WithTracing(c.trace),
 	)
+
+	// create the tracer
+	tracer_ := tracer.New()
+	defer tracer_.Close()
 
 	// extract the data
 	exporter := circle.Exporter{
 		Circle:    client,
 		CircleOrg: c.circleOrg,
+		Tracer:    tracer_,
 	}
 	data, err := exporter.Export(ctx)
 	if err != nil {
@@ -72,6 +78,9 @@ func registerExport(app *kingpin.CmdClause) {
 	cmd := app.Command("export", "export circle data").
 		Action(c.run)
 
+	cmd.Arg("save", "save the output to a file").
+		StringVar(&c.file)
+
 	cmd.Flag("org", "circle organization").
 		Required().
 		Envar("CIRCLE_ORG").
@@ -81,9 +90,6 @@ func registerExport(app *kingpin.CmdClause) {
 		Required().
 		Envar("CIRCLE_TOKEN").
 		StringVar(&c.circleToken)
-
-	cmd.Flag("out", "save the output to a file").
-		StringVar(&c.file)
 
 	cmd.Flag("debug", "enable debug logging").
 		BoolVar(&c.debug)

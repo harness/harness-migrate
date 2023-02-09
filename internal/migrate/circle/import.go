@@ -4,11 +4,13 @@ package circle
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/harness/harness-migrate/internal/harness"
 	"github.com/harness/harness-migrate/internal/migrate/circle/yaml/commons"
 	"github.com/harness/harness-migrate/internal/migrate/circle/yaml/converter"
 	"github.com/harness/harness-migrate/internal/slug"
+	"github.com/harness/harness-migrate/internal/tracer"
 	"github.com/harness/harness-migrate/internal/types"
 
 	"github.com/gotidy/ptr"
@@ -22,9 +24,13 @@ type Importer struct {
 	ScmType  string // github, gitlab, bitbucket
 	ScmLogin string
 	ScmToken string
+
+	Tracer tracer.Tracer
 }
 
 func (m *Importer) Import(ctx context.Context, data *types.Org) error {
+
+	m.Tracer.Start("create organization %s", m.HarnessOrg)
 
 	// find the harness organization
 	org, err := m.Harness.FindOrg(m.HarnessOrg)
@@ -46,6 +52,10 @@ func (m *Importer) Import(ctx context.Context, data *types.Org) error {
 		return err
 	}
 
+	m.Tracer.Stop("create organization %s [done]", m.HarnessOrg)
+
+	m.Tracer.Start("create secret %s", m.ScmType)
+
 	// find the github, gitlab or bitbucket secret or
 	// create if the secret does not already exist.
 	if _, err = m.Harness.FindSecretOrg(org.ID, m.ScmType); err != nil {
@@ -57,6 +67,10 @@ func (m *Importer) Import(ctx context.Context, data *types.Org) error {
 			return err
 		}
 	}
+
+	m.Tracer.Stop("create secret %s [done]", m.ScmType)
+
+	m.Tracer.Start("create connector %s", m.ScmType)
 
 	// find the github, gitlab or bitbucket connector or
 	// create if the connector does not already exist.
@@ -75,8 +89,12 @@ func (m *Importer) Import(ctx context.Context, data *types.Org) error {
 		}
 	}
 
+	m.Tracer.Stop("create connector %s [done]", m.ScmType)
+
 	// convert each circle project to a harness project.
 	for _, srcProject := range data.Projects {
+
+		m.Tracer.Start("create project %s", srcProject.Name)
 
 		// convert the circle project to a harness project
 		// structure and convert the circle project name to
@@ -118,11 +136,22 @@ func (m *Importer) Import(ctx context.Context, data *types.Org) error {
 			return err
 		}
 
+		// TODO remove this once conversion works as expected
+		conf = []byte(fmt.Sprintf(
+			string(dummy),
+			project.Identifier,
+			project.Identifier,
+			project.Identifier,
+			project.Orgidentifier,
+		))
+
 		// create the harness pipeline with an inline yaml
 		err = m.Harness.CreatePipeline(org.ID, project.Identifier, conf)
 		if err != nil {
 			return err
 		}
+
+		m.Tracer.Stop("create project %s [done]", srcProject.Name)
 	}
 
 	return nil

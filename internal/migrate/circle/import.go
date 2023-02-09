@@ -5,6 +5,7 @@ package circle
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/harness/harness-migrate/internal/harness"
 	"github.com/harness/harness-migrate/internal/migrate/circle/yaml/commons"
@@ -107,7 +108,12 @@ func (m *Importer) Import(ctx context.Context, data *types.Org) error {
 
 		// create the harness project.
 		if err := m.Harness.CreateProject(project); err != nil {
-			return err
+			// if the error indicates the project already exists
+			// we can continue with the import, else we should return
+			// the error and exit the import.
+			if isErrConflict(err) == false {
+				return err
+			}
 		}
 
 		// wait for the harness secret manager to be created for the
@@ -125,7 +131,13 @@ func (m *Importer) Import(ctx context.Context, data *types.Org) error {
 			secret := createSecret(org.ID, project.Identifier, slug.Create(srcEnv.Name), srcEnv.Desc, srcEnv.Value)
 			// save the secret to harness.
 			if err := m.Harness.CreateSecret(secret); err != nil {
-				return err
+				// if the error indicates the secret already
+				// exists we can continue with the import,
+				// else we should return the error and exit
+				// the import.
+				if isErrConflict(err) == false {
+					return err
+				}
 			}
 		}
 
@@ -148,7 +160,12 @@ func (m *Importer) Import(ctx context.Context, data *types.Org) error {
 		// create the harness pipeline with an inline yaml
 		err = m.Harness.CreatePipeline(org.ID, project.Identifier, conf)
 		if err != nil {
-			return err
+			// if the error indicates the pipeline already
+			// exists we can continue with the import, else
+			// we should return the error and exit the import.
+			if isErrConflict(err) == false {
+				return err
+			}
 		}
 
 		m.Tracer.Stop("create project %s [done]", srcProject.Name)
@@ -241,6 +258,13 @@ func createGitlabConnector(org, id, username, token string) *harness.Connector {
 			},
 		},
 	}
+}
+
+// helper function return true if the error message
+// indicate the resource already exists.
+func isErrConflict(err error) bool {
+	return strings.Contains(err.Error(), "already present") ||
+		strings.Contains(err.Error(), "already exists")
 }
 
 var dummy = `

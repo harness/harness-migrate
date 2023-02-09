@@ -62,7 +62,7 @@ func (c *console) Stop(format string, args ...interface{}) {
 
 // Close stops the progress bar.
 func (c *console) Close() {
-	c.done <- true
+	close(c.done)
 	c.bar.Exit()
 }
 

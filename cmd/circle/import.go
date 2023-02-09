@@ -66,9 +66,6 @@ func (c *importCommand) run(*kingpin.ParseContext) error {
 	)
 	importer.Tracer = tracer_
 
-	// ensure the tracer is closed
-	defer importer.Tracer.Close()
-
 	// create an scm cient to verify the token
 	// and retrieve the user id.
 	client := createClient(

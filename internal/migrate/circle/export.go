@@ -21,7 +21,7 @@ type Exporter struct {
 // Export exports Circle data.
 func (m *Exporter) Export(ctx context.Context) (*types.Org, error) {
 
-	m.Tracer.Start("find organization")
+	m.Tracer.Start("export organization")
 
 	// find the circle organization by uuid
 	srcOrg, err := m.Circle.FindOrgID(m.CircleOrg)
@@ -34,7 +34,7 @@ func (m *Exporter) Export(ctx context.Context) (*types.Org, error) {
 		Name: srcOrg.Name,
 	}
 
-	m.Tracer.Stop("find organization %s [done]", srcOrg.Name)
+	m.Tracer.Stop("export organization %s [done]", srcOrg.Name)
 
 	// retrieve a list of all circle projects in the organization.
 	srcProjects, err := m.Circle.ListProjects(srcOrg.ID)
@@ -45,7 +45,7 @@ func (m *Exporter) Export(ctx context.Context) (*types.Org, error) {
 	// convert each circle project to a harness project.
 	for _, srcProject := range srcProjects {
 
-		m.Tracer.Start("create project %s", srcProject.Name)
+		m.Tracer.Start("export project %s", srcProject.Name)
 
 		// get a list of recent pipeline executions
 		pipelines, err := m.Circle.ListPipelines(srcProject.Slug)
@@ -101,7 +101,7 @@ func (m *Exporter) Export(ctx context.Context) (*types.Org, error) {
 		// append projects to the org
 		dstOrg.Projects = append(dstOrg.Projects, dstProject)
 
-		m.Tracer.Stop("create project %s [done]", srcProject.Name)
+		m.Tracer.Stop("export project %s [done]", srcProject.Name)
 	}
 
 	return dstOrg, nil

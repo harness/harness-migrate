@@ -1,0 +1,7 @@
+{
+    "status": "FAILURE",
+    "code": "RESOURCE_NOT_FOUND_EXCEPTION",
+    "message": "Connector with identifier [pranavgcsx] in project [pranavt1], org [default] not found",
+    "correlationId": "36267105-c063-459c-9a49-88194f657c7f",
+    "errors": null
+}

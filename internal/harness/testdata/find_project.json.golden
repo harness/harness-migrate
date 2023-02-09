@@ -1,0 +1,17 @@
+{
+  "orgIdentifier": "default",
+  "identifier": "pranavt1",
+  "name": "pranav",
+  "color": "#0063f7",
+  "modules": [
+    "CV",
+    "CI",
+    "STO",
+    "CD",
+    "TEMPLATESERVICE",
+    "PMS",
+    "CE",
+    "CF",
+    "CORE"
+  ]
+}

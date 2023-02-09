@@ -1,0 +1,56 @@
+{
+    "status": "SUCCESS",
+    "data": {
+        "connector": {
+            "name": "pranavgcs",
+            "identifier": "pranavgcs",
+            "description": "",
+            "orgIdentifier": "default",
+            "projectIdentifier": "pranavt1",
+            "tags": {},
+            "type": "Gcp",
+            "spec": {
+                "credential": {
+                    "type": "ManualConfig",
+                    "spec": {
+                        "secretKeyRef": "pranavgcs"
+                    }
+                },
+                "delegateSelectors": [],
+                "executeOnDelegate": false
+            }
+        },
+        "createdAt": 1671561889912,
+        "lastModifiedAt": 1671561889906,
+        "status": {
+            "status": "SUCCESS",
+            "errorSummary": null,
+            "errors": null,
+            "testedAt": 1671561890282,
+            "lastTestedAt": 0,
+            "lastConnectedAt": 1671561890282
+        },
+        "activityDetails": {
+            "lastActivityTime": 1671561889931
+        },
+        "harnessManaged": false,
+        "gitDetails": {
+            "objectId": null,
+            "branch": null,
+            "repoIdentifier": null,
+            "rootFolder": null,
+            "filePath": null,
+            "repoName": null,
+            "commitId": null,
+            "fileUrl": null,
+            "repoUrl": null
+        },
+        "entityValidityDetails": {
+            "valid": true,
+            "invalidYaml": null
+        },
+        "governanceMetadata": null
+    },
+    "metaData": null,
+    "correlationId": "d4bacf7d-9171-4972-8782-59e61b060aae"
+}

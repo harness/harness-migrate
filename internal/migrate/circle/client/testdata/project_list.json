@@ -1,0 +1,11 @@
+{
+    "items": [
+        {
+            "id": "b9b97877-5d65-4a25-9a77-5e841f086b56",
+            "name": "hello-world",
+            "slug": "circleci/216caad37819ng3EFmqdLS/T216caad37819NpwJ368",
+            "has_trigger": true
+        }
+    ],
+    "next_page_token": null
+}

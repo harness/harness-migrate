@@ -1,0 +1,65 @@
+{
+    "status": "SUCCESS",
+    "data": {
+        "name": "scriptvar",
+        "identifier": "scriptvar",
+        "tags": {},
+        "version": 17,
+        "numOfStages": 1,
+        "createdAt": 1673652968631,
+        "lastUpdatedAt": 1673654210573,
+        "modules": [
+            "ci",
+            "pms",
+            "sto"
+        ],
+        "executionSummaryInfo": {
+            "numOfErrors": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+            ],
+            "deployments": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+            ],
+            "lastExecutionTs": 1673654219103,
+            "lastExecutionStatus": "Success",
+            "lastExecutionId": "yKSwoC2wTl-PoKXQVf2EoQ"
+        },
+        "filters": {
+            "ci": {
+                "repoNames": [
+                    "circleci-demo-ruby-rails"
+                ]
+            },
+            "pms": {
+                "stageTypes": [
+                    "CI"
+                ],
+                "featureFlagStepCount": 0
+            },
+            "sto": {}
+        },
+        "stageNames": [
+            "build"
+        ],
+        "entityValidityDetails": {
+            "valid": true,
+            "invalidYaml": null
+        },
+        "storeType": "INLINE",
+        "isDraft": false
+    },
+    "metaData": null,
+    "correlationId": "ddae89b4-6b83-4cd8-bd0a-41662dda9d0d"
+}

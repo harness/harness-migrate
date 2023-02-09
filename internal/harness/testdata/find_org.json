@@ -1,0 +1,16 @@
+{
+    "status": "SUCCESS",
+    "data": {
+        "organization": {
+            "identifier": "default",
+            "name": "default",
+            "description": "Default Organization",
+            "tags": {}
+        },
+        "createdAt": 1623712669478,
+        "lastModifiedAt": 1623712669478,
+        "harnessManaged": true
+    },
+    "metaData": null,
+    "correlationId": "0d612bf3-2f3a-40af-87ab-61c3f1634d2c"
+}

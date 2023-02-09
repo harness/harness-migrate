@@ -1,0 +1,17 @@
+{
+  "name": "pranavgcs",
+  "identifier": "pranavgcs",
+  "orgIdentifier": "default",
+  "projectIdentifier": "pranavt1",
+  "type": "Gcp",
+  "spec": {
+    "credential": {
+      "spec": {
+        "secretKeyRef": "pranavgcs"
+      },
+      "type": "ManualConfig"
+    },
+    "delegateSelectors": [],
+    "executeOnDelegate": false
+  }
+}

@@ -1,0 +1,28 @@
+{
+    "status": "SUCCESS",
+    "data": {
+        "project": {
+            "orgIdentifier": "default",
+            "identifier": "pranavt1",
+            "name": "pranav",
+            "color": "#0063f7",
+            "modules": [
+                "CV",
+                "CI",
+                "STO",
+                "CD",
+                "TEMPLATESERVICE",
+                "PMS",
+                "CE",
+                "CF",
+                "CORE"
+            ],
+            "description": "",
+            "tags": {}
+        },
+        "createdAt": null,
+        "lastModifiedAt": 1663774477071
+    },
+    "metaData": null,
+    "correlationId": "5bee8180-8609-4dfa-988f-2bc3c82ba94f"
+}

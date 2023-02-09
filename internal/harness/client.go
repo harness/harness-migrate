@@ -1,0 +1,87 @@
+// Copyright 2023 Harness Inc. All rights reserved.
+
+// Package harness provides a Harness http client.
+package harness
+
+import "time"
+
+// Client is used to communicate with the Harness server.
+type Client interface {
+	// FindOrg returns an organization by identifier.
+	FindOrg(id string) (*Org, error)
+
+	// FindProject returns a project by organization and
+	// identifier.
+	FindProject(org, id string) (*Project, error)
+
+	// FindPipeline returns a pipeline by organization,
+	// project and identifer.
+	FindPipeline(org, project, id string) (*Pipeline, error)
+
+	// FindSecret returns a secret by organization, project
+	// and identifer.
+	FindSecret(org, project, id string) (*Secret, error)
+
+	// FindSecretOrg returns a secret by organization and
+	// identifer.
+	FindSecretOrg(org, id string) (*Secret, error)
+
+	// FindConnector returns a connector by organization,
+	// project and identifer.
+	FindConnector(org, project, id string) (*Connector, error)
+
+	// FindConnectorOrg returns a connector by organization
+	// and identifer.
+	FindConnectorOrg(org, id string) (*Connector, error)
+
+	// CreateOrg creates an organization.
+	CreateOrg(org *Org) error
+
+	// CreateProject creates a project.
+	CreateProject(project *Project) error
+
+	// CreateSecret creates a secret.
+	CreateSecret(secret *Secret) error
+
+	// CreateSecret creates an organization secret.
+	CreateSecretOrg(secret *Secret) error
+
+	// CreateConnector creates a connector.
+	CreateConnector(connector *Connector) error
+
+	// CreateConnector creates an organization connector.
+	CreateConnectorOrg(connector *Connector) error
+
+	// CreatePipeline creates a pipeline for the
+	// organization and pipeline identifier, with the
+	// given identifier and name.
+	CreatePipeline(org, project string, pipeline []byte) error
+}
+
+// WaitHarnessSecretManager blocks until the harness
+// secret manager is created for the project.
+func WaitHarnessSecretManager(client Client, org, project string) error {
+	for i := 0; ; i++ {
+		if _, err := client.FindConnector(org, project, "harnessSecretManager"); err == nil {
+			return nil
+		} else if i == 30 {
+			return err
+		} else {
+			time.Sleep(5 * time.Second)
+		}
+	}
+}
+
+// WaitHarnessSecretManagerOrg blocks until the harness
+// secret manager is created for the organization.
+func WaitHarnessSecretManagerOrg(client Client, org string) error {
+	for i := 0; ; i++ {
+		if _, err := client.FindConnectorOrg(org, "harnessSecretManager"); err == nil {
+			return nil
+		} else if i == 30 {
+			return err
+		} else {
+			time.Sleep(5 * time.Second)
+		}
+	}
+}

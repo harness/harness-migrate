@@ -1,0 +1,13 @@
+{
+    "slug": "circleci/216caad37819ng3EFmqdLS/T216caad37819NpwJ368",
+    "organization_name": "Jane Citizen",
+    "organization_id": "71555d36-fdfe-464d-95be-b0998480d9fb",
+    "name": "hello-world",
+    "id": "b9b97877-5d65-4a25-9a77-5e841f086b56",
+    "organization_slug": "circleci/216caad37819ng3EFmqdLS",
+    "vcs_info": {
+        "vcs_url": "//circleci.com/71555d36-fdfe-464d-95be-b0998480d9fb/b9b97877-5d65-4a25-9a77-5e841f086b56",
+        "default_branch": "main",
+        "provider": "CircleCI"
+    }
+}

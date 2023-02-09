@@ -13,6 +13,7 @@ import (
 
 type console struct {
 	bar  *progressbar.ProgressBar
+	time time.Time
 	done chan (bool)
 	once sync.Once
 }
@@ -22,12 +23,10 @@ type console struct {
 func New() *console {
 	return &console{
 		done: make(chan (bool)),
-		// bar:  progressbar.Default(-1),
 		bar: progressbar.NewOptions64(-1,
 			progressbar.OptionSetWriter(os.Stderr),
 			progressbar.OptionSetWidth(10),
 			progressbar.OptionThrottle(65*time.Millisecond),
-			// progressbar.OptionShowCount(),
 			progressbar.OptionSpinnerType(14),
 			progressbar.OptionFullWidth(),
 			progressbar.OptionSetRenderBlankState(true),
@@ -43,11 +42,19 @@ func (c *console) Start(format string, args ...interface{}) {
 	c.once.Do(func() {
 		go c.start()
 	})
+	c.time = time.Now()
 	c.bar.Describe(fmt.Sprintf(format, args...))
 }
 
 // Stop stops the trace routine.
 func (c *console) Stop(format string, args ...interface{}) {
+	// this code implements an artificial delay to
+	// prevent the progress bars from appearing and
+	// disapparing too quickly.
+	if time.Now().Sub(c.time) < (time.Second) {
+		time.Sleep(time.Second)
+	}
+
 	c.bar.Clear()
 	fmt.Printf(format, args...)
 	fmt.Println("")

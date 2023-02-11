@@ -123,6 +123,21 @@ type (
 )
 
 //
+// Error Types
+//
+
+// Error represents an API error response.
+type Error struct {
+	Code    string `json:"code"`
+	Message string `json:"message"`
+}
+
+// Error returns the error message.
+func (e *Error) Error() string {
+	return e.Message
+}
+
+//
 // Response envelopes
 //
 

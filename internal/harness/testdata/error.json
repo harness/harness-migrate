@@ -1,0 +1,5 @@
+{
+    "status": "ERROR",
+    "code": "DUPLICATE_FIELD",
+    "message": "A project with identifier [foo] and orgIdentifier [bar] is already present"
+}

@@ -219,3 +219,25 @@ func TestFindConnectorNull(t *testing.T) {
 		t.Errorf("Want not found error, got no error")
 	}
 }
+
+func TestCreateError(t *testing.T) {
+	defer gock.Off()
+
+	gock.New("https://app.harness.io").
+		Post("/gateway/ng/api/organizations").
+		MatchParam("accountIdentifier", "gVcEoNyqQNKbigC_hA3JqA").
+		Reply(400).
+		File("testdata/error.json")
+
+	client := New("gVcEoNyqQNKbigC_hA3JqA", "dummy0d0ac576df34be6a882")
+	err := client.CreateOrg(&Org{ID: "default", Name: "default"})
+	if err == nil {
+		t.Errorf("Expect error")
+		return
+	}
+
+	got, want := err.Error(), "A project with identifier [foo] and orgIdentifier [bar] is already present"
+	if got != want {
+		t.Errorf("Expect error %s, got %s", want, got)
+	}
+}

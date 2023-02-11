@@ -317,6 +317,13 @@ func (c *client) open(rawurl, method string, in, out interface{}) (io.ReadCloser
 	if resp.StatusCode > 299 {
 		defer resp.Body.Close()
 		out, _ := ioutil.ReadAll(resp.Body)
+		// attempt to unmarshal the error into the
+		// custom Error structure.
+		resperr := new(Error)
+		if jsonerr := json.Unmarshal(out, resperr); jsonerr == nil {
+			return nil, resperr
+		}
+		// else return the error body as a string
 		return nil, fmt.Errorf("client error %d: %s", resp.StatusCode, string(out))
 	}
 	return resp.Body, nil

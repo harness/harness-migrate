@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/harness/harness-migrate/cmd/circle"
+	"github.com/harness/harness-migrate/cmd/gitlab"
 
 	"github.com/alecthomas/kingpin/v2"
 )
@@ -29,6 +30,7 @@ func Command() {
 	app := kingpin.New(application, description)
 
 	circle.Register(app)
+	gitlab.Register(app)
 
 	kingpin.Version(version)
 	kingpin.MustParse(app.Parse(os.Args[1:]))

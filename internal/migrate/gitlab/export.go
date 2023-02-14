@@ -20,7 +20,7 @@ type Exporter struct {
 	Tracer tracer.Tracer
 }
 
-// Export exports Circle data.
+// Export exports gitlab data.
 func (m *Exporter) Export(ctx context.Context) (*types.Org, error) {
 
 	m.Tracer.Start("export organization")
@@ -42,7 +42,7 @@ func (m *Exporter) Export(ctx context.Context) (*types.Org, error) {
 
 	m.Tracer.Stop("export organization %s [done]", srcOrg.Name)
 
-	// retrieve a list of all circle projects in the organization.
+	// retrieve a list of all gitlab projects in the organization.
 	// use the "traverse" helper to paginate and return the full list.
 	srcRepos, err := traverse.Repos(ctx, m.Gitlab)
 	if err != nil {
@@ -59,10 +59,12 @@ func (m *Exporter) Export(ctx context.Context) (*types.Org, error) {
 
 		m.Tracer.Start("export repository %s", srcRepo.Name)
 
-		// convert the circle project to a common format.
+		// convert the gitlab project to a common format.
 		dstProject := &types.Project{
-			Name: srcRepo.Name,
-			Repo: srcRepo.Clone,
+			Name:   srcRepo.Name,
+			Repo:   srcRepo.Clone,
+			Branch: srcRepo.Branch,
+			Type:   "gitlab",
 		}
 
 		// append projects to the org

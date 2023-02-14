@@ -35,6 +35,16 @@ type (
 		Type string      `json:"type"`
 		Spec interface{} `json:"spec"`
 	}
+
+	// Repository defines a resository.
+	Repository struct {
+		UID           string `json:"uid"`
+		ParentID      int64  `json:"parent_id"`
+		Description   string `json:"description"`
+		IsPublic      bool   `json:"is_public"`
+		DefaultBranch string `json:"default_branch"`
+		GitURL        string `json:"git_url"`
+	}
 )
 
 //
@@ -210,5 +220,13 @@ type (
 	// Request envelope for the Secret type
 	secretCreateEnvelope struct {
 		Secret *Secret `json:"secret"`
+	}
+
+	// RepositoryCreateRequest defines a repo creation request.
+	RepositoryCreateRequest struct {
+		UID           string `json:"uid"`
+		DefaultBranch string `json:"default_branch"`
+		Description   string `json:"description"`
+		IsPublic      bool   `json:"is_public"`
 	}
 )

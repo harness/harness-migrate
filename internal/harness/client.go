@@ -57,7 +57,7 @@ type Client interface {
 	// given identifier and name.
 	CreatePipeline(org, project string, pipeline []byte) error
 
-	// CreateConnector creates a repository.
+	// CreateRepository creates a repository.
 	CreateRepository(org, project string, repo *RepositoryCreateRequest) (*Repository, error)
 }
 

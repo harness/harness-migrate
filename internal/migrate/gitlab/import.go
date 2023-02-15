@@ -141,11 +141,12 @@ func (m *Importer) Import(ctx context.Context, data *types.Org) error {
 		}
 		repo, err := m.Harness.CreateRepository(project.Orgidentifier, project.Identifier, repoCreate)
 		if err != nil {
-			// if the error indicates the project already exists
-			// we can continue with the import, else we should return
-			// the error and exit the import.
-			if isErrConflict(err) == false {
-				return err
+			// if the error indicates the project already exists, continue with next project.
+			// This is a temporary workaround to avoid conflicts while pushing the git repo.
+			// TODO: Handle conflicts properly, this only works because repo migration is the last step of a project migration.
+			if isErrConflict(err) {
+				m.Tracer.Stop("create repository %s [done]", project.Identifier)
+				continue
 			}
 		}
 
@@ -153,13 +154,13 @@ func (m *Importer) Import(ctx context.Context, data *types.Org) error {
 
 		m.Tracer.Start("clone git repository %s", project.Identifier)
 
-		// create tmp dir for repo clone (don't use name to avoid issues with invalid chars)
+		// create tmp dir for repo clone (use generated name to avoid issues with invalid chars)
 		// NOTE: no extra clean-up required - tmpDir is already being cleaned-up.
-		repoDir, err := os.MkdirTemp(tmpDir, "repo-*.git")
+		tmpRepoDir, err := os.MkdirTemp(tmpDir, "repo-*.git")
 		if err != nil {
 			return fmt.Errorf("failed to create tempo dir for repo: %w", err)
 		}
-		gitRepo, err := git.PlainCloneContext(ctx, repoDir, true, &git.CloneOptions{
+		gitRepo, err := git.PlainCloneContext(ctx, tmpRepoDir, true, &git.CloneOptions{
 			URL: srcProject.Repo,
 			Auth: &http.BasicAuth{
 				Username: m.ScmLogin,

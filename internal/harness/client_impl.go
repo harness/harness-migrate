@@ -230,6 +230,20 @@ func (c *client) CreatePipeline(org, project string, pipeline []byte) error {
 	return c.post(uri, buf, out)
 }
 
+func (c *client) CreateRepository(org, project string, repo *RepositoryCreateRequest) (*Repository, error) {
+	out := new(Repository)
+	uri := fmt.Sprintf("%s/gateway/code/api/v1/accounts/%s/orgs/%s/projects/%s/repos",
+		c.address,
+		c.account,
+		org,
+		project,
+	)
+	if err := c.post(uri, repo, out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 //
 // http request helper functions
 //

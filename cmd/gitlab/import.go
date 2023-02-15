@@ -24,9 +24,10 @@ type importCommand struct {
 	debug bool
 	file  string
 
-	harnessToken   string
-	harnessAccount string
-	harnessOrg     string
+	harnessEndpoint string
+	harnessToken    string
+	harnessAccount  string
+	harnessOrg      string
 
 	gitlabToken    string
 	gitlabEndpoint string
@@ -80,12 +81,14 @@ func (c *importCommand) run(*kingpin.ParseContext) error {
 
 	// create the importer
 	importer := &gitlab.Importer{
-		Harness:    harness.New(c.harnessAccount, c.harnessToken),
-		HarnessOrg: c.harnessOrg,
-		ScmType:    "gitlab",
-		ScmToken:   c.gitlabToken,
-		ScmLogin:   user.Login,
-		Tracer:     tracer_,
+		Harness: harness.New(c.harnessAccount, c.harnessToken,
+			harness.WithAddress(c.harnessEndpoint), harness.WithTracing(c.debug)),
+		HarnessOrg:   c.harnessOrg,
+		HarnessToken: c.harnessToken,
+		ScmType:      "gitlab",
+		ScmToken:     c.gitlabToken,
+		ScmLogin:     user.Login,
+		Tracer:       tracer_,
 	}
 
 	// // execute the import routine.
@@ -116,6 +119,10 @@ func registerImport(app *kingpin.CmdClause) {
 		Required().
 		Envar("HARNESS_TOKEN").
 		StringVar(&c.harnessToken)
+
+	cmd.Flag("harness-endpoint", "harness endpoint").
+		Envar("HARNESS_ENDPOINT").
+		StringVar(&c.harnessEndpoint)
 
 	cmd.Flag("gitlab-token", "gitlab token").
 		Envar("GITLAB_TOKEN").

@@ -38,7 +38,7 @@ func (c *exportCommand) run(*kingpin.ParseContext) error {
 	ctx := context.Background()
 	ctx = slog.NewContext(ctx, log)
 
-	// create the circle client (url, token, org)
+	// create the gitlab client (url, token, org)
 	client := scmgitlab.NewDefault()
 
 	// provide a custom http.Client with a transport

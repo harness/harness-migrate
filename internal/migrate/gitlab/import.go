@@ -4,6 +4,8 @@ package gitlab
 
 import (
 	"context"
+	"fmt"
+	"os"
 	"strings"
 
 	"github.com/harness/harness-migrate/internal/harness"
@@ -11,13 +13,19 @@ import (
 	"github.com/harness/harness-migrate/internal/tracer"
 	"github.com/harness/harness-migrate/internal/types"
 
+	git "github.com/go-git/go-git/v5"
+
+	"github.com/go-git/go-git/v5/config"
+	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/gotidy/ptr"
 )
 
-// Importer imports data from Circle to Harness.
+// Importer imports data from gitlab to Harness.
 type Importer struct {
-	Harness    harness.Client
-	HarnessOrg string
+	Harness      harness.Client
+	HarnessOrg   string
+	HarnessToken string
 
 	ScmType  string // github, gitlab, bitbucket
 	ScmLogin string
@@ -81,13 +89,20 @@ func (m *Importer) Import(ctx context.Context, data *types.Org) error {
 
 	m.Tracer.Stop("create connector %s [done]", m.ScmType)
 
-	// convert each circle project to a harness project.
+	// create tmp dir for cloning repos
+	tmpDir, err := os.MkdirTemp("", "harness-migrate-*")
+	if err != nil {
+		return fmt.Errorf("failed to create temp dir for org: %w", err)
+	}
+	defer os.RemoveAll(tmpDir)
+
+	// convert each gitlab project to a harness project.
 	for _, srcProject := range data.Projects {
 
 		m.Tracer.Start("create project %s", srcProject.Name)
 
-		// convert the circle project to a harness project
-		// structure and convert the circle project name to
+		// convert the gitlab project to a harness project
+		// structure and convert the gitlab project name to
 		// a harness project identifier.
 		project := &harness.Project{
 			Orgidentifier: org.ID,
@@ -113,17 +128,80 @@ func (m *Importer) Import(ctx context.Context, data *types.Org) error {
 			return err
 		}
 
-		// TODO(johannesHarness) create the repository in Harness
-
-		// TODO(johannesHarness) clone the repository
-
-		// TODO(johannesHarness) push the repository to harness
-
-		// sample code to clone a repository using the native Go
-		// git library.
-		// https://gist.github.com/bradrydzewski/9cff9df374840cfee74eee25772dec49
-
 		m.Tracer.Stop("create project %s [done]", srcProject.Name)
+
+		m.Tracer.Start("create repository %s", project.Identifier)
+
+		// create the harness repository in harness
+		repoCreate := &harness.RepositoryCreateRequest{
+			UID:           project.Identifier,
+			Description:   srcProject.Desc,
+			DefaultBranch: srcProject.Branch,
+			IsPublic:      false, // TODO: Harness doesn't have private repos at the moment
+		}
+		repo, err := m.Harness.CreateRepository(project.Orgidentifier, project.Identifier, repoCreate)
+		if err != nil {
+			// if the error indicates the project already exists, continue with next project.
+			// This is a temporary workaround to avoid conflicts while pushing the git repo.
+			// TODO: Handle conflicts properly, this only works because repo migration is the last step of a project migration.
+			if isErrConflict(err) {
+				m.Tracer.Stop("create repository %s [done]", project.Identifier)
+				continue
+			}
+		}
+
+		m.Tracer.Stop("create repository %s [done]", project.Identifier)
+
+		m.Tracer.Start("clone git repository %s", project.Identifier)
+
+		// create tmp dir for repo clone (use generated name to avoid issues with invalid chars)
+		// NOTE: no extra clean-up required - tmpDir is already being cleaned-up.
+		tmpRepoDir, err := os.MkdirTemp(tmpDir, "repo-*.git")
+		if err != nil {
+			return fmt.Errorf("failed to create tempo dir for repo: %w", err)
+		}
+		gitRepo, err := git.PlainCloneContext(ctx, tmpRepoDir, true, &git.CloneOptions{
+			URL: srcProject.Repo,
+			Auth: &http.BasicAuth{
+				Username: m.ScmLogin,
+				Password: m.ScmToken,
+			},
+			ReferenceName: plumbing.NewBranchReferenceName(srcProject.Branch),
+			SingleBranch:  false,
+			Tags:          git.AllTags,
+			NoCheckout:    true,
+		})
+		if err != nil {
+			return fmt.Errorf("failed to clone repo from '%s': %w", srcProject.Repo, err)
+		}
+
+		m.Tracer.Stop("clone git repository %s [done]", project.Identifier)
+
+		m.Tracer.Start("push git repository %s", project.Identifier)
+
+		// add empty harness repo as remote
+		const gitRemoteHarness = "harness"
+		gitRepo.CreateRemote(&config.RemoteConfig{
+			Name: gitRemoteHarness,
+			URLs: []string{repo.GitURL},
+		})
+
+		// push repo
+		err = gitRepo.PushContext(ctx, &git.PushOptions{
+			RemoteName: gitRemoteHarness,
+			Auth: &http.BasicAuth{
+				Username: "git",
+				Password: m.HarnessToken,
+			},
+			RefSpecs: []config.RefSpec{
+				config.RefSpec("refs/remotes/origin/*:refs/heads/*"),
+				config.RefSpec("refs/tags/*:refs/tags/*")},
+		})
+		if err != nil {
+			return fmt.Errorf("failed to push repo to '%s': %w", repo.GitURL, err)
+		}
+
+		m.Tracer.Stop("push git repository %s [done]", project.Identifier)
 	}
 
 	return nil

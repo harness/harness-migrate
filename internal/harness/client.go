@@ -56,6 +56,9 @@ type Client interface {
 	// organization and pipeline identifier, with the
 	// given identifier and name.
 	CreatePipeline(org, project string, pipeline []byte) error
+
+	// CreateRepository creates a repository.
+	CreateRepository(org, project string, repo *RepositoryCreateRequest) (*Repository, error)
 }
 
 // WaitHarnessSecretManager blocks until the harness

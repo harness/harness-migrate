@@ -6,6 +6,8 @@ import (
 	"context"
 	"os"
 
+	"github.com/harness/harness-migrate/cmd/drone"
+
 	"github.com/harness/harness-migrate/cmd/circle"
 	"github.com/harness/harness-migrate/cmd/gitlab"
 
@@ -31,6 +33,7 @@ func Command() {
 
 	circle.Register(app)
 	gitlab.Register(app)
+	drone.Register(app)
 
 	kingpin.Version(version)
 	kingpin.MustParse(app.Parse(os.Args[1:]))

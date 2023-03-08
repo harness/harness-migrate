@@ -6,9 +6,8 @@ import (
 	"context"
 	"os"
 
-	"github.com/harness/harness-migrate/cmd/drone"
-
 	"github.com/harness/harness-migrate/cmd/circle"
+	"github.com/harness/harness-migrate/cmd/drone"
 	"github.com/harness/harness-migrate/cmd/gitlab"
 
 	"github.com/alecthomas/kingpin/v2"

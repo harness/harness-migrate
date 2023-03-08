@@ -131,7 +131,7 @@ func (m *Importer) Import(ctx context.Context, data *types.Org) error {
 		}
 
 		// convert the drone yaml to a harness yaml
-		yamlFile, _, err := m.ScmClient.Contents.Find(ctx, srcProject.Name, srcProject.Yaml, srcProject.Branch)
+		yamlFile, _, err := m.ScmClient.Contents.Find(ctx, srcProject.RepoSlug, srcProject.Yaml, srcProject.Branch)
 		if err != nil {
 			return err
 		}

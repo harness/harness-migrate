@@ -62,11 +62,12 @@ func (m *Exporter) Export(ctx context.Context) (*types.Org, error) {
 		}
 		// convert the Drone repository to a common format
 		dstProject := &types.Project{
-			Name:   repo.Name,
-			Type:   "drone",
-			Repo:   repo.CloneURL,
-			Branch: repo.Branch,
-			Yaml:   repo.Config,
+			Name:     repo.Name,
+			Type:     "drone",
+			Repo:     repo.CloneURL,
+			Branch:   repo.Branch,
+			Yaml:     repo.Config,
+			RepoSlug: repo.Slug,
 		}
 
 		// find Drone secrets

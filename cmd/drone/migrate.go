@@ -2,19 +2,22 @@ package drone
 
 import (
 	"context"
-	"encoding/json"
-	"os"
 
+	"github.com/harness/harness-migrate/internal/migrate/drone"
+	"github.com/harness/harness-migrate/internal/migrate/drone/repo"
 	"github.com/harness/harness-migrate/internal/tracer"
-	"github.com/harness/harness-migrate/internal/types"
 
 	"github.com/alecthomas/kingpin/v2"
 	"golang.org/x/exp/slog"
 )
 
-type importCommand struct {
+type migrateCommand struct {
 	debug bool
-	file  string
+	trace bool
+
+	Driver     string
+	Datasource string
+	namespace  string
 
 	harnessToken   string
 	harnessAccount string
@@ -26,8 +29,7 @@ type importCommand struct {
 	bitbucketToken string
 }
 
-func (c *importCommand) run(*kingpin.ParseContext) error {
-
+func (c *migrateCommand) run(*kingpin.ParseContext) error {
 	// create the logger
 	log := createLogger(c.debug)
 
@@ -35,22 +37,21 @@ func (c *importCommand) run(*kingpin.ParseContext) error {
 	ctx := context.Background()
 	ctx = slog.NewContext(ctx, log)
 
-	// read the data file
-	data, err := os.ReadFile(c.file)
-	if err != nil {
-		log.Error("cannot read data file", nil)
-		return err
-	}
+	droneRepo, err := repo.NewRepository(c.Driver, c.Datasource)
 
-	// unmarshal the data file
-	org := new(types.Org)
-	if err := json.Unmarshal(data, org); err != nil {
-		log.Error("cannot unmarshal data file", nil)
-		return err
-	}
-	// create the tracer
 	tracer_ := tracer.New()
 	defer tracer_.Close()
+
+	// extract the data
+	exporter := &drone.Exporter{
+		Repository: droneRepo,
+		Namespace:  c.namespace,
+		Tracer:     tracer_,
+	}
+	data, err := exporter.Export(ctx)
+	if err != nil {
+		return err
+	}
 
 	importer := createImporter(
 		c.harnessAccount,
@@ -61,6 +62,7 @@ func (c *importCommand) run(*kingpin.ParseContext) error {
 		c.bitbucketToken,
 		c.harnessAddress,
 	)
+
 	importer.Tracer = tracer_
 	// create scm client to verify the token
 	// and retrieve the user id.
@@ -89,18 +91,14 @@ func (c *importCommand) run(*kingpin.ParseContext) error {
 	importer.ScmClient = client
 
 	// execute the import routine.
-	return importer.Import(ctx, org)
+	return importer.Import(ctx, data)
 }
 
-// helper function registers the import command.
-func registerImport(app *kingpin.CmdClause) {
-	c := new(importCommand)
+func registerMigrate(app *kingpin.CmdClause) {
+	c := new(migrateCommand)
 
-	cmd := app.Command("import", "import circle data").
+	cmd := app.Command("migrate", "migrate drone data to harness").
 		Action(c.run)
-
-	cmd.Arg("file", "data file to import").
-		StringVar(&c.file)
 
 	cmd.Flag("harness-account", "harness account").
 		Required().
@@ -134,6 +132,23 @@ func registerImport(app *kingpin.CmdClause) {
 		Envar("BITBUCKET_TOKEN").
 		StringVar(&c.bitbucketToken)
 
+	cmd.Flag("namespace", "drone namespace").
+		Required().
+		Envar("DRONE_NAMESPACE").
+		StringVar(&c.namespace)
+
+	cmd.Flag("driver", "drone db type").
+		Default("sqlite3").
+		StringVar(&c.Driver)
+
+	cmd.Flag("datasource", "drone database datasource").
+		Envar("DRONE_DATABASE_DATASOURCE").
+		Default("database.sqlite3").
+		StringVar(&c.Datasource)
+
 	cmd.Flag("debug", "enable debug logging").
 		BoolVar(&c.debug)
+
+	cmd.Flag("trace", "enable trace logging").
+		BoolVar(&c.trace)
 }

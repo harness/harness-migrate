@@ -3,7 +3,6 @@ package drone
 import (
 	"context"
 	"encoding/json"
-	"io/ioutil"
 	"os"
 
 	"github.com/harness/harness-migrate/internal/migrate/drone"
@@ -66,7 +65,7 @@ func (c *exportCommand) run(*kingpin.ParseContext) error {
 		return err
 	}
 
-	return ioutil.WriteFile(c.file, file, 0644)
+	return os.WriteFile(c.file, file, 0644)
 }
 
 // helper function registers the export command

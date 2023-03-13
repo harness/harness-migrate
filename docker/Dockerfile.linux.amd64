@@ -1,7 +1,7 @@
 FROM alpine:3.6 as alpine
 
 # Copy the harness-migrate binary into the container
-COPY release/harness-migrate-linux-amd64 /bin/harness-migrate
+ADD release/harness-migrate-linux-amd64 /bin/harness-migrate
 
 # Set the command to run when the container starts
-ENTRYPOINT ["harness-migrate"]
+ENTRYPOINT ["/bin/harness-migrate"]

@@ -85,6 +85,8 @@ steps:
 
 depends_on:
   - default
+  - publish docker-amd64
+  - publish docker-arm64
 trigger:
   ref:
     - refs/heads/master

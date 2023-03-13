@@ -97,7 +97,7 @@ func (c *importCommand) run(*kingpin.ParseContext) error {
 func registerImport(app *kingpin.CmdClause) {
 	c := new(importCommand)
 
-	cmd := app.Command("import", "import circle data").
+	cmd := app.Command("import", "import drone data").
 		Action(c.run)
 
 	cmd.Arg("file", "data file to import").

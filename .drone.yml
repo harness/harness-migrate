@@ -14,9 +14,40 @@ steps:
     commands:
       - GOOS=linux   GOARCH=amd64   go build -o release/harness-migrate-linux-amd64
       - GOOS=linux   GOARCH=arm64   go build -o release/harness-migrate-linux-arm64
-      - GOOS=darwin  GOARCH=amd64   go build -o release/harness-migrate-darwin-amd64
-      - GOOS=darwin  GOARCH=arm64   go build -o release/harness-migrate-darwin-arm64
-      - GOOS=windows GOARCH=amd64   go build -o release/harness-migrate-windows-amd64.exe
+
+  - name: publish docker-amd64
+    image: plugins/docker
+    pull: if-not-exists
+    settings:
+      repo: harness/harness-migrate
+      auto_tag: true
+      auto_tag_suffix: linux-amd64
+      dockerfile: docker/Dockerfile.linux.amd64
+      username:
+        from_secret: docker_username
+      password:
+        from_secret: docker_password
+    when:
+      ref:
+        - refs/heads/master
+        - refs/tags/*
+
+  - name: publish docker-arm64
+    image: plugins/docker
+    pull: if-not-exists
+    settings:
+      repo: harness/harness-migrate
+      auto_tag: true
+      auto_tag_suffix: linux-arm64
+      dockerfile: docker/Dockerfile.linux.arm64
+      username:
+        from_secret: docker_username
+      password:
+        from_secret: docker_password
+    when:
+      ref:
+        - refs/heads/master
+        - refs/tags/*
 
   - name: release
     image: plugins/github-release
@@ -24,9 +55,6 @@ steps:
       files:
         - release/harness-migrate-linux-amd64
         - release/harness-migrate-linux-arm64
-        - release/harness-migrate-darwin-amd64
-        - release/harness-migrate-darwin-arm64
-        - release/harness-migrate-windows-amd64.exe
       api_key:
         from_secret: github_token
     when:
@@ -46,7 +74,7 @@ steps:
   - name: manifest
     image: plugins/manifest
     settings:
-      repo: harness/harness-migrate
+      repo: drone/drone-runner-aws
       spec: docker/manifest.tmpl
       auto_tag: true
       ignore_missing: true

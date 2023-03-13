@@ -1,11 +1,9 @@
-// Copyright 2023 Harness Inc. All rights reserved.
-
-package circle
+package drone
 
 import (
 	"os"
 
-	"github.com/drone/go-convert/convert/circle"
+	"github.com/drone/go-convert/convert/drone"
 
 	"github.com/alecthomas/kingpin/v2"
 )
@@ -15,12 +13,12 @@ type convertCommand struct {
 }
 
 func (c *convertCommand) run(*kingpin.ParseContext) error {
-	a, err := os.ReadFile(c.path)
+	file, err := os.ReadFile(c.path)
 	if err != nil {
 		return err
 	}
-	converter := circle.New()
-	yaml, err := converter.ConvertBytes(a)
+	converter := drone.New()
+	yaml, err := converter.ConvertBytes(file)
 	if err != nil {
 		return err
 	}
@@ -32,10 +30,10 @@ func (c *convertCommand) run(*kingpin.ParseContext) error {
 func registerConvert(app *kingpin.CmdClause) {
 	c := new(convertCommand)
 
-	cmd := app.Command("convert", "convert a circle yaml").
+	cmd := app.Command("convert", "convert a drone yaml").
 		Action(c.run)
 
-	cmd.Arg("path", "path to circle yaml").
-		Default(".circle/config.yml").
+	cmd.Arg("path", "path to drone yaml").
+		Default(".drone.yml").
 		StringVar(&c.path)
 }

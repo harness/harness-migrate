@@ -5,6 +5,8 @@ package circle
 import (
 	"context"
 
+	"github.com/drone/go-convert/convert/circle"
+
 	"github.com/harness/harness-migrate/internal/migrate/circle/client"
 	"github.com/harness/harness-migrate/internal/tracer"
 	"github.com/harness/harness-migrate/internal/types"
@@ -67,10 +69,16 @@ func (m *Exporter) Export(ctx context.Context) (*types.Org, error) {
 
 		// convert the circle project to a common format.
 		dstProject := &types.Project{
-			Name: srcProject.Name,
-			Yaml: config.Source,
+			Name:         srcProject.Name,
+			OriginalYaml: []byte(config.Source),
 		}
 
+		converter := circle.New()
+		newYaml, err := converter.ConvertString(config.Source)
+		if err != nil {
+			return nil, err
+		}
+		dstProject.Yaml = newYaml
 		// extract the repository details from the pipeline.
 		switch {
 		case srcPipeline.Params.Gitlab.ID != "":

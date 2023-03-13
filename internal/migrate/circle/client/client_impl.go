@@ -32,7 +32,7 @@ func New(token string, opts ...Option) Client {
 	for _, opt := range opts {
 		opt(client_)
 	}
-	// set defualt address if not provided.
+	// set default address if not provided.
 	if client_.address == "" {
 		client_.address = "https://circleci.com"
 	}

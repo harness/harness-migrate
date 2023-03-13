@@ -1,6 +1,4 @@
-// Copyright 2023 Harness Inc. All rights reserved.
-
-package circle
+package drone
 
 import (
 	"context"
@@ -8,13 +6,11 @@ import (
 	"os"
 
 	"github.com/harness/harness-migrate/cmd/util"
-
-	"golang.org/x/exp/slog"
-
-	"github.com/alecthomas/kingpin/v2"
-
 	"github.com/harness/harness-migrate/internal/tracer"
 	"github.com/harness/harness-migrate/internal/types"
+
+	"github.com/alecthomas/kingpin/v2"
+	"golang.org/x/exp/slog"
 )
 
 type importCommand struct {
@@ -53,12 +49,10 @@ func (c *importCommand) run(*kingpin.ParseContext) error {
 		log.Error("cannot unmarshal data file", nil)
 		return err
 	}
-
 	// create the tracer
 	tracer_ := tracer.New()
 	defer tracer_.Close()
 
-	// create the importer
 	importer := util.CreateImporter(
 		c.harnessAccount,
 		c.harnessOrg,
@@ -69,8 +63,7 @@ func (c *importCommand) run(*kingpin.ParseContext) error {
 		c.harnessAddress,
 	)
 	importer.Tracer = tracer_
-
-	// create a scm client to verify the token
+	// create scm client to verify the token
 	// and retrieve the user id.
 	client := util.CreateClient(
 		c.githubToken,
@@ -93,6 +86,8 @@ func (c *importCommand) run(*kingpin.ParseContext) error {
 	log.Debug("verified user and token",
 		slog.String("user", user.Login),
 	)
+
+	importer.ScmClient = client
 
 	// execute the import routine.
 	return importer.Import(ctx, org)

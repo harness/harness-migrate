@@ -1,25 +1,25 @@
-// Copyright 2023 Harness Inc. All rights reserved.
-
-package circle
+package drone
 
 import (
 	"context"
-	"encoding/json"
-	"os"
 
 	"github.com/harness/harness-migrate/cmd/util"
-
-	"golang.org/x/exp/slog"
+	"github.com/harness/harness-migrate/internal/migrate/drone"
+	"github.com/harness/harness-migrate/internal/migrate/drone/repo"
+	"github.com/harness/harness-migrate/internal/tracer"
 
 	"github.com/alecthomas/kingpin/v2"
-
-	"github.com/harness/harness-migrate/internal/tracer"
-	"github.com/harness/harness-migrate/internal/types"
+	"github.com/jmoiron/sqlx"
+	"golang.org/x/exp/slog"
 )
 
-type importCommand struct {
+type migrateCommand struct {
 	debug bool
-	file  string
+	trace bool
+
+	Driver     string
+	Datasource string
+	namespace  string
 
 	harnessToken   string
 	harnessAccount string
@@ -31,8 +31,7 @@ type importCommand struct {
 	bitbucketToken string
 }
 
-func (c *importCommand) run(*kingpin.ParseContext) error {
-
+func (c *migrateCommand) run(*kingpin.ParseContext) error {
 	// create the logger
 	log := util.CreateLogger(c.debug)
 
@@ -40,37 +39,13 @@ func (c *importCommand) run(*kingpin.ParseContext) error {
 	ctx := context.Background()
 	ctx = slog.NewContext(ctx, log)
 
-	// read the data file
-	data, err := os.ReadFile(c.file)
+	var db *sqlx.DB
+	droneRepo, err := repo.NewRepository(c.Driver, c.Datasource, db)
 	if err != nil {
-		log.Error("cannot read data file", nil)
 		return err
 	}
 
-	// unmarshal the data file
-	org := new(types.Org)
-	if err := json.Unmarshal(data, org); err != nil {
-		log.Error("cannot unmarshal data file", nil)
-		return err
-	}
-
-	// create the tracer
-	tracer_ := tracer.New()
-	defer tracer_.Close()
-
-	// create the importer
-	importer := util.CreateImporter(
-		c.harnessAccount,
-		c.harnessOrg,
-		c.harnessToken,
-		c.githubToken,
-		c.gitlabToken,
-		c.bitbucketToken,
-		c.harnessAddress,
-	)
-	importer.Tracer = tracer_
-
-	// create a scm client to verify the token
+	// create scm client to verify the token
 	// and retrieve the user id.
 	client := util.CreateClient(
 		c.githubToken,
@@ -85,6 +60,33 @@ func (c *importCommand) run(*kingpin.ParseContext) error {
 		return err
 	}
 
+	tracer_ := tracer.New()
+	defer tracer_.Close()
+
+	// extract the data
+	exporter := &drone.Exporter{
+		Repository: droneRepo,
+		Namespace:  c.namespace,
+		Tracer:     tracer_,
+		ScmClient:  client,
+	}
+	data, err := exporter.Export(ctx)
+	if err != nil {
+		return err
+	}
+
+	importer := util.CreateImporter(
+		c.harnessAccount,
+		c.harnessOrg,
+		c.harnessToken,
+		c.githubToken,
+		c.gitlabToken,
+		c.bitbucketToken,
+		c.harnessAddress,
+	)
+
+	importer.Tracer = tracer_
+
 	// provide the user id to the importer. the user id
 	// is required by the connector despite the fact that
 	// it can be retrieved using the token itself (like we just did)
@@ -94,19 +96,17 @@ func (c *importCommand) run(*kingpin.ParseContext) error {
 		slog.String("user", user.Login),
 	)
 
+	importer.ScmClient = client
+
 	// execute the import routine.
-	return importer.Import(ctx, org)
+	return importer.Import(ctx, data)
 }
 
-// helper function registers the import command.
-func registerImport(app *kingpin.CmdClause) {
-	c := new(importCommand)
+func registerMigrate(app *kingpin.CmdClause) {
+	c := new(migrateCommand)
 
-	cmd := app.Command("import", "import circle data").
+	cmd := app.Command("migrate", "migrate drone data to harness").
 		Action(c.run)
-
-	cmd.Arg("file", "data file to import").
-		StringVar(&c.file)
 
 	cmd.Flag("harness-account", "harness account").
 		Required().
@@ -140,6 +140,23 @@ func registerImport(app *kingpin.CmdClause) {
 		Envar("BITBUCKET_TOKEN").
 		StringVar(&c.bitbucketToken)
 
+	cmd.Flag("namespace", "drone namespace").
+		Required().
+		Envar("DRONE_NAMESPACE").
+		StringVar(&c.namespace)
+
+	cmd.Flag("driver", "drone db type").
+		Default("sqlite3").
+		StringVar(&c.Driver)
+
+	cmd.Flag("datasource", "drone database datasource").
+		Envar("DRONE_DATABASE_DATASOURCE").
+		Default("database.sqlite3").
+		StringVar(&c.Datasource)
+
 	cmd.Flag("debug", "enable debug logging").
 		BoolVar(&c.debug)
+
+	cmd.Flag("trace", "enable trace logging").
+		BoolVar(&c.trace)
 }

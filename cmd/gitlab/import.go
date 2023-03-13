@@ -5,19 +5,19 @@ package gitlab
 import (
 	"context"
 	"encoding/json"
-	"io/ioutil"
 	"net/http"
+	"os"
 
-	"golang.org/x/exp/slog"
-
-	"github.com/alecthomas/kingpin/v2"
-	scmgitlab "github.com/drone/go-scm/scm/driver/gitlab"
-	"github.com/drone/go-scm/scm/transport"
-
+	"github.com/harness/harness-migrate/cmd/util"
 	"github.com/harness/harness-migrate/internal/harness"
 	"github.com/harness/harness-migrate/internal/migrate/gitlab"
 	"github.com/harness/harness-migrate/internal/tracer"
 	"github.com/harness/harness-migrate/internal/types"
+
+	"github.com/alecthomas/kingpin/v2"
+	scmgitlab "github.com/drone/go-scm/scm/driver/gitlab"
+	"github.com/drone/go-scm/scm/transport"
+	"golang.org/x/exp/slog"
 )
 
 type importCommand struct {
@@ -36,14 +36,14 @@ type importCommand struct {
 func (c *importCommand) run(*kingpin.ParseContext) error {
 
 	// create the logger
-	log := createLogger(c.debug)
+	log := util.CreateLogger(c.debug)
 
 	// attach the logger to the context
 	ctx := context.Background()
 	ctx = slog.NewContext(ctx, log)
 
 	// read the data file
-	data, err := ioutil.ReadFile(c.file)
+	data, err := os.ReadFile(c.file)
 	if err != nil {
 		log.Error("cannot read data file", nil)
 		return err

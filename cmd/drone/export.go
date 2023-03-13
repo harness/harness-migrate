@@ -3,13 +3,16 @@ package drone
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"os"
 
+	"github.com/harness/harness-migrate/cmd/util"
 	"github.com/harness/harness-migrate/internal/migrate/drone"
 	"github.com/harness/harness-migrate/internal/migrate/drone/repo"
 	"github.com/harness/harness-migrate/internal/tracer"
 
 	"github.com/alecthomas/kingpin/v2"
+	"github.com/jmoiron/sqlx"
 	"golang.org/x/exp/slog"
 )
 
@@ -21,18 +24,22 @@ type exportCommand struct {
 	Driver     string
 	Datasource string
 	namespace  string
+
+	githubToken    string
+	gitlabToken    string
+	bitbucketToken string
 }
 
 func (c *exportCommand) run(*kingpin.ParseContext) error {
-
 	// create the logger
-	log := createLogger(c.debug)
+	log := util.CreateLogger(c.debug)
 
 	// attach the logger to the context
 	ctx := context.Background()
 	ctx = slog.NewContext(ctx, log)
 
-	droneRepo, err := repo.NewRepository(c.Driver, c.Datasource)
+	var db *sqlx.DB
+	droneRepo, err := repo.NewRepository(c.Driver, c.Datasource, db)
 	if err != nil {
 		return err
 	}
@@ -40,11 +47,29 @@ func (c *exportCommand) run(*kingpin.ParseContext) error {
 	tracer_ := tracer.New()
 	defer tracer_.Close()
 
+	client := util.CreateClient(
+		c.githubToken,
+		c.gitlabToken,
+		c.bitbucketToken,
+	)
+
+	if c.githubToken == "" && c.gitlabToken == "" && c.bitbucketToken == "" {
+		return errors.New("no scm token provided")
+	}
+
+	user, _, err := client.Users.Find(ctx)
+	if err != nil {
+		log.Error("cannot retrieve git user", nil)
+		return err
+	}
+
 	// extract the data
 	exporter := &drone.Exporter{
 		Repository: droneRepo,
 		Namespace:  c.namespace,
 		Tracer:     tracer_,
+		ScmClient:  client,
+		ScmLogin:   user.Login,
 	}
 	data, err := exporter.Export(ctx)
 	if err != nil {
@@ -91,6 +116,18 @@ func registerExport(app *kingpin.CmdClause) {
 		Envar("DRONE_DATABASE_DATASOURCE").
 		Default("database.sqlite3").
 		StringVar(&c.Datasource)
+
+	cmd.Flag("github-token", "github token").
+		Envar("GITHUB_TOKEN").
+		StringVar(&c.githubToken)
+
+	cmd.Flag("gitlab-token", "gitlab token").
+		Envar("GITLAB_TOKEN").
+		StringVar(&c.gitlabToken)
+
+	cmd.Flag("bitbucket-token", "bitbucket token").
+		Envar("BITBUCKET_TOKEN").
+		StringVar(&c.bitbucketToken)
 
 	cmd.Flag("debug", "enable debug logging").
 		BoolVar(&c.debug)

@@ -13,13 +13,14 @@ type Org struct {
 
 // Project defines a project.
 type Project struct {
-	Name      string      `json:"name"`
-	Desc      string      `json:"desc,omitempty"`
-	Repo      string      `json:"repo,omitempty"`
-	Branch    string      `json:"branch,omitempty"`
-	Type      string      `json:"type"` // github, gitlab, bitbucket
-	Yaml      string      `json:"yaml"`
-	RepoSlug  string      `json:"repoSlug,omitempty"`
+	Name         string `json:"name"`
+	Desc         string `json:"desc,omitempty"`
+	Repo         string `json:"repo,omitempty"`
+	Branch       string `json:"branch,omitempty"`
+	Type         string `json:"type"` // github, gitlab, bitbucket
+	Yaml         []byte `json:"yaml"`
+	OriginalYaml []byte `json:"originalYaml,omitempty"`
+
 	Secrets   []*Secret   `json:"secrets,omitempty"`
 	Pipelines []*Pipeline `json:"pipelines,omitempty"`
 }

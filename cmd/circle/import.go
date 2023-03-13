@@ -5,7 +5,9 @@ package circle
 import (
 	"context"
 	"encoding/json"
-	"io/ioutil"
+	"os"
+
+	"github.com/harness/harness-migrate/cmd/util"
 
 	"golang.org/x/exp/slog"
 
@@ -22,6 +24,7 @@ type importCommand struct {
 	harnessToken   string
 	harnessAccount string
 	harnessOrg     string
+	harnessAddress string
 
 	githubToken    string
 	gitlabToken    string
@@ -31,14 +34,14 @@ type importCommand struct {
 func (c *importCommand) run(*kingpin.ParseContext) error {
 
 	// create the logger
-	log := createLogger(c.debug)
+	log := util.CreateLogger(c.debug)
 
 	// attach the logger to the context
 	ctx := context.Background()
 	ctx = slog.NewContext(ctx, log)
 
 	// read the data file
-	data, err := ioutil.ReadFile(c.file)
+	data, err := os.ReadFile(c.file)
 	if err != nil {
 		log.Error("cannot read data file", nil)
 		return err
@@ -56,19 +59,20 @@ func (c *importCommand) run(*kingpin.ParseContext) error {
 	defer tracer_.Close()
 
 	// create the importer
-	importer := createImporter(
+	importer := util.CreateImporter(
 		c.harnessAccount,
 		c.harnessOrg,
 		c.harnessToken,
 		c.githubToken,
 		c.gitlabToken,
 		c.bitbucketToken,
+		c.harnessAddress,
 	)
 	importer.Tracer = tracer_
 
-	// create an scm cient to verify the token
+	// create a scm client to verify the token
 	// and retrieve the user id.
-	client := createClient(
+	client := util.CreateClient(
 		c.githubToken,
 		c.gitlabToken,
 		c.bitbucketToken,
@@ -83,7 +87,7 @@ func (c *importCommand) run(*kingpin.ParseContext) error {
 
 	// provide the user id to the importer. the user id
 	// is required by the connector despite the fact that
-	// it can be retrieve using the token itself (like we just did)
+	// it can be retrieved using the token itself (like we just did)
 	importer.ScmLogin = user.Login
 
 	log.Debug("verified user and token",
@@ -118,6 +122,11 @@ func registerImport(app *kingpin.CmdClause) {
 		Required().
 		Envar("HARNESS_TOKEN").
 		StringVar(&c.harnessToken)
+
+	cmd.Flag("harness-address", "harness address").
+		Envar("HARNESS_ADDRESS").
+		Default("https://app.harness.io").
+		StringVar(&c.harnessAddress)
 
 	cmd.Flag("github-token", "github token").
 		Envar("GITHUB_TOKEN").

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"os"
 
+	"github.com/harness/harness-migrate/cmd/util"
 	"github.com/harness/harness-migrate/internal/tracer"
 	"github.com/harness/harness-migrate/internal/types"
 
@@ -29,7 +30,7 @@ type importCommand struct {
 func (c *importCommand) run(*kingpin.ParseContext) error {
 
 	// create the logger
-	log := createLogger(c.debug)
+	log := util.CreateLogger(c.debug)
 
 	// attach the logger to the context
 	ctx := context.Background()
@@ -52,7 +53,7 @@ func (c *importCommand) run(*kingpin.ParseContext) error {
 	tracer_ := tracer.New()
 	defer tracer_.Close()
 
-	importer := createImporter(
+	importer := util.CreateImporter(
 		c.harnessAccount,
 		c.harnessOrg,
 		c.harnessToken,
@@ -64,7 +65,7 @@ func (c *importCommand) run(*kingpin.ParseContext) error {
 	importer.Tracer = tracer_
 	// create scm client to verify the token
 	// and retrieve the user id.
-	client := createClient(
+	client := util.CreateClient(
 		c.githubToken,
 		c.gitlabToken,
 		c.bitbucketToken,

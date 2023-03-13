@@ -3,11 +3,9 @@
 package circle
 
 import (
-	"io/ioutil"
 	"os"
 
-	"github.com/harness/harness-migrate/internal/migrate/circle/yaml/commons"
-	"github.com/harness/harness-migrate/internal/migrate/circle/yaml/converter"
+	"github.com/drone/go-convert/convert/circle"
 
 	"github.com/alecthomas/kingpin/v2"
 )
@@ -17,16 +15,16 @@ type convertCommand struct {
 }
 
 func (c *convertCommand) run(*kingpin.ParseContext) error {
-	a, err := ioutil.ReadFile(c.path)
+	a, err := os.ReadFile(c.path)
 	if err != nil {
 		return err
 	}
-	opts := commons.Opts{}
-	b, err := converter.Convert(opts, a)
+	converter := circle.New()
+	yaml, err := converter.ConvertBytes(a)
 	if err != nil {
 		return err
 	}
-	os.Stdout.Write(b)
+	os.Stdout.Write(yaml)
 	return nil
 }
 

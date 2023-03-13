@@ -7,6 +7,12 @@ import (
 	"github.com/harness/harness-migrate/internal/harness"
 )
 
+type DockerConnectorOptions struct {
+	Username string
+	Password string
+	URL      string
+}
+
 func CreateSecret(org, project, identifier, desc, data string) *harness.Secret {
 	return &harness.Secret{
 		Name:              identifier,
@@ -58,7 +64,7 @@ func CreateGithubConnector(org, id, username, token string) *harness.Connector {
 	}
 }
 
-// CreateGitlabConnector helper function to create a github connector
+// CreateGitlabConnector helper function to create a GitHub connector
 func CreateGitlabConnector(org, id, username, token string) *harness.Connector {
 	return &harness.Connector{
 		Name:          id,
@@ -84,6 +90,46 @@ func CreateGitlabConnector(org, id, username, token string) *harness.Connector {
 					Tokenref: token,
 				},
 			},
+		},
+	}
+}
+
+// CreateDockerConnector helper function to create a docker connector
+func CreateDockerConnector(org, id string, args ...interface{}) *harness.Connector {
+	var authentication *harness.Resource
+	var options DockerConnectorOptions
+	if len(args) > 0 {
+		if arg, ok := args[0].(DockerConnectorOptions); ok {
+			options = arg
+		}
+	}
+	// Check if username and password are provided
+	if options.Username != "" && options.Password != "" {
+		authentication = &harness.Resource{
+			Type: "UsernamePassword",
+			Spec: map[string]string{
+				"username":    options.Username,
+				"passwordRef": options.Password,
+			},
+		}
+	} else {
+		authentication = &harness.Resource{
+			Type: "Anonymous",
+		}
+	}
+	if options.URL == "" {
+		options.URL = "https://registry.hub.docker.com/v2/"
+	}
+	return &harness.Connector{
+		Name:          id,
+		Identifier:    id,
+		Orgidentifier: org,
+		Type:          "DockerRegistry",
+		Spec: &harness.ConnectorDocker{
+			ExecuteOnDelegate: false,
+			DockerRegistryURL: options.URL,
+			ProviderType:      "DockerHub",
+			Authentication:    authentication,
 		},
 	}
 }

@@ -5,8 +5,9 @@ package circle
 import (
 	"context"
 	"encoding/json"
-	"io/ioutil"
 	"os"
+
+	"github.com/harness/harness-migrate/cmd/util"
 
 	"golang.org/x/exp/slog"
 
@@ -28,7 +29,7 @@ type exportCommand struct {
 func (c *exportCommand) run(*kingpin.ParseContext) error {
 
 	// create the logger
-	log := createLogger(c.debug)
+	log := util.CreateLogger(c.debug)
 
 	// attach the logger to the context
 	ctx := context.Background()
@@ -68,7 +69,7 @@ func (c *exportCommand) run(*kingpin.ParseContext) error {
 		return err
 	}
 
-	return ioutil.WriteFile(c.file, file, 0644)
+	return os.WriteFile(c.file, file, 0644)
 }
 
 // helper function registers the export command

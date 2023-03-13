@@ -22,7 +22,31 @@ type repository struct {
 
 // NewRepository returns a new Repository that provides access to the Drone
 // database using the specified connection string.
-func NewRepository(driver, datasource string) (Repository, error) {
+func NewRepository(driver, datasource string, db *sqlx.DB) (Repository, error) {
+	var err error
+
+	// If a DB connection is not provided, create one
+	if db == nil {
+		db, err = createDBConnection(driver, datasource)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create DB connection: %w", err)
+		}
+	}
+
+	// Check the connection using the Ping method
+	err = db.Ping()
+	if err != nil {
+		return nil, fmt.Errorf("failed to ping database %s: %w", datasource, err)
+	}
+
+	return &repository{
+		db:     db,
+		dbType: driver,
+	}, nil
+}
+
+// createDBConnection creates a new database connection based on the specified driver and datasource.
+func createDBConnection(driver, datasource string) (*sqlx.DB, error) {
 	var db *sqlx.DB
 	var err error
 	switch driver {
@@ -40,15 +64,7 @@ func NewRepository(driver, datasource string) (Repository, error) {
 		return nil, fmt.Errorf("failed to connect to datasource %s: %w", datasource, err)
 	}
 
-	err = db.Ping()
-	if err != nil {
-		return nil, fmt.Errorf("failed to ping database %s: %w", datasource, err)
-	}
-
-	return &repository{
-		db:     db,
-		dbType: driver,
-	}, nil
+	return db, nil
 }
 
 func (r *repository) GetRepos(ctx context.Context, namespace string) ([]*Repo, error) {

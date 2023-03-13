@@ -5,6 +5,8 @@ package circle
 import (
 	"context"
 
+	"github.com/harness/harness-migrate/cmd/util"
+
 	"golang.org/x/exp/slog"
 
 	"github.com/harness/harness-migrate/internal/migrate/circle"
@@ -24,6 +26,7 @@ type migrateCommand struct {
 	harnessToken   string
 	harnessAccount string
 	harnessOrg     string
+	harnessAddress string
 
 	githubToken    string
 	gitlabToken    string
@@ -33,7 +36,7 @@ type migrateCommand struct {
 func (c *migrateCommand) run(*kingpin.ParseContext) error {
 
 	// create the logger
-	log := createLogger(c.debug)
+	log := util.CreateLogger(c.debug)
 
 	// attach the logger to the context
 	ctx := context.Background()
@@ -60,19 +63,20 @@ func (c *migrateCommand) run(*kingpin.ParseContext) error {
 	}
 
 	// create the importer
-	importer := createImporter(
+	importer := util.CreateImporter(
 		c.harnessAccount,
 		c.harnessOrg,
 		c.harnessToken,
 		c.githubToken,
 		c.gitlabToken,
 		c.bitbucketToken,
+		c.harnessAddress,
 	)
 	importer.Tracer = tracer_
 
 	// create an scm cient to verify the token
 	// and retrieve the user id.
-	scmClient := createClient(
+	scmClient := util.CreateClient(
 		c.githubToken,
 		c.gitlabToken,
 		c.bitbucketToken,
@@ -119,6 +123,11 @@ func registerMigrate(app *kingpin.CmdClause) {
 		Required().
 		Envar("HARNESS_TOKEN").
 		StringVar(&c.harnessToken)
+
+	cmd.Flag("harness-address", "harness address").
+		Envar("HARNESS_ADDRESS").
+		Default("https://app.harness.io").
+		StringVar(&c.harnessAddress)
 
 	cmd.Flag("github-token", "github token").
 		Envar("GITHUB_TOKEN").

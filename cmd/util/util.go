@@ -1,8 +1,10 @@
-package drone
+package util
 
 import (
 	"net/http"
 	"os"
+
+	"github.com/harness/harness-migrate/internal/migrate"
 
 	"github.com/drone/go-scm/scm"
 	"github.com/drone/go-scm/scm/driver/bitbucket"
@@ -11,13 +13,11 @@ import (
 	"github.com/drone/go-scm/scm/transport"
 	"github.com/drone/go-scm/scm/transport/oauth2"
 	"github.com/harness/harness-migrate/internal/harness"
-	"github.com/harness/harness-migrate/internal/migrate/drone"
-
 	"golang.org/x/exp/slog"
 )
 
-// helper function creates a logger
-func createLogger(debug bool) slog.Logger {
+// CreateLogger helper function creates a logger
+func CreateLogger(debug bool) slog.Logger {
 	opts := new(slog.HandlerOptions)
 	if debug {
 		opts.Level = slog.DebugLevel
@@ -27,9 +27,9 @@ func createLogger(debug bool) slog.Logger {
 	)
 }
 
-// helper function creates an importer
-func createImporter(harnessAccount, harnessOrg, harnessToken, githubToken, gitlabToken, bitbucketToken, harnessAddress string) *drone.Importer {
-	importer := &drone.Importer{
+// CreateImporter helper function creates an importer
+func CreateImporter(harnessAccount, harnessOrg, harnessToken, githubToken, gitlabToken, bitbucketToken, harnessAddress string) *migrate.Importer {
+	importer := &migrate.Importer{
 		Harness:    harness.New(harnessAccount, harnessToken, harness.WithAddress(harnessAddress)),
 		HarnessOrg: harnessOrg,
 	}
@@ -47,8 +47,8 @@ func createImporter(harnessAccount, harnessOrg, harnessToken, githubToken, gitla
 	return importer
 }
 
-// helper function creates an scm client
-func createClient(githubToken, gitlabToken, bitbucketToken string) *scm.Client {
+// CreateClient helper function creates an scm client
+func CreateClient(githubToken, gitlabToken, bitbucketToken string) *scm.Client {
 	var client *scm.Client
 	switch {
 	case githubToken != "":

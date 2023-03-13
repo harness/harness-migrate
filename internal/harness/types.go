@@ -115,6 +115,13 @@ type (
 		Apiaccess         *Resource `json:"apiAccess"`
 	}
 
+	ConnectorDocker struct {
+		ExecuteOnDelegate bool      `json:"executeOnDelegate"`
+		DockerRegistryURL string    `json:"dockerRegistryUrl"`
+		ProviderType      string    `json:"providerType"`
+		Authentication    *Resource `json:"auth"`
+	}
+
 	// ConnectorGithub defines a Github connector.
 	ConnectorGithub struct {
 		Executeondelegate bool      `json:"executeOnDelegate"`

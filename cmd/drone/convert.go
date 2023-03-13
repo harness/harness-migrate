@@ -3,7 +3,7 @@ package drone
 import (
 	"os"
 
-	"github.com/drone/spec/dist/go/convert/drone"
+	"github.com/drone/go-convert/convert/drone"
 
 	"github.com/alecthomas/kingpin/v2"
 )
@@ -13,15 +13,16 @@ type convertCommand struct {
 }
 
 func (c *convertCommand) run(*kingpin.ParseContext) error {
-	file, err := os.Open(c.path)
+	file, err := os.ReadFile(c.path)
 	if err != nil {
 		return err
 	}
-	b, err := drone.From(file)
+	converter := drone.New()
+	yaml, err := converter.ConvertBytes(file)
 	if err != nil {
 		return err
 	}
-	os.Stdout.Write(b)
+	os.Stdout.Write(yaml)
 	return nil
 }
 

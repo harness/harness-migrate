@@ -5,6 +5,10 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/drone/go-convert/convert/drone"
+
+	"github.com/drone/go-scm/scm"
+
 	"github.com/harness/harness-migrate/internal/migrate/drone/repo"
 	"github.com/harness/harness-migrate/internal/tracer"
 	"github.com/harness/harness-migrate/internal/types"
@@ -14,6 +18,9 @@ import (
 type Exporter struct {
 	Repository repo.Repository
 	Namespace  string
+
+	ScmClient *scm.Client
+	ScmLogin  string
 
 	Tracer tracer.Tracer
 }
@@ -62,13 +69,26 @@ func (m *Exporter) Export(ctx context.Context) (*types.Org, error) {
 		}
 		// convert the Drone repository to a common format
 		dstProject := &types.Project{
-			Name:     repo.Name,
-			Type:     "drone",
-			Repo:     repo.CloneURL,
-			Branch:   repo.Branch,
-			Yaml:     repo.Config,
-			RepoSlug: repo.Slug,
+			Name:   repo.Name,
+			Type:   "drone",
+			Repo:   repo.CloneURL,
+			Branch: repo.Branch,
 		}
+
+		yamlFile, _, err := m.ScmClient.Contents.Find(ctx, repo.Slug, repo.Config, repo.Branch)
+		if err != nil {
+			return nil, err
+		}
+
+		dstProject.OriginalYaml = yamlFile.Data
+
+		converter := drone.New()
+		newYaml, err := converter.ConvertBytes(yamlFile.Data)
+		if err != nil {
+			return nil, err
+		}
+
+		dstProject.Yaml = newYaml
 
 		// find Drone secrets
 		secrets, secretErr := m.Repository.GetSecrets(ctx, repo.ID)

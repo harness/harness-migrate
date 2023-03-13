@@ -1,11 +1,11 @@
-package drone
+package migrate
 
 import (
 	"context"
 
+	"github.com/drone/go-convert/convert/harness/downgrader"
 	"github.com/drone/go-scm/scm"
 	"github.com/harness/harness-migrate/internal/harness"
-	"github.com/harness/harness-migrate/internal/migrate/drone/yaml"
 	"github.com/harness/harness-migrate/internal/slug"
 	"github.com/harness/harness-migrate/internal/tracer"
 	"github.com/harness/harness-migrate/internal/types"
@@ -23,6 +23,8 @@ type Importer struct {
 
 	Tracer tracer.Tracer
 }
+
+const dockerConnectorName = "docker"
 
 func (m *Importer) Import(ctx context.Context, data *types.Org) error {
 	m.Tracer.Start("create organization %s", m.HarnessOrg)
@@ -47,7 +49,7 @@ func (m *Importer) Import(ctx context.Context, data *types.Org) error {
 	}
 	m.Tracer.Stop("create organization %s [done]", m.HarnessOrg)
 
-	m.Tracer.Start("create secret %s", m.ScmType)
+	m.Tracer.Start("create provider secret %s", m.ScmType)
 	// create if the secret does not already exist.
 	if _, err = m.Harness.FindSecretOrg(org.ID, m.ScmType); err != nil {
 		// create the scm secret as an inline secret using
@@ -59,11 +61,25 @@ func (m *Importer) Import(ctx context.Context, data *types.Org) error {
 		}
 	}
 
-	m.Tracer.Stop("create secret %s [done]", m.ScmType)
+	m.Tracer.Stop("create provider secret %s [done]", m.ScmType)
+
+	m.Tracer.Start("create organisation secrets if they exist")
+	// create org secrets
+	for _, secret := range data.Secrets {
+		if _, err = m.Harness.FindSecretOrg(org.ID, secret.Name); err != nil {
+			s := util.CreateSecretOrg(org.ID, secret.Name, secret.Value)
+			// save the secret to the organization
+			if err := m.Harness.CreateSecretOrg(s); err != nil {
+				return err
+			}
+		}
+	}
+
+	m.Tracer.Stop("create organisation secrets [done]")
 
 	m.Tracer.Start("create connector %s", m.ScmType)
-	// create if the connector does not already exist.
-	if _, err = m.Harness.FindConnectorOrg(org.ID, m.ScmType); err != nil {
+	connector, _ := m.Harness.FindConnectorOrg(org.ID, m.ScmType)
+	if connector == nil {
 		switch m.ScmType {
 		case "gitlab":
 			conn := util.CreateGitlabConnector(org.ID, m.ScmType, m.ScmLogin, "org."+m.ScmType)
@@ -75,6 +91,14 @@ func (m *Importer) Import(ctx context.Context, data *types.Org) error {
 			if err := m.Harness.CreateConnectorOrg(conn); err != nil {
 				return err
 			}
+		}
+	}
+
+	dockerConnector, _ := m.Harness.FindConnectorOrg(org.ID, dockerConnectorName)
+	if dockerConnector == nil {
+		conn := util.CreateDockerConnector(org.ID, dockerConnectorName)
+		if err := m.Harness.CreateConnectorOrg(conn); err != nil {
+			return err
 		}
 	}
 
@@ -129,19 +153,22 @@ func (m *Importer) Import(ctx context.Context, data *types.Org) error {
 			}
 		}
 
-		// convert the drone yaml to a harness yaml
-		yamlFile, _, err := m.ScmClient.Contents.Find(ctx, srcProject.RepoSlug, srcProject.Yaml, srcProject.Branch)
+		// downgrade to the v0 yaml
+		d := downgrader.New(
+			downgrader.WithCodebase(project.Name, connector.Identifier),
+			downgrader.WithDockerhub(dockerConnectorName),
+			//downgrader.WithKubernetes(c.kubeName, c.kubeConn), //TODO add kubernetes?
+			downgrader.WithName(project.Name),
+			downgrader.WithOrganization(project.Orgidentifier),
+			downgrader.WithProject(project.Name),
+		)
+		after, err := d.Downgrade(srcProject.Yaml)
 		if err != nil {
 			return err
 		}
 
-		conf, err := yaml.Convert(yamlFile.Data)
-		if err != nil {
-			return err
-		}
-
-		// create the harness pipeline with an inline yaml
-		err = m.Harness.CreatePipeline(org.ID, project.Identifier, conf)
+		//create the harness pipeline with an inline yaml
+		err = m.Harness.CreatePipeline(org.ID, project.Identifier, after)
 		if err != nil {
 			// if the error indicates the pipeline already
 			// exists we can continue with the import, else

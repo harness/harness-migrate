@@ -1,0 +1,38 @@
+kind: pipeline
+type: docker
+name: default
+
+steps:
+  - name: test
+    image: golang:1.19
+    commands:
+      - go test -coverprofile=cover.out ./...
+      - go tool cover -func=cover.out
+
+  - name: build
+    image: golang:1.19
+    commands:
+      - GOOS=linux   GOARCH=amd64   go build -o release/harness-migrate-linux-amd64
+      - GOOS=linux   GOARCH=arm64   go build -o release/harness-migrate-linux-arm64
+      - GOOS=darwin  GOARCH=amd64   go build -o release/harness-migrate-darwin-amd64
+      - GOOS=darwin  GOARCH=arm64   go build -o release/harness-migrate-darwin-arm64
+      - GOOS=windows GOARCH=amd64   go build -o release/harness-migrate-windows-amd64.exe
+
+#  - name: release
+#    image: plugins/github-release
+#    settings:
+#      files:
+#        - release/harness-migrate-linux-amd64
+#        - release/harness-migrate-linux-arm64
+#        - release/harness-migrate-darwin-amd64
+#        - release/harness-migrate-darwin-arm64
+#        - release/harness-migrate-windows-amd64.exe
+#      api_key:
+#        from_secret: github_token
+#    when:
+#      ref:
+#        - refs/tags/*
+
+trigger:
+  branch:
+    - master

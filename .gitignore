@@ -3,3 +3,4 @@ _testing
 harness-migrate
 .env
 /data.json
+/release

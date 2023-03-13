@@ -7,12 +7,12 @@ tags:
 {{/if}}
 manifests:
   -
-    image: harness/harness-migrate:{{#if build.tag}}{{trimPrefix "v" build.tag}}-{{/if}}linux-amd64
+    image: harness/harness-migrate:{{#if build.tag}}{{trimPrefix "v" build.tag}}-linux-amd64{{else}}latest-linux-amd64{{/if}}
     platform:
       architecture: amd64
       os: linux
   -
-    image: harness/harness-migrate:{{#if build.tag}}{{trimPrefix "v" build.tag}}-{{/if}}linux-arm64
+    image: harness/harness-migrate:{{#if build.tag}}{{trimPrefix "v" build.tag}}-linux-arm64{{else}}latest-linux-arm64{{/if}}
     platform:
       architecture: arm64
       os: linux

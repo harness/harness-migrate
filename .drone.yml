@@ -46,6 +46,7 @@ steps:
   - name: manifest
     image: plugins/manifest
     settings:
+      repo: harness/harness-migrate
       spec: docker/manifest.tmpl
       auto_tag: true
       ignore_missing: true

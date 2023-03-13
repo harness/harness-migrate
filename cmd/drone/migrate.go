@@ -45,6 +45,21 @@ func (c *migrateCommand) run(*kingpin.ParseContext) error {
 		return err
 	}
 
+	// create scm client to verify the token
+	// and retrieve the user id.
+	client := util.CreateClient(
+		c.githubToken,
+		c.gitlabToken,
+		c.bitbucketToken,
+	)
+
+	// get the current user id.
+	user, _, err := client.Users.Find(ctx)
+	if err != nil {
+		log.Error("cannot retrieve git user", nil)
+		return err
+	}
+
 	tracer_ := tracer.New()
 	defer tracer_.Close()
 
@@ -53,6 +68,7 @@ func (c *migrateCommand) run(*kingpin.ParseContext) error {
 		Repository: droneRepo,
 		Namespace:  c.namespace,
 		Tracer:     tracer_,
+		ScmClient:  client,
 	}
 	data, err := exporter.Export(ctx)
 	if err != nil {
@@ -70,20 +86,6 @@ func (c *migrateCommand) run(*kingpin.ParseContext) error {
 	)
 
 	importer.Tracer = tracer_
-	// create scm client to verify the token
-	// and retrieve the user id.
-	client := util.CreateClient(
-		c.githubToken,
-		c.gitlabToken,
-		c.bitbucketToken,
-	)
-
-	// get the current user id.
-	user, _, err := client.Users.Find(ctx)
-	if err != nil {
-		log.Error("cannot retrieve git user", nil)
-		return err
-	}
 
 	// provide the user id to the importer. the user id
 	// is required by the connector despite the fact that

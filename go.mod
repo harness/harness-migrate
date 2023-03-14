@@ -32,7 +32,7 @@ require (
 	github.com/coreos/go-semver v0.3.1 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/drone/drone-go v1.7.1 // indirect
-	github.com/drone/go-convert v0.0.0-20230309190128-58662549c82e // indirect
+	github.com/drone/go-convert v0.0.0-20230314110242-02c13e780dd0 // indirect
 	github.com/emirpasic/gods v1.18.1 // indirect
 	github.com/go-git/gcfg v1.5.0 // indirect
 	github.com/go-git/go-billy/v5 v5.4.0 // indirect

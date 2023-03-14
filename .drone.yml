@@ -24,9 +24,9 @@ steps:
       auto_tag_suffix: linux-amd64
       dockerfile: docker/Dockerfile.linux.amd64
       username:
-        from_secret: docker_username
+        from_secret: harness-docker-username
       password:
-        from_secret: docker_password
+        from_secret: harness-docker-password
     when:
       ref:
         - refs/heads/master
@@ -41,9 +41,9 @@ steps:
       auto_tag_suffix: linux-arm64
       dockerfile: docker/Dockerfile.linux.arm64
       username:
-        from_secret: docker_username
+        from_secret: harness-docker-username
       password:
-        from_secret: docker_password
+        from_secret: harness-docker-password
     when:
       ref:
         - refs/heads/master
@@ -74,14 +74,13 @@ steps:
   - name: manifest
     image: plugins/manifest
     settings:
-      repo: harness/harness-migrate
       spec: docker/manifest.tmpl
       auto_tag: true
       ignore_missing: true
       password:
-        from_secret: docker_password
+        from_secret: harness-docker-password
       username:
-        from_secret: docker_username
+        from_secret: harness-docker-username
 
 depends_on:
   - default

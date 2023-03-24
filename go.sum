@@ -38,10 +38,14 @@ github.com/drone/go-convert v0.0.0-20230309190128-58662549c82e h1:AA7+MaKLc0QdoG
 github.com/drone/go-convert v0.0.0-20230309190128-58662549c82e/go.mod h1:ybSeGF+K0cC8HpMY+WzV/YjGoDwHc006Bxwchr5ec9U=
 github.com/drone/go-convert v0.0.0-20230314110242-02c13e780dd0 h1:Nh5la+5+RthAmi/gmxJEwTB+YXyqCKt7faJAUrYDXJo=
 github.com/drone/go-convert v0.0.0-20230314110242-02c13e780dd0/go.mod h1:LLEIt5SaVFJBbG4NHpsb/JTIaiD++zGZZoHQ7yxiOhU=
+github.com/drone/go-convert v0.0.0-20230324183447-8490e318cfb0 h1:yg04Zoshc0RI7SkBP5UTsLqCC0gmitU35lzBVh/SomM=
+github.com/drone/go-convert v0.0.0-20230324183447-8490e318cfb0/go.mod h1:ZdA1+wH1UE3Wl6xjMdbZmvDJdC9Ty/VOHZp0sG4+Whs=
 github.com/drone/go-scm v1.28.1 h1:3WukxtsFFU5omHfp8dU3EXjEQCmtqAZkCj9pHHs+Xus=
 github.com/drone/go-scm v1.28.1/go.mod h1:DFIJJjhMj0TSXPz+0ni4nyZ9gtTtC40Vh/TGRugtyWw=
 github.com/drone/spec v0.0.0-20230306170233-c4d2b52ae481 h1:6277aLOZn4ql3Grg8KriWdV/8RmljCFpyPf0tq7Zyus=
 github.com/drone/spec v0.0.0-20230306170233-c4d2b52ae481/go.mod h1:pdaL6nOipGF/5L6jAu1DwAeLzmZdaU3+UIvQ1MUIZ9Y=
+github.com/drone/spec v0.0.0-20230316030012-8fb992844a55 h1:3JssRUXnMnGVSXUni4mkln4TGzvHMgcN4lpviuH35dY=
+github.com/drone/spec v0.0.0-20230316030012-8fb992844a55/go.mod h1:pdaL6nOipGF/5L6jAu1DwAeLzmZdaU3+UIvQ1MUIZ9Y=
 github.com/emirpasic/gods v1.18.1 h1:FXtiHYKDGKCW2KzwZKx0iC0PQmdlorYgdFG9jPXJ1Bc=
 github.com/emirpasic/gods v1.18.1/go.mod h1:8tpGGwCnJ5H4r6BWwaV6OrWmMoPhUl5jm/FMNAnJvWQ=
 github.com/ghodss/yaml v1.0.0 h1:wQHKEahhL6wmXdzwWG11gIVCkOv05bNOh+Rxn0yngAk=

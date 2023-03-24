@@ -6,7 +6,7 @@ require (
 	github.com/Masterminds/squirrel v1.5.3
 	github.com/alecthomas/kingpin/v2 v2.3.1
 	github.com/drone/go-scm v1.28.1
-	github.com/drone/spec v0.0.0-20230306170233-c4d2b52ae481
+	github.com/drone/spec v0.0.0-20230316030012-8fb992844a55
 	github.com/ghodss/yaml v1.0.0
 	github.com/go-git/go-git/v5 v5.5.2
 	github.com/google/go-cmp v0.5.9
@@ -32,7 +32,7 @@ require (
 	github.com/coreos/go-semver v0.3.1 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/drone/drone-go v1.7.1 // indirect
-	github.com/drone/go-convert v0.0.0-20230314110242-02c13e780dd0 // indirect
+	github.com/drone/go-convert v0.0.0-20230324183447-8490e318cfb0 // indirect
 	github.com/emirpasic/gods v1.18.1 // indirect
 	github.com/go-git/gcfg v1.5.0 // indirect
 	github.com/go-git/go-billy/v5 v5.4.0 // indirect

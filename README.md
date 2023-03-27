@@ -31,3 +31,15 @@ Convert a circle pipeline:
 ```term
 $ harness-migrate circle convert /path/to/.circle/config.yml
 ```
+
+Convert a github pipeline:
+
+```term
+$ harness-migrate github convert /path/to/.github/workflows/main.yml
+```
+
+Convert a drone pipeline:
+
+```term
+$ harness-migrate drone convert /path/to/.drone.yml
+```

@@ -70,31 +70,39 @@ func (c *convertCommand) run(ctx *kingpin.ParseContext) error {
 		}
 	}
 
-	// write the output to the console
-	if c.output == "" || c.output == "-" {
-		// write the yaml before conversion
-		if c.beforeAfter {
-			// if the original yaml has separator and terminator
-			// lines, strip these before showing the before / after
-			before = bytes.TrimPrefix(before, []byte("---\n"))
-			before = bytes.TrimSuffix(before, []byte("...\n"))
-			before = bytes.TrimSuffix(before, []byte("..."))
-
-			os.Stdout.WriteString("---\n")
-			os.Stdout.Write(before)
-			os.Stdout.WriteString("\n---\n")
-		}
-
-		if c.color {
-			return quick.Highlight(os.Stdout, string(after), "yaml", "terminal", c.theme)
-		} else {
-			os.Stdout.Write(after)
-			return nil
-		}
+	// write the converted yaml to the output file
+	if c.output != "" && c.output != "-" {
+		return ioutil.WriteFile(c.output, after, 0644)
 	}
 
-	// write the output to the output file
-	return ioutil.WriteFile(c.output, after, 0644)
+	// write the original yaml to the buffer
+	if c.beforeAfter {
+		// if the original yaml has separator and terminator
+		// lines, strip these before showing the before / after
+		before = bytes.TrimPrefix(before, []byte("---\n"))
+		before = bytes.TrimSuffix(before, []byte("...\n"))
+		before = bytes.TrimSuffix(before, []byte("..."))
+		before = bytes.TrimSuffix(before, []byte("\n"))
+
+		var buf bytes.Buffer
+		buf.WriteString("---\n")
+		buf.Write(before)
+		buf.WriteString("\n---\n")
+		buf.Write(after)
+		buf.WriteString("...\n")
+
+		// combine the before and after
+		after = buf.Bytes()
+	}
+
+	if c.color {
+		// hightlight and write to stdout
+		return quick.Highlight(os.Stdout, string(after), "yaml", "terminal", c.theme)
+	} else {
+		// write to stdout
+		os.Stdout.Write(after)
+		return nil
+	}
 }
 
 // helper function registers the convert command

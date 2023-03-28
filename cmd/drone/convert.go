@@ -2,13 +2,16 @@ package drone
 
 import (
 	"bytes"
+	"fmt"
 	"io/ioutil"
 	"os"
 
 	"github.com/drone/go-convert/convert/drone"
 	"github.com/drone/go-convert/convert/harness/downgrader"
 
+	"github.com/alecthomas/chroma/quick"
 	"github.com/alecthomas/kingpin/v2"
+	"github.com/mattn/go-isatty"
 )
 
 type convertCommand struct {
@@ -26,6 +29,9 @@ type convertCommand struct {
 
 	downgrade   bool
 	beforeAfter bool
+
+	color bool
+	theme string
 }
 
 func (c *convertCommand) run(ctx *kingpin.ParseContext) error {
@@ -64,31 +70,39 @@ func (c *convertCommand) run(ctx *kingpin.ParseContext) error {
 		}
 	}
 
-	if c.beforeAfter {
-		// if the original yaml has separator and terminator
-		// lines, strip these before showing the before / after
-		before = bytes.TrimPrefix(before, []byte("---\n"))
-		before = bytes.TrimSuffix(before, []byte("...\n"))
-		before = bytes.TrimSuffix(before, []byte("..."))
-
-		os.Stdout.WriteString("---\n")
-		os.Stdout.Write(before)
-		os.Stdout.WriteString("\n---\n")
-	}
-
+	// write the output to the console
 	if c.output == "" || c.output == "-" {
-		// write the output to the console
-		os.Stdout.Write(after)
-		return nil
-	} else {
-		// write the output to the output file
-		return ioutil.WriteFile(c.output, after, 0644)
+		// write the yaml before conversion
+		if c.beforeAfter {
+			// if the original yaml has separator and terminator
+			// lines, strip these before showing the before / after
+			before = bytes.TrimPrefix(before, []byte("---\n"))
+			before = bytes.TrimSuffix(before, []byte("...\n"))
+			before = bytes.TrimSuffix(before, []byte("..."))
+
+			os.Stdout.WriteString("---\n")
+			os.Stdout.Write(before)
+			os.Stdout.WriteString("\n---\n")
+		}
+
+		if c.color {
+			return quick.Highlight(os.Stdout, string(after), "yaml", "terminal", c.theme)
+		} else {
+			os.Stdout.Write(after)
+			return nil
+		}
 	}
+
+	// write the output to the output file
+	return ioutil.WriteFile(c.output, after, 0644)
 }
 
 // helper function registers the convert command
 func registerConvert(app *kingpin.CmdClause) {
 	c := new(convertCommand)
+
+	// determine if tty
+	tty := isatty.IsTerminal(os.Stdout.Fd())
 
 	cmd := app.Command("convert", "converts a drone yaml").
 		Action(c.run)
@@ -107,6 +121,16 @@ func registerConvert(app *kingpin.CmdClause) {
 	cmd.Flag("before-after", "print the before and after").
 		BoolVar(&c.beforeAfter)
 
+	cmd.Flag("color", "pring with syntax highlighting").
+		Envar("COLOR").
+		Default(fmt.Sprint(tty)).
+		BoolVar(&c.color)
+
+	cmd.Flag("theme", "syntax highlighting theme").
+		Envar("THEME").
+		Default("friendly").
+		StringVar(&c.theme)
+
 	cmd.Flag("org", "harness organization").
 		Default("default").
 		StringVar(&c.org)
@@ -116,26 +140,26 @@ func registerConvert(app *kingpin.CmdClause) {
 		StringVar(&c.proj)
 
 	cmd.Flag("pipeline", "harness pipeline name").
-		Default("default").
+		Default("").
 		StringVar(&c.name)
 
 	cmd.Flag("repo-connector", "repository connector").
-		Default("default").
+		Default("").
 		StringVar(&c.repoConn)
 
 	cmd.Flag("repo-name", "repository name").
-		Default("default").
+		Default("").
 		StringVar(&c.repoName)
 
 	cmd.Flag("kube-connector", "kubernetes connector").
-		Default("default").
+		Default("").
 		StringVar(&c.kubeConn)
 
-	cmd.Flag("kube-namespace", "kubernets namespace").
-		Default("default").
+	cmd.Flag("kube-namespace", "kubernetes namespace").
+		Default("").
 		StringVar(&c.kubeName)
 
 	cmd.Flag("docker-connector", "dockerhub connector").
-		Default("default").
+		Default("").
 		StringVar(&c.kubeName)
 }

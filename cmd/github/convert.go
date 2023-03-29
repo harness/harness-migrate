@@ -1,122 +1,165 @@
 package github
 
 import (
+	"bytes"
 	"fmt"
 	"os"
-	"path/filepath"
 
-	"github.com/alecthomas/kingpin/v2"
+	"github.com/mattn/go-isatty"
+
 	"github.com/drone/go-convert/convert/github"
 	"github.com/drone/go-convert/convert/harness/downgrader"
+
+	"github.com/alecthomas/chroma/quick"
+	"github.com/alecthomas/kingpin/v2"
 )
 
-const filePerm = 0644
-
 type convertCommand struct {
-	path    string
-	version string
-	output  string
+	input  string
+	output string
+
+	name       string
+	proj       string
+	org        string
+	repoName   string
+	repoConn   string
+	kubeName   string
+	kubeConn   string
+	dockerConn string
+
+	downgrade   bool
+	beforeAfter bool
+
+	color bool
+	theme string
 }
 
 func (c *convertCommand) run(ctx *kingpin.ParseContext) error {
-	fileInfo, err := os.Stat(c.path)
+	// open the github yaml
+	before, err := os.ReadFile(c.input)
+	if err != nil {
+		return err
+	}
+	// convert the pipeline yaml from the drone
+	// format to the harness yaml format.
+	converter := github.New(
+		github.WithDockerhub(c.dockerConn),
+		github.WithKubernetes(c.kubeName, c.kubeConn),
+	)
+	after, err := converter.ConvertBytes(before)
 	if err != nil {
 		return err
 	}
 
-	if fileInfo.IsDir() {
-		if c.output == "" {
-			return fmt.Errorf("output directory is required when input is a directory")
-		}
-		if err := os.MkdirAll(filepath.Join(c.output, "harness"), os.ModePerm); err != nil {
-			return fmt.Errorf("failed to create output directory: %w", err)
-		}
-
-		files, err := os.ReadDir(c.path)
+	// downgrade from the v1 harness yaml format
+	// to the v0 harness yaml format.
+	if c.downgrade {
+		// downgrade to the v0 yaml
+		d := downgrader.New(
+			downgrader.WithCodebase(c.repoName, c.repoConn),
+			downgrader.WithDockerhub(c.dockerConn),
+			downgrader.WithKubernetes(c.kubeName, c.kubeConn),
+			downgrader.WithName(c.name),
+			downgrader.WithOrganization(c.org),
+			downgrader.WithProject(c.proj),
+		)
+		after, err = d.Downgrade(after)
 		if err != nil {
-			return fmt.Errorf("failed to read directory: %w", err)
+			return err
 		}
+	}
 
-		for _, file := range files {
-			inputPath := filepath.Join(c.path, file.Name())
-			outputPath := filepath.Join(c.output, "harness", file.Name())
+	// write the converted yaml to the output file
+	if c.output != "" && c.output != "-" {
+		return os.WriteFile(c.output, after, 0644)
+	}
 
-			if filepath.Ext(file.Name()) != ".yaml" && filepath.Ext(file.Name()) != ".yml" {
-				fmt.Printf("skipping non-YAML file %s\n", inputPath)
-				continue
-			}
+	// write the original yaml to the buffer
+	if c.beforeAfter {
+		// if the original yaml has separator and terminator
+		// lines, strip these before showing the before / after
+		before = bytes.TrimPrefix(before, []byte("---\n"))
+		before = bytes.TrimSuffix(before, []byte("...\n"))
+		before = bytes.TrimSuffix(before, []byte("..."))
+		before = bytes.TrimSuffix(before, []byte("\n"))
 
-			if err := convertFile(inputPath, outputPath, c.version); err != nil {
-				return fmt.Errorf("failed to convert file %s: %w", inputPath, err)
-			}
+		var buf bytes.Buffer
+		buf.WriteString("---\n")
+		buf.Write(before)
+		buf.WriteString("\n---\n")
+		buf.Write(after)
+		buf.WriteString("...\n")
 
-		}
+		// combine the before and after
+		after = buf.Bytes()
+	}
+
+	if c.color {
+		// highlight and write to stdout
+		return quick.Highlight(os.Stdout, string(after), "yaml", "terminal", c.theme)
 	} else {
-		if err := convertFile(c.path, c.output, c.version); err != nil {
-			return fmt.Errorf("failed to convert file %s: %w", c.path, err)
-		}
+		// write to stdout
+		os.Stdout.Write(after)
+		return nil
 	}
-
-	return nil
-}
-
-func convertFile(inputPath string, outputPath string, version string) error {
-	fileInfo, err := os.Stat(inputPath)
-	if err != nil {
-		return err
-	}
-
-	if fileInfo.IsDir() {
-		return fmt.Errorf("input path is a directory: %s", inputPath)
-	}
-
-	file, err := os.ReadFile(inputPath)
-	if err != nil {
-		return fmt.Errorf("failed to read file %s: %w", inputPath, err)
-	}
-
-	converter := github.New()
-	yaml, err := converter.ConvertBytes(file)
-	if err != nil {
-		return fmt.Errorf("failed to convert file %s: %w", inputPath, err)
-	}
-
-	if version == "v1" {
-		d := downgrader.New()
-		yaml, err = d.Downgrade(yaml)
-		if err != nil {
-			return fmt.Errorf("failed to downgrade file %s to v1: %w", inputPath, err)
-		}
-	}
-
-	if _, err := os.Stdout.Write(yaml); err != nil {
-		return fmt.Errorf("failed to write YAML to stdout: %w", err)
-	}
-
-	if outputPath != "" {
-		if err := os.WriteFile(outputPath, yaml, filePerm); err != nil {
-			return fmt.Errorf("failed to write YAML to file %s: %w", outputPath, err)
-		}
-	}
-
-	return nil
 }
 
 // helper function registers the convert command
 func registerConvert(app *kingpin.CmdClause) {
 	c := new(convertCommand)
 
+	tty := isatty.IsTerminal(os.Stdout.Fd())
+
 	cmd := app.Command("convert", "convert a github yaml").
 		Action(c.run)
 
 	cmd.Arg("path", "path to github yaml directory or file").
 		Default(".github/workflows/main.yml").
-		StringVar(&c.path)
+		StringVar(&c.input)
 
-	cmd.Flag("version", "harness yaml version, v1 or v2").
-		Default("v2").
-		StringVar(&c.version)
+	cmd.Flag("downgrade", "downgrade to the legacy yaml format").
+		Default("false").
+		BoolVar(&c.downgrade)
 
-	cmd.Flag("output", "output location to write file(s) to").
-		StringVar(&c.output)
+	cmd.Flag("before-after", "print the before and after").
+		Default("false").
+		BoolVar(&c.beforeAfter)
+
+	cmd.Flag("color", "pring with syntax highlighting").
+		Envar("COLOR").
+		Default(fmt.Sprint(tty)).
+		BoolVar(&c.color)
+
+	cmd.Flag("theme", "syntax highlighting theme").
+		Envar("THEME").
+		Default("friendly").
+		StringVar(&c.theme)
+
+	cmd.Flag("org", "harness organization").
+		Default("default").
+		StringVar(&c.org)
+
+	cmd.Flag("project", "harness project").
+		Default("default").
+		StringVar(&c.proj)
+
+	cmd.Flag("pipeline", "harness pipeline name").
+		Default("default").
+		StringVar(&c.name)
+
+	cmd.Flag("repo-connector", "repository connector").
+		StringVar(&c.repoConn)
+
+	cmd.Flag("repo-name", "repository name").
+		StringVar(&c.repoName)
+
+	cmd.Flag("kube-connector", "kubernetes connector").
+		StringVar(&c.kubeConn)
+
+	cmd.Flag("kube-namespace", "kubernetes namespace").
+		StringVar(&c.kubeName)
+
+	cmd.Flag("docker-connector", "dockerhub connector").
+		StringVar(&c.dockerConn)
+
 }

@@ -1,8 +1,11 @@
 This document attempts to describe known limitations and problems for yaml
 conversion.
 
-In this document, `v0 yaml` refers to current Harness CI yaml. `harness-migrate`
-supports converting to `v0 yaml` with the `--downgrade` flag, for example:
+In this document, `v0 yaml` refers to current Harness CI yaml. `v1 yaml` refers
+to the new "simplified" Harness CI yaml.
+
+`harness-migrate` supports converting to `v0 yaml` with the `--downgrade` flag,
+for example:
 
 ```
 harness-migrate github convert --downgrade example.yml

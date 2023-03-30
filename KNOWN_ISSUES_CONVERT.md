@@ -1,10 +1,10 @@
 This document attempts to describe known limitations and problems for yaml
 conversion.
 
-In this document, `v0 yaml` refers to current Harness CI yaml. `v1 yaml` refers
+In this document, "v0 yaml" refers to current Harness CI yaml. "v1 yaml" refers
 to the new "simplified" Harness CI yaml.
 
-`harness-migrate` supports converting to `v0 yaml` with the `--downgrade` flag,
+`harness-migrate` supports converting to v0 yaml with the `--downgrade` flag,
 for example:
 
 ```
@@ -29,11 +29,10 @@ env:
   my-environment: production
 ```
 
-Which converts to this `v0 yaml` which contains hyphens in variable names, which
-is invalid:
+Example converted v0 yaml:
 ```yaml
   variables:
-  - name: my-environment
+  - name: my-environment # this is invalid
     type: String
     value: production
 ```
@@ -42,3 +41,12 @@ is invalid:
 
 Replace `-` characters in the variable with `_`, or remove them, then update 
 all references to the variable in the pipeline.
+
+Example valid yaml:
+```yaml
+  variables:
+  - name: myenvironment # this is valid
+    type: String
+    value: production
+```
+

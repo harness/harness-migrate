@@ -14,6 +14,9 @@ steps:
     commands:
       - GOOS=linux   GOARCH=amd64   go build -o release/harness-migrate-linux-amd64
       - GOOS=linux   GOARCH=arm64   go build -o release/harness-migrate-linux-arm64
+      - GOOS=darwin  GOARCH=amd64   go build -o release/harness-migrate-darwin-amd64
+      - GOOS=darwin  GOARCH=arm64   go build -o release/harness-migrate-darwin-arm64
+      - GOOS=windows GOARCH=amd64   go build -o release/harness-migrate-windows-amd64.exe
 
   - name: publish docker-amd64
     image: plugins/docker
@@ -55,6 +58,9 @@ steps:
       files:
         - release/harness-migrate-linux-amd64
         - release/harness-migrate-linux-arm64
+        - release/harness-migrate-darwin-amd64
+        - release/harness-migrate-darwin-arm64
+        - release/harness-migrate-windows-amd64.exe
       api_key:
         from_secret: github_token
     when:

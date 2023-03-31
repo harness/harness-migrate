@@ -54,6 +54,21 @@ Example valid yaml:
     value: production
 ```
 
+### [jobs.<job_id>.needs](https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#jobsjob_idneeds)
+
+Jobs in workflows **run in parallel by default**. To run jobs sequentially, you
+can define dependencies on other jobs using the `jobs.<job_id>.needs` keyword.
+
+**Problem**
+
+Since the `jobs.<job_id>.needs` keyword is not currently supported, **stages
+will likely not execute in the desired order**.
+
+**Fix**
+
+Review the workflow’s `jobs.<job_id>.needs` rules, and manually move the stages
+into the correct order.
+
 ### [jobs.<job_id>.timeout-minutes](https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#jobsjob_idtimeout-minutes)
 
 `jobs.<job_id>.timeout-minutes` is the maximum number of minutes to let a job 

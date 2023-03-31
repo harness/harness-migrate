@@ -25,7 +25,7 @@ const application = "harness-migrate"
 const description = "import repositories and pipelines into harness"
 
 // application version
-const version = "1.0.0"
+var version string
 
 // Command parses the command line arguments and then executes a
 // subcommand program.
@@ -37,6 +37,6 @@ func Command() {
 	drone.Register(app)
 	github.Register(app)
 
-	kingpin.Version(version)
+	app.Version(version)
 	kingpin.MustParse(app.Parse(os.Args[1:]))
 }

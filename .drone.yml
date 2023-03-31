@@ -70,6 +70,7 @@ steps:
 trigger:
   branch:
     - master
+    - refs/tags/v*
 
 ---
 kind: pipeline

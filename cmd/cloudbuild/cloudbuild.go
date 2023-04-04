@@ -34,7 +34,7 @@ type convertCommand struct {
 }
 
 func (c *convertCommand) run(ctx *kingpin.ParseContext) error {
-	// open the github yaml
+	// open the cloudbuild yaml
 	before, err := os.ReadFile(c.input)
 	if err != nil {
 		return err

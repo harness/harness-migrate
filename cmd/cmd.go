@@ -6,17 +6,13 @@ import (
 	"context"
 	"os"
 
-	"github.com/harness/harness-migrate/cmd/cloudbuild"
-
-	"github.com/harness/harness-migrate/cmd/travis"
-
 	"github.com/harness/harness-migrate/cmd/bitbucket"
-
-	"github.com/harness/harness-migrate/cmd/github"
-
 	"github.com/harness/harness-migrate/cmd/circle"
+	"github.com/harness/harness-migrate/cmd/cloudbuild"
 	"github.com/harness/harness-migrate/cmd/drone"
+	"github.com/harness/harness-migrate/cmd/github"
 	"github.com/harness/harness-migrate/cmd/gitlab"
+	"github.com/harness/harness-migrate/cmd/travis"
 
 	"github.com/alecthomas/kingpin/v2"
 )

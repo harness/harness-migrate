@@ -6,11 +6,13 @@ import (
 	"context"
 	"os"
 
-	"github.com/harness/harness-migrate/cmd/github"
-
+	"github.com/harness/harness-migrate/cmd/bitbucket"
 	"github.com/harness/harness-migrate/cmd/circle"
+	"github.com/harness/harness-migrate/cmd/cloudbuild"
 	"github.com/harness/harness-migrate/cmd/drone"
+	"github.com/harness/harness-migrate/cmd/github"
 	"github.com/harness/harness-migrate/cmd/gitlab"
+	"github.com/harness/harness-migrate/cmd/travis"
 
 	"github.com/alecthomas/kingpin/v2"
 )
@@ -32,10 +34,13 @@ var version string
 func Command() {
 	app := kingpin.New(application, description)
 
+	bitbucket.Register(app)
+	cloudbuild.Register(app)
 	circle.Register(app)
-	gitlab.Register(app)
 	drone.Register(app)
+	gitlab.Register(app)
 	github.Register(app)
+	travis.Register(app)
 
 	app.Version(version)
 	kingpin.MustParse(app.Parse(os.Args[1:]))

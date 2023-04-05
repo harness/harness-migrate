@@ -98,6 +98,7 @@ func registerExport(app *kingpin.CmdClause) {
 	c := new(exportCommand)
 
 	cmd := app.Command("export", "export drone data").
+		Hidden().
 		Action(c.run)
 
 	cmd.Arg("save", "save the output to a file").

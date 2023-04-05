@@ -113,9 +113,12 @@ func registerConvert(app *kingpin.CmdClause) {
 	cmd := app.Command("convert", "convert a github yaml").
 		Action(c.run)
 
-	cmd.Arg("path", "path to github yaml directory or file").
+	cmd.Arg("input", "path to github yaml directory or file").
 		Default(".github/workflows/main.yml").
 		StringVar(&c.input)
+
+	cmd.Arg("output", "path to save the converted yaml").
+		StringVar(&c.output)
 
 	cmd.Flag("downgrade", "downgrade to the legacy yaml format").
 		Default("false").

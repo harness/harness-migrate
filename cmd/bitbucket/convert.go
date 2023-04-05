@@ -111,9 +111,12 @@ func registerConvert(app *kingpin.CmdClause) {
 	cmd := app.Command("convert", "convert a bitbucket yaml").
 		Action(c.run)
 
-	cmd.Arg("path", "path to bitbucket yaml directory or file").
+	cmd.Arg("input", "path to bitbucket yaml directory or file").
 		Default("bitbucket-pipelines.yml").
 		StringVar(&c.input)
+
+	cmd.Arg("output", "path to save the converted yaml").
+		StringVar(&c.output)
 
 	cmd.Flag("downgrade", "downgrade to the legacy yaml format").
 		Default("false").

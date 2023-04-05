@@ -106,6 +106,7 @@ func registerMigrate(app *kingpin.CmdClause) {
 	c := new(migrateCommand)
 
 	cmd := app.Command("migrate", "migrate drone data to harness").
+		Hidden().
 		Action(c.run)
 
 	cmd.Flag("harness-account", "harness account").

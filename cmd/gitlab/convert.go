@@ -111,9 +111,12 @@ func registerConvert(app *kingpin.CmdClause) {
 	cmd := app.Command("convert", "convert a gitlab yaml").
 		Action(c.run)
 
-	cmd.Arg("path", "path to gitlab yaml directory or file").
+	cmd.Arg("input", "path to the gitlab yaml").
 		Default(".gitlab.yml").
 		StringVar(&c.input)
+
+	cmd.Arg("output", "path to save the converted yaml").
+		StringVar(&c.output)
 
 	cmd.Flag("downgrade", "downgrade to the legacy yaml format").
 		Default("false").

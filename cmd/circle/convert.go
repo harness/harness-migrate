@@ -33,6 +33,7 @@ func registerConvert(app *kingpin.CmdClause) {
 	c := new(convertCommand)
 
 	cmd := app.Command("convert", "convert a circle yaml").
+		Hidden().
 		Action(c.run)
 
 	cmd.Arg("path", "path to circle yaml").

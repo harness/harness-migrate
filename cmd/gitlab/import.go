@@ -100,6 +100,7 @@ func registerImport(app *kingpin.CmdClause) {
 	c := new(importCommand)
 
 	cmd := app.Command("import", "import gitlab data").
+		Hidden().
 		Action(c.run)
 
 	cmd.Arg("file", "data file to import").

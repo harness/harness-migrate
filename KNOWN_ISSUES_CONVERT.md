@@ -16,6 +16,80 @@ To see all supported conversion flags for a provider, pass the `--help` flag:
 harness-migrate github convert --help
 ```
 
+## Cloud Build
+
+### [artifacts](https://cloud.google.com/build/docs/build-config-file-schema#artifacts)
+
+One or more non-container artifacts to be stored in Cloud Storage.
+
+**Problem**
+
+Cloud Build supports publishing artifacts to a GCP bucket in the YAML:
+
+```yaml
+steps:
+- name: 'gcr.io/cloud-builders/go'
+  args: ['build', 'my-package']
+artifacts:
+  objects:
+    location: 'gs://mybucket/'
+    paths: ['my-package']
+```
+
+**Fix**
+
+Create a step that uses the built-in Upload Artifacts to GCS step.
+
+### [availableSecrets](https://cloud.google.com/build/docs/build-config-file-schema#availablesecrets)
+
+Adds the value of the secret to the environment and you can access this value via environment variable from scripts or processes.
+
+**Problem**
+
+Cloud Build supports reading secrets from Secrets Manager and assigning them to environment variables at the pipeline level.
+
+```yaml
+steps:
+- name: python:slim
+  entrypoint: python
+  args: ['main.py']
+  secretEnv: ['MYSECRET']
+availableSecrets:
+  secretManager:
+  - versionName: projects/$PROJECT_ID/secrets/mySecret/versions/latest
+    env: 'MYSECRET'
+```
+
+**Fix**
+
+Create a GCP Secrets Manager connector to read the secrets into environment variables.
+
+## Drone
+
+### [depends_on](https://docs.drone.io/pipeline/docker/syntax/parallelism/)
+
+Steps can depend on the successful execution of previous steps.
+
+**Problem**
+
+Harness CI does not have equivalent support for dependencies at the step level.
+
+**Fix**
+
+TBD
+
+### [image_pull_secrets](https://docs.drone.io/yaml/docker/#the-image_pull_secrets-attribute)
+
+Docker credentials in the format of a Docker config.json file. This file may provide credentials for multiple repositories.
+
+**Problem**
+
+Harness CI does not support Docker config.json files in connectors.
+
+**Fix**
+
+Create Docker registry connectors for each private registry, and reference the necessary connector in each step.
+
 ## GitHub Actions
 
 ### [env](https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#env)

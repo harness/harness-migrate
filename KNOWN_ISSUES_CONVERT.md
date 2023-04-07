@@ -16,6 +16,54 @@ To see all supported conversion flags for a provider, pass the `--help` flag:
 harness-migrate github convert --help
 ```
 
+## All
+
+Issues that are not specific to any provider.
+
+### JEXL
+
+Conversion will not always choose the correct JEXL syntax.
+
+Drone example
+
+```yaml
+kind: pipeline                                                                  
+type: docker                                                                    
+name: default                                                                   
+                                                                                
+steps:                                                                                                                       
+  - name: publish                                                
+    image: plugins/docker                                                       
+    pull: if-not-exists                                                         
+    settings:                                                                   
+      repo: harness/example                                            
+      auto_tag: true                                                            
+      auto_tag_suffix: linux-amd64                                              
+      dockerfile: docker/Dockerfile.linux.amd64                                 
+      username:                                                                 
+        from_secret: docker-username                                    
+      password:                                                                 
+        from_secret: docker-password                                    
+    when:                                                                       
+      ref:                                                                      
+        - refs/heads/master                                                     
+        - refs/tags/v*
+```
+
+The `when` conditions convert to this JEXL
+
+```yaml
+              when:
+                condition: <+trigger.payload.ref> == "refs/heads/master" || <+trigger.payload.ref> == "refs/tags/v*"
+```
+
+The tag ref syntax needs to be manually changed to this
+
+```yaml
+              when:
+                condition: <+trigger.payload.ref> == "refs/heads/master" || <+trigger.payload.ref> =~ "refs/tags/v.*"
+```
+
 ## Cloud Build
 
 ### [artifacts](https://cloud.google.com/build/docs/build-config-file-schema#artifacts)

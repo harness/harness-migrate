@@ -6,7 +6,7 @@ require (
 	github.com/Masterminds/squirrel v1.5.3
 	github.com/alecthomas/chroma v0.10.0
 	github.com/alecthomas/kingpin/v2 v2.3.1
-	github.com/drone/go-convert v0.0.0-20230404110536-e064bd8b55b9
+	github.com/drone/go-convert v0.0.0-20230406211654-81226107537f
 	github.com/drone/go-scm v1.28.1
 	github.com/go-git/go-git/v5 v5.5.2
 	github.com/google/go-cmp v0.5.9
@@ -19,7 +19,7 @@ require (
 	github.com/mattn/go-sqlite3 v1.14.16
 	github.com/schollz/progressbar/v3 v3.13.0
 	golang.org/x/exp v0.0.0-20221019170559-20944726eadf
-	golang.org/x/text v0.8.0
+	golang.org/x/text v0.9.0
 )
 
 require (

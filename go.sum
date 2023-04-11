@@ -31,10 +31,8 @@ github.com/dlclark/regexp2 v1.4.0 h1:F1rxgk7p4uKjwIQxBs9oAXe5CqrXlCduYEJvrF4u93E
 github.com/dlclark/regexp2 v1.4.0/go.mod h1:2pZnwuY/m+8K6iRw6wQdMtk+rH5tNGR1i55kozfMjCc=
 github.com/docker/go-units v0.5.0 h1:69rxXcBk27SvSaaxTtLh/8llcHD8vYHT7WSdRZ/jvr4=
 github.com/docker/go-units v0.5.0/go.mod h1:fgPhTUdO+D/Jk86RDLlptpiXQzgHJF7gydDDbaIK4Dk=
-github.com/drone/go-convert v0.0.0-20230406211654-81226107537f h1:mNp6r3DUbNdKVfQL3zbZghXzfF+MfYmY/dkbsem2WmM=
-github.com/drone/go-convert v0.0.0-20230406211654-81226107537f/go.mod h1:aGyq3jDZrHPuHY26DDXNgIMtY70N4XVSBig7wwQE9ZE=
-github.com/drone/go-convert v0.0.0-20230407195957-7127d4d63d4c h1:HNaAsslxwmLl5jq6bVhJIql/yfmEfCp9EUh7cQKpDrI=
-github.com/drone/go-convert v0.0.0-20230407195957-7127d4d63d4c/go.mod h1:aGyq3jDZrHPuHY26DDXNgIMtY70N4XVSBig7wwQE9ZE=
+github.com/drone/go-convert v0.0.0-20230411160400-6042ba828cf3 h1:b/Y5lKO3h8ZTszydXWz+sUJIMtv6bmynIF3PsGXfZvE=
+github.com/drone/go-convert v0.0.0-20230411160400-6042ba828cf3/go.mod h1:aGyq3jDZrHPuHY26DDXNgIMtY70N4XVSBig7wwQE9ZE=
 github.com/drone/go-scm v1.28.1 h1:3WukxtsFFU5omHfp8dU3EXjEQCmtqAZkCj9pHHs+Xus=
 github.com/drone/go-scm v1.28.1/go.mod h1:DFIJJjhMj0TSXPz+0ni4nyZ9gtTtC40Vh/TGRugtyWw=
 github.com/drone/spec v0.0.0-20230405164936-2404edb2a1af h1:+F29DYdCluOAU4jZ9+EuONq5Qydzp1Am+RbeLvoWYSo=
@@ -60,8 +58,6 @@ github.com/go-sql-driver/mysql v1.7.0/go.mod h1:OXbVy3sEdcQ2Doequ6Z5BW6fXNQTmx+9
 github.com/google/go-cmp v0.2.0/go.mod h1:oXzfMopK8JAjlY9xF4vHSVASa0yLyX7SntLO5aqRK0M=
 github.com/google/go-cmp v0.5.9 h1:O2Tfq5qg4qc4AmwVlvv0oLiVAGB7enBSJ2x2DqQFi38=
 github.com/google/go-cmp v0.5.9/go.mod h1:17dUlkBOakJ0+DkrSSNjCkIjxS6bF9zb3elmeNGIjoY=
-github.com/google/subcommands v1.2.0 h1:vWQspBTo2nEqTUFita5/KeEWlUL8kQObDFbub/EN9oE=
-github.com/google/subcommands v1.2.0/go.mod h1:ZjhPrFU+Olkh9WazFPsl27BQ4UPiG37m3yTrtFlrHVk=
 github.com/gotidy/ptr v1.4.0 h1:7++suUs+HNHMnyz6/AW3SE+4EnBhupPSQTSI7QNijVc=
 github.com/gotidy/ptr v1.4.0/go.mod h1:MjRBG6/IETiiZGWI8LrRtISXEji+8b/jigmj2q0mEyM=
 github.com/h2non/gock v1.0.9/go.mod h1:CZMcB0Lg5IWnr9bF79pPMg9WeV6WumxQiUJ1UvdO1iE=

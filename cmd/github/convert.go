@@ -164,5 +164,4 @@ func registerConvert(app *kingpin.CmdClause) {
 
 	cmd.Flag("docker-connector", "dockerhub connector").
 		StringVar(&c.dockerConn)
-
 }

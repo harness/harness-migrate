@@ -126,7 +126,7 @@ func registerConvert(app *kingpin.CmdClause) {
 		Default("false").
 		BoolVar(&c.beforeAfter)
 
-	cmd.Flag("color", "pring with syntax highlighting").
+	cmd.Flag("color", "print with syntax highlighting").
 		Envar("COLOR").
 		Default(fmt.Sprint(tty)).
 		BoolVar(&c.color)

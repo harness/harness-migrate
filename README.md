@@ -3,9 +3,15 @@ continuous integration pipelines from other providers to Harness CI.
 
 __Install__
 
+Download the appropriate binary from 
+[releases](https://github.com/harness/harness-migrate/releases).
+
+__Build__
+
 ```term
 $ git clone https://github.com/harness/harness-migrate.git
-$ go install
+$ cd harness-migrate
+$ go build
 ```
 
 __Usage__

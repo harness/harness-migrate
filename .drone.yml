@@ -18,6 +18,13 @@ steps:
       - GOOS=darwin  GOARCH=arm64   go build -ldflags "-X github.com/harness/harness-migrate/cmd.version=${DRONE_TAG##v}" -o release/harness-migrate-darwin-arm64
       - GOOS=windows GOARCH=amd64   go build -ldflags "-X github.com/harness/harness-migrate/cmd.version=${DRONE_TAG##v}" -o release/harness-migrate-windows-amd64.exe
 
+      - tar -cvzf release/harness-migrate-linux-amd64.tar.gz   -C release harness-migrate-linux-amd64
+      - tar -cvzf release/harness-migrate-linux-arm64.tar.gz   -C release harness-migrate-linux-arm64
+      - tar -cvzf release/harness-migrate-darwin-amd64.tar.gz  -C release harness-migrate-darwin-amd64
+      - tar -cvzf release/harness-migrate-darwin-arm64.tar.gz  -C release harness-migrate-darwin-arm64
+      - tar -cvzf release/harness-migrate-windows-amd64.tar.gz -C release harness-migrate-windows-amd64.exe
+
+      - sha256sum release/*.tar.gz > release/harness-migrate-checksums.txt
   - name: publish docker-amd64
     image: plugins/docker
     pull: if-not-exists
@@ -56,11 +63,8 @@ steps:
     image: plugins/github-release
     settings:
       files:
-        - release/harness-migrate-linux-amd64
-        - release/harness-migrate-linux-arm64
-        - release/harness-migrate-darwin-amd64
-        - release/harness-migrate-darwin-arm64
-        - release/harness-migrate-windows-amd64.exe
+        - release/harness-migrate-*.tar.gz
+        - release/harness-migrate-checksums.txt
       api_key:
         from_secret: github_token
     when:

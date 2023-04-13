@@ -20,7 +20,7 @@ harness-migrate github convert --help
 
 Issues that are not specific to any provider.
 
-### JEXL
+### JEXL syntax
 
 Conversion will not always choose the correct JEXL syntax.
 
@@ -63,6 +63,20 @@ The tag ref syntax needs to be manually changed to this
               when:
                 condition: <+trigger.payload.ref> == "refs/heads/master" || <+trigger.payload.ref> =~ "refs/tags/v.*"
 ```
+
+### Expressions
+
+See [Webhook Triggers Reference](https://developer.harness.io/docs/platform/pipelines/w_pipeline-steps-reference/triggers-reference/)
+for available trigger expressions.
+
+**Problem**
+
+There might not be an expression for your use case. For example, the git [commit ref](https://git-scm.com/book/en/v2/Git-Internals-Git-References).
+
+**Solution**
+
+Retrieve the desired value from the webhook payload, which is available via `<+trigger.payload.*>`.
+For example, for a GitHub repository, the git commit ref is available at `<+trigger.payload.ref>`.
 
 ## Cloud Build
 

@@ -12,20 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package github
+package gitlab
 
 import (
 	"bytes"
 	"fmt"
 	"os"
 
-	"github.com/mattn/go-isatty"
-
-	"github.com/drone/go-convert/convert/github"
+	"github.com/drone/go-convert/convert/gitlab"
 	"github.com/drone/go-convert/convert/harness/downgrader"
 
 	"github.com/alecthomas/chroma/quick"
 	"github.com/alecthomas/kingpin/v2"
+	"github.com/mattn/go-isatty"
 )
 
 type convertCommand struct {
@@ -49,16 +48,16 @@ type convertCommand struct {
 }
 
 func (c *convertCommand) run(ctx *kingpin.ParseContext) error {
-	// open the github yaml
+	// open the gitlab yaml
 	before, err := os.ReadFile(c.input)
 	if err != nil {
 		return err
 	}
 	// convert the pipeline yaml from the drone
 	// format to the harness yaml format.
-	converter := github.New(
-		github.WithDockerhub(c.dockerConn),
-		github.WithKubernetes(c.kubeName, c.kubeConn),
+	converter := gitlab.New(
+		gitlab.WithDockerhub(c.dockerConn),
+		gitlab.WithKubernetes(c.kubeName, c.kubeConn),
 	)
 	after, err := converter.ConvertBytes(before)
 	if err != nil {
@@ -118,17 +117,16 @@ func (c *convertCommand) run(ctx *kingpin.ParseContext) error {
 	}
 }
 
-// helper function registers the convert command
 func registerConvert(app *kingpin.CmdClause) {
 	c := new(convertCommand)
 
 	tty := isatty.IsTerminal(os.Stdout.Fd())
 
-	cmd := app.Command("convert", "convert a github yaml").
+	cmd := app.Command("convert", "convert a gitlab yaml").
 		Action(c.run)
 
-	cmd.Arg("input", "path to github yaml directory or file").
-		Default(".github/workflows/main.yml").
+	cmd.Arg("input", "path to the gitlab yaml").
+		Default(".gitlab.yml").
 		StringVar(&c.input)
 
 	cmd.Arg("output", "path to save the converted yaml").

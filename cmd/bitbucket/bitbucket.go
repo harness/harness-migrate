@@ -12,28 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package tracer
+package bitbucket
 
-// Tracer defines tracing methods.
-type Tracer interface {
-	// Start the named tracer.
-	Start(format string, args ...interface{})
+import "github.com/alecthomas/kingpin/v2"
 
-	// Stop the named tracer.
-	Stop(format string, args ...interface{})
-
-	// Close the tracer.
-	Close()
+func Register(app *kingpin.Application) {
+	cmd := app.Command("bitbucket", "migrate bitbucket data")
+	//registerImport(cmd)
+	registerConvert(cmd)
 }
-
-// Default returns the default tracer (noop)
-func Default() Tracer {
-	return new(none)
-}
-
-// none implements a noop tracer.
-type none struct{}
-
-func (*none) Start(format string, args ...interface{}) {}
-func (*none) Stop(format string, args ...interface{})  {}
-func (*none) Close()                                   {}

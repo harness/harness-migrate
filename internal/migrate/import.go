@@ -1,3 +1,17 @@
+// Copyright 2023 Harness, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package migrate
 
 import (
@@ -28,6 +42,7 @@ const dockerConnectorName = "docker"
 
 func (m *Importer) Import(ctx context.Context, data *types.Org) error {
 	m.Tracer.Start("create organization %s", m.HarnessOrg)
+
 	// find the harness organization
 	org, err := m.Harness.FindOrg(m.HarnessOrg)
 	if err != nil {
@@ -108,13 +123,14 @@ func (m *Importer) Import(ctx context.Context, data *types.Org) error {
 	for _, srcProject := range data.Projects {
 
 		m.Tracer.Start("create project %s", srcProject.Name)
+		projectSlug := slug.Create(srcProject.Name)
 
 		// convert the circle project to a harness project
 		// structure and convert the circle project name to
 		// a harness project identifier.
 		project := &harness.Project{
 			Orgidentifier: org.ID,
-			Identifier:    slug.Create(srcProject.Name),
+			Identifier:    projectSlug,
 			Name:          srcProject.Name,
 		}
 
@@ -132,7 +148,7 @@ func (m *Importer) Import(ctx context.Context, data *types.Org) error {
 		// project. It is created async and if we do not wait, it
 		// could result in failure to add secrets in subsequent steps.
 		if err := harness.WaitHarnessSecretManager(
-			m.Harness, m.HarnessOrg, project.Identifier); err != nil {
+			m.Harness, m.HarnessOrg, projectSlug); err != nil {
 			return err
 		}
 
@@ -140,7 +156,7 @@ func (m *Importer) Import(ctx context.Context, data *types.Org) error {
 		for _, srcEnv := range srcProject.Secrets {
 			// convert the environment variable to an inline
 			// secret, stored in the harness secret manager.
-			secret := util.CreateSecret(org.ID, project.Identifier, slug.Create(srcEnv.Name), srcEnv.Desc, srcEnv.Value)
+			secret := util.CreateSecret(org.ID, projectSlug, slug.Create(srcEnv.Name), srcEnv.Desc, srcEnv.Value)
 			// save the secret to harness.
 			if err := m.Harness.CreateSecret(secret); err != nil {
 				// if the error indicates the secret already
@@ -159,8 +175,9 @@ func (m *Importer) Import(ctx context.Context, data *types.Org) error {
 			downgrader.WithDockerhub(dockerConnectorName),
 			//downgrader.WithKubernetes(c.kubeName, c.kubeConn), //TODO add kubernetes?
 			downgrader.WithName(project.Name),
+			downgrader.WithIdentifier(projectSlug),
 			downgrader.WithOrganization(project.Orgidentifier),
-			downgrader.WithProject(project.Name),
+			downgrader.WithProject(projectSlug),
 		)
 		after, err := d.Downgrade(srcProject.Yaml)
 		if err != nil {
@@ -168,7 +185,7 @@ func (m *Importer) Import(ctx context.Context, data *types.Org) error {
 		}
 
 		//create the harness pipeline with an inline yaml
-		err = m.Harness.CreatePipeline(org.ID, project.Identifier, after)
+		err = m.Harness.CreatePipeline(org.ID, projectSlug, after)
 		if err != nil {
 			// if the error indicates the pipeline already
 			// exists we can continue with the import, else

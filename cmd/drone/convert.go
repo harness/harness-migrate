@@ -30,8 +30,9 @@ type convertCommand struct {
 	downgrade   bool
 	beforeAfter bool
 
-	color bool
-	theme string
+	color  bool
+	theme  string
+	format string
 }
 
 func (c *convertCommand) run(ctx *kingpin.ParseContext) error {
@@ -97,7 +98,7 @@ func (c *convertCommand) run(ctx *kingpin.ParseContext) error {
 
 	if c.color {
 		// hightlight and write to stdout
-		return quick.Highlight(os.Stdout, string(after), "yaml", "terminal", c.theme)
+		return quick.Highlight(os.Stdout, string(after), "yaml", c.format, c.theme)
 	} else {
 		// write to stdout
 		os.Stdout.Write(after)
@@ -136,8 +137,14 @@ func registerConvert(app *kingpin.CmdClause) {
 
 	cmd.Flag("theme", "syntax highlighting theme").
 		Envar("THEME").
-		Default("friendly").
+		Default("github").
 		StringVar(&c.theme)
+
+	cmd.Flag("formatter", "syntax highlighting formatter").
+		Hidden().
+		Envar("FORMAT").
+		Default("terminal").
+		StringVar(&c.format)
 
 	cmd.Flag("org", "harness organization").
 		Default("default").

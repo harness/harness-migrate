@@ -1,12 +1,33 @@
 `harness-migrate` is a command line utility to help convert and migrate
 continuous integration pipelines from other providers to Harness CI.
 
-__Install__
+## Install on Mac
 
-Download the appropriate binary from 
-[releases](https://github.com/harness/harness-migrate/releases).
+Intel CPU
 
-__Build__
+```sh
+curl -L https://github.com/harness/harness-migrate/releases/latest/download/harness-migrate-darwin-amd64.tar.gz | tar zx
+```
+
+Apple silicon (M1 or M2) CPU
+
+```sh
+curl -L https://github.com/harness/harness-migrate/releases/latest/download/harness-migrate-darwin-arm64.tar.gz | tar zx
+```
+
+Copy the binary into place
+
+```sh
+sudo cp harness-migrate /usr/local/bin
+```
+
+Verify the install
+
+```sh
+harness-migrate --help
+```
+
+## Build
 
 ```term
 $ git clone https://github.com/harness/harness-migrate.git
@@ -14,7 +35,7 @@ $ cd harness-migrate
 $ go build
 ```
 
-__Usage__
+## Usage
 
 Convert a circle pipeline:
 

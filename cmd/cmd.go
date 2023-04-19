@@ -24,6 +24,7 @@ import (
 	"github.com/harness/harness-migrate/cmd/drone"
 	"github.com/harness/harness-migrate/cmd/github"
 	"github.com/harness/harness-migrate/cmd/gitlab"
+	"github.com/harness/harness-migrate/cmd/terraform"
 	"github.com/harness/harness-migrate/cmd/travis"
 
 	"github.com/alecthomas/kingpin/v2"
@@ -53,6 +54,7 @@ func Command() {
 	gitlab.Register(app)
 	github.Register(app)
 	travis.Register(app)
+	terraform.Register(app)
 
 	app.Version(version)
 	kingpin.MustParse(app.Parse(os.Args[1:]))

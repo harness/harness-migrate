@@ -1,4 +1,4 @@
-`harness-migrate` is a command line utility to help convert and migrate
+**harness-migrate** is a command line utility to help convert and migrate
 continuous integration pipelines from other providers to Harness CI.
 
 ## Install on Mac

@@ -12,17 +12,19 @@ steps:
   - name: build
     image: golang:1.19
     commands:
-      - GOOS=linux   GOARCH=amd64   go build -ldflags "-X github.com/harness/harness-migrate/cmd.version=${DRONE_TAG##v}" -o release/harness-migrate-linux-amd64
-      - GOOS=linux   GOARCH=arm64   go build -ldflags "-X github.com/harness/harness-migrate/cmd.version=${DRONE_TAG##v}" -o release/harness-migrate-linux-arm64
-      - GOOS=darwin  GOARCH=amd64   go build -ldflags "-X github.com/harness/harness-migrate/cmd.version=${DRONE_TAG##v}" -o release/harness-migrate-darwin-amd64
-      - GOOS=darwin  GOARCH=arm64   go build -ldflags "-X github.com/harness/harness-migrate/cmd.version=${DRONE_TAG##v}" -o release/harness-migrate-darwin-arm64
-      - GOOS=windows GOARCH=amd64   go build -ldflags "-X github.com/harness/harness-migrate/cmd.version=${DRONE_TAG##v}" -o release/harness-migrate-windows-amd64.exe
+      - GOOS=linux   GOARCH=amd64   go build -ldflags "-X github.com/harness/harness-migrate/cmd.version=${DRONE_TAG##v}" -o release/linux/amd64/harness-migrate
+      - GOOS=linux   GOARCH=arm64   go build -ldflags "-X github.com/harness/harness-migrate/cmd.version=${DRONE_TAG##v}" -o release/linux/arm64/harness-migrate
+      - GOOS=darwin  GOARCH=amd64   go build -ldflags "-X github.com/harness/harness-migrate/cmd.version=${DRONE_TAG##v}" -o release/darwin/amd64/harness-migrate
+      - GOOS=darwin  GOARCH=arm64   go build -ldflags "-X github.com/harness/harness-migrate/cmd.version=${DRONE_TAG##v}" -o release/darwin/arm64/harness-migrate
+      - GOOS=windows GOARCH=amd64   go build -ldflags "-X github.com/harness/harness-migrate/cmd.version=${DRONE_TAG##v}" -o release/windows/amd64/harness-migrate.exe
+      - GOOS=windows GOARCH=arm64   go build -ldflags "-X github.com/harness/harness-migrate/cmd.version=${DRONE_TAG##v}" -o release/windows/arm64/harness-migrate.exe
 
-      - tar -cvzf release/harness-migrate-linux-amd64.tar.gz   -C release harness-migrate-linux-amd64
-      - tar -cvzf release/harness-migrate-linux-arm64.tar.gz   -C release harness-migrate-linux-arm64
-      - tar -cvzf release/harness-migrate-darwin-amd64.tar.gz  -C release harness-migrate-darwin-amd64
-      - tar -cvzf release/harness-migrate-darwin-arm64.tar.gz  -C release harness-migrate-darwin-arm64
-      - tar -cvzf release/harness-migrate-windows-amd64.tar.gz -C release harness-migrate-windows-amd64.exe
+      - tar -cvzf release/harness-migrate-linux-amd64.tar.gz   -C release/linux/amd64   harness-migrate
+      - tar -cvzf release/harness-migrate-linux-arm64.tar.gz   -C release/linux/arm64   harness-migrate
+      - tar -cvzf release/harness-migrate-darwin-amd64.tar.gz  -C release/darwin/amd64  harness-migrate
+      - tar -cvzf release/harness-migrate-darwin-arm64.tar.gz  -C release/darwin/arm64  harness-migrate
+      - tar -cvzf release/harness-migrate-windows-amd64.tar.gz -C release/windows/amd64 harness-migrate.exe
+      - tar -cvzf release/harness-migrate-windows-arm64.tar.gz -C release/windows/arm64 harness-migrate.exe
 
       - sha256sum release/*.tar.gz > release/harness-migrate-checksums.txt
   - name: publish docker-amd64

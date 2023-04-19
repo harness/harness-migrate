@@ -20,6 +20,7 @@ import (
 	"strings"
 
 	"github.com/drone/go-convert/convert/drone"
+	"github.com/drone/go-convert/convert/harness/downgrader"
 
 	"github.com/drone/go-scm/scm"
 
@@ -39,7 +40,7 @@ type Exporter struct {
 	Tracer tracer.Tracer
 }
 
-func (m *Exporter) Export(ctx context.Context) (*types.Org, error) {
+func (m *Exporter) Export(ctx context.Context, downgrade bool) (*types.Org, error) {
 
 	m.Tracer.Start("export organization")
 
@@ -100,6 +101,20 @@ func (m *Exporter) Export(ctx context.Context) (*types.Org, error) {
 		newYaml, err := converter.ConvertBytes(yamlFile.Data)
 		if err != nil {
 			return nil, err
+		}
+
+		// downgrade from the v1 harness yaml format
+		// to the v0 harness yaml format.
+		if downgrade {
+			// downgrade to the v0 yaml
+			d := downgrader.New(
+				downgrader.WithName(repo.Name),
+				downgrader.WithProject(repo.Name),
+			)
+			newYaml, err = d.Downgrade(newYaml)
+			if err != nil {
+				return nil, err
+			}
 		}
 
 		dstProject.Yaml = newYaml

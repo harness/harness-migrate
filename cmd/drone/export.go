@@ -39,6 +39,8 @@ type exportCommand struct {
 	Datasource string
 	namespace  string
 
+	downgrade bool
+
 	githubToken    string
 	gitlabToken    string
 	bitbucketToken string
@@ -85,7 +87,7 @@ func (c *exportCommand) run(*kingpin.ParseContext) error {
 		ScmClient:  client,
 		ScmLogin:   user.Login,
 	}
-	data, err := exporter.Export(ctx)
+	data, err := exporter.Export(ctx, c.downgrade)
 	if err != nil {
 		return err
 	}
@@ -117,6 +119,10 @@ func registerExport(app *kingpin.CmdClause) {
 
 	cmd.Arg("save", "save the output to a file").
 		StringVar(&c.file)
+
+	cmd.Flag("downgrade", "downgrade to the legacy yaml format").
+		Default("true").
+		BoolVar(&c.downgrade)
 
 	cmd.Flag("namespace", "drone namespace").
 		Required().

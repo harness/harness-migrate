@@ -20,6 +20,7 @@ import (
 	"strings"
 
 	"github.com/drone/go-convert/convert/drone"
+	"github.com/drone/go-convert/convert/harness/downgrader"
 
 	"github.com/drone/go-scm/scm"
 
@@ -32,6 +33,7 @@ import (
 type Exporter struct {
 	Repository repo.Repository
 	Namespace  string
+	Downgrade  bool
 
 	ScmClient *scm.Client
 	ScmLogin  string
@@ -100,6 +102,20 @@ func (m *Exporter) Export(ctx context.Context) (*types.Org, error) {
 		newYaml, err := converter.ConvertBytes(yamlFile.Data)
 		if err != nil {
 			return nil, err
+		}
+
+		// downgrade from the v1 harness yaml format
+		// to the v0 harness yaml format.
+		if m.Downgrade {
+			// downgrade to the v0 yaml
+			d := downgrader.New(
+				downgrader.WithName(repo.Name),
+				downgrader.WithProject(repo.Name),
+			)
+			newYaml, err = d.Downgrade(newYaml)
+			if err != nil {
+				return nil, err
+			}
 		}
 
 		dstProject.Yaml = newYaml

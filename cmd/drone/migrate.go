@@ -35,6 +35,8 @@ type migrateCommand struct {
 	Datasource string
 	namespace  string
 
+	downgrade bool
+
 	harnessToken   string
 	harnessAccount string
 	harnessOrg     string
@@ -154,6 +156,10 @@ func registerMigrate(app *kingpin.CmdClause) {
 	cmd.Flag("bitbucket-token", "bitbucket token").
 		Envar("BITBUCKET_TOKEN").
 		StringVar(&c.bitbucketToken)
+
+	cmd.Flag("downgrade", "downgrade to the legacy yaml format").
+		Default("true").
+		BoolVar(&c.downgrade)
 
 	cmd.Flag("namespace", "drone namespace").
 		Required().

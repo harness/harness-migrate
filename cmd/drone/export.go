@@ -31,9 +31,10 @@ import (
 )
 
 type exportCommand struct {
-	debug bool
-	trace bool
-	file  string
+	debug     bool
+	downgrade bool
+	trace     bool
+	file      string
 
 	Driver     string
 	Datasource string
@@ -79,6 +80,7 @@ func (c *exportCommand) run(*kingpin.ParseContext) error {
 
 	// extract the data
 	exporter := &drone.Exporter{
+		Downgrade:  c.downgrade,
 		Repository: droneRepo,
 		Namespace:  c.namespace,
 		Tracer:     tracer_,
@@ -117,6 +119,10 @@ func registerExport(app *kingpin.CmdClause) {
 
 	cmd.Arg("save", "save the output to a file").
 		StringVar(&c.file)
+
+	cmd.Flag("downgrade", "downgrade to the legacy yaml format").
+		Default("true").
+		BoolVar(&c.downgrade)
 
 	cmd.Flag("namespace", "drone namespace").
 		Required().

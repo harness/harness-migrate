@@ -31,15 +31,14 @@ import (
 )
 
 type exportCommand struct {
-	debug bool
-	trace bool
-	file  string
+	debug     bool
+	downgrade bool
+	trace     bool
+	file      string
 
 	Driver     string
 	Datasource string
 	namespace  string
-
-	downgrade bool
 
 	githubToken    string
 	gitlabToken    string
@@ -81,13 +80,14 @@ func (c *exportCommand) run(*kingpin.ParseContext) error {
 
 	// extract the data
 	exporter := &drone.Exporter{
+		Downgrade:  c.downgrade,
 		Repository: droneRepo,
 		Namespace:  c.namespace,
 		Tracer:     tracer_,
 		ScmClient:  client,
 		ScmLogin:   user.Login,
 	}
-	data, err := exporter.Export(ctx, c.downgrade)
+	data, err := exporter.Export(ctx)
 	if err != nil {
 		return err
 	}

@@ -33,6 +33,7 @@ import (
 type Exporter struct {
 	Repository repo.Repository
 	Namespace  string
+	Downgrade  bool
 
 	ScmClient *scm.Client
 	ScmLogin  string
@@ -40,7 +41,7 @@ type Exporter struct {
 	Tracer tracer.Tracer
 }
 
-func (m *Exporter) Export(ctx context.Context, downgrade bool) (*types.Org, error) {
+func (m *Exporter) Export(ctx context.Context) (*types.Org, error) {
 
 	m.Tracer.Start("export organization")
 
@@ -105,7 +106,7 @@ func (m *Exporter) Export(ctx context.Context, downgrade bool) (*types.Org, erro
 
 		// downgrade from the v1 harness yaml format
 		// to the v0 harness yaml format.
-		if downgrade {
+		if m.Downgrade {
 			// downgrade to the v0 yaml
 			d := downgrader.New(
 				downgrader.WithName(repo.Name),

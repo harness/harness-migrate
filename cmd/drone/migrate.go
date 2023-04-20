@@ -86,7 +86,7 @@ func (c *migrateCommand) run(*kingpin.ParseContext) error {
 		Tracer:     tracer_,
 		ScmClient:  client,
 	}
-	data, err := exporter.Export(ctx, c.downgrade)
+	data, err := exporter.Export(ctx)
 	if err != nil {
 		return err
 	}

@@ -11,6 +11,8 @@ steps:
 
   - name: build
     image: golang:1.19
+    environment:
+      CGO_ENABLED: 1
     commands:
       - GOOS=linux   GOARCH=amd64   go build -ldflags "-X github.com/harness/harness-migrate/cmd.version=${DRONE_TAG##v}" -o release/linux/amd64/harness-migrate
       - GOOS=linux   GOARCH=arm64   go build -ldflags "-X github.com/harness/harness-migrate/cmd.version=${DRONE_TAG##v}" -o release/linux/arm64/harness-migrate

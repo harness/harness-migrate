@@ -25,7 +25,7 @@ import (
 	_ "github.com/mattn/go-sqlite3" // required for sqlite3
 )
 
-var _ = squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
+var statementBuilder squirrel.StatementBuilderType
 
 // repository is an implementation of the Repository interface that
 // provides access to the Drone database using SQLite.
@@ -34,10 +34,21 @@ type repository struct {
 	dbType string
 }
 
+func initStatementBuilder(driver string) {
+	switch driver {
+	case "postgres":
+		statementBuilder = squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
+	default:
+		statementBuilder = squirrel.StatementBuilder.PlaceholderFormat(squirrel.Question)
+	}
+}
+
 // NewRepository returns a new Repository that provides access to the Drone
 // database using the specified connection string.
 func NewRepository(driver, datasource string, db *sqlx.DB) (Repository, error) {
 	var err error
+
+	initStatementBuilder(driver)
 
 	// If a DB connection is not provided, create one
 	if db == nil {
@@ -83,7 +94,7 @@ func createDBConnection(driver, datasource string) (*sqlx.DB, error) {
 
 func (r *repository) GetRepos(ctx context.Context, namespace string) ([]*Repo, error) {
 	var repos []*Repo
-	query, args, err := squirrel.
+	query, args, err := statementBuilder.
 		Select("*").
 		From("repos").
 		Where(squirrel.Eq{"repo_namespace": namespace}).
@@ -100,7 +111,7 @@ func (r *repository) GetRepos(ctx context.Context, namespace string) ([]*Repo, e
 
 func (r *repository) LatestBuild(ctx context.Context, repoId int64) (*Build, error) {
 	var builds Build
-	query, args, err := squirrel.
+	query, args, err := statementBuilder.
 		Select("build_id", "build_repo_id", "build_trigger", "build_number", "build_parent", "build_status", "build_error",
 			"build_event", "build_action", "build_link", "build_timestamp", "build_title", "build_message", "build_before",
 			"build_after", "build_ref", "build_source_repo", "build_source", "build_target", "build_author", "build_author_name",
@@ -127,7 +138,7 @@ func (r *repository) LatestBuild(ctx context.Context, repoId int64) (*Build, err
 
 func (r *repository) GetSecrets(ctx context.Context, repoID int64) ([]*Secret, error) {
 	var secrets []*Secret
-	query, args, err := squirrel.
+	query, args, err := statementBuilder.
 		Select("secret_id", "secret_repo_id", "secret_name", "secret_data", "secret_pull_request", "secret_pull_request_push").
 		From("secrets").
 		Where(squirrel.Eq{"secret_repo_id": repoID}).
@@ -144,7 +155,7 @@ func (r *repository) GetSecrets(ctx context.Context, repoID int64) ([]*Secret, e
 
 func (r *repository) GetOrgSecrets(ctx context.Context, namespace string) ([]*OrgSecret, error) {
 	var secrets []*OrgSecret
-	query, args, err := squirrel.
+	query, args, err := statementBuilder.
 		Select("orgsecrets.*").
 		From("orgsecrets").
 		Where(squirrel.Eq{"orgsecrets.secret_namespace": namespace}).

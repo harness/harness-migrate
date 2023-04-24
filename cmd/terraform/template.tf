@@ -1,8 +1,8 @@
 terraform {
   required_providers {
     harness = {
-      source  = "harness/harness"
-      version = "~> 0.17"
+      source  = "{{ .Provider.Source }}"
+      version = "= {{ .Provider.Version }}"
     }
   }
 }
@@ -16,12 +16,13 @@ provider "harness" {
 
 module "organization" {
   source  = "harness-community/structure/harness//modules/organizations"
-  version = "0.1.3"
+  version = "~> 0.1"
 
-  name = "{{ .HarnessOrg }}"
+  name = "{{ .Account.Organization }}"
 }
 
-{{ range .Org.Secrets -}}
+{{- /* Create organization secrets */}}
+{{- range .Org.Secrets -}}
 resource "harness_platform_secret_text" "organization_{{ slugify .Name }}" {
   identifier  = "{{ slugify .Name }}"
   name        = "{{ .Name }}"
@@ -34,20 +35,22 @@ resource "harness_platform_secret_text" "organization_{{ slugify .Name }}" {
 }
 {{- end -}}
 
-{{ range .Org.Projects -}}
+{{- /* Create projects */}}
+{{- range .Org.Projects -}}
 {{- /* Read in pipeline yaml so its values can be referenced */}}
 {{ $yaml := fromYaml .Yaml }}
 {{ $projectSlug := (slugify .Name) -}}
 module "project_{{ $projectSlug }}" {
   source  = "harness-community/structure/harness//modules/projects"
-  version = "0.1.3"
+  version = "~> 0.1"
 
   name            = "{{- printf "%s" $yaml.pipeline.name -}}"
   organization_id = module.organization.details.id
 }
 
-{{ range .Secrets -}}
-resource "harness_platform_secret_text" "project_{{ $projectSlug }}" {
+{{/* Create project secrets */}}
+{{- range .Secrets -}}
+resource "harness_platform_secret_text" "project_{{ slugify .Name }}" {
   identifier  = "{{ slugify .Name }}"
   name        = "{{ .Name }}"
   org_id      = module.organization.details.id
@@ -58,11 +61,12 @@ resource "harness_platform_secret_text" "project_{{ $projectSlug }}" {
 
   secret_manager_identifier = "harnessSecretManager"  
 }
-{{- end }}
+{{ end }}
 
+{{- /* Create project pipeline */}}
 module "pipeline_{{ slugify .Name }}" {
   source  = "harness-community/content/harness//modules/pipelines"
-  version = "0.1.1"
+  version = "~> 0.1"
 
   name            = "{{- printf "%s" $yaml.pipeline.name -}}"
   organization_id = module.organization.details.id

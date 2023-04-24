@@ -42,9 +42,11 @@ type terraformCommand struct {
 	output string
 	tmpl   string
 
-	account    string
-	endpoint   string
-	harnessOrg string
+	account         string
+	endpoint        string
+	organization    string
+	providerSource  string
+	providerVersion string
 
 	color bool
 	theme string
@@ -68,9 +70,13 @@ func (c *terraformCommand) run(ctx *kingpin.ParseContext) error {
 			Endpoint: c.endpoint,
 		},
 		Account: account{
-			ID: c.account,
+			ID:           c.account,
+			Organization: c.organization,
 		},
-		HarnessOrg: c.harnessOrg,
+		Provider: provider{
+			Source:  c.providerSource,
+			Version: c.providerVersion,
+		},
 	}
 
 	tmpl := defaultTmpl
@@ -155,7 +161,7 @@ func Register(app *kingpin.Application) {
 
 	cmd.Flag("org", "harness organization").
 		Default("default").
-		StringVar(&c.harnessOrg)
+		StringVar(&c.organization)
 
 	cmd.Flag("color", "print with syntax highlighting").
 		Envar("COLOR").
@@ -166,22 +172,36 @@ func Register(app *kingpin.Application) {
 		Envar("THEME").
 		Default("friendly").
 		StringVar(&c.theme)
+
+	cmd.Flag("provider-source", "harness terraform provider source").
+		Default("harness/harness").
+		StringVar(&c.providerSource)
+
+	cmd.Flag("provider-version", "harness terraform provider version").
+		Default("0.17.5").
+		StringVar(&c.providerVersion)
 }
 
 type (
 	input struct {
-		Account    account
-		Auth       auth
-		HarnessOrg string
-		Org        *types.Org
+		Account  account
+		Auth     auth
+		Org      *types.Org
+		Provider provider
 	}
 
 	account struct {
-		ID  string
-		Key string
+		ID           string
+		Key          string
+		Organization string
 	}
 
 	auth struct {
 		Endpoint string
+	}
+
+	provider struct {
+		Source  string
+		Version string
 	}
 )

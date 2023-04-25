@@ -16,6 +16,7 @@ package drone
 
 import (
 	"context"
+	"strings"
 
 	"github.com/harness/harness-migrate/cmd/util"
 	"github.com/harness/harness-migrate/internal/migrate/drone"
@@ -31,9 +32,10 @@ type migrateCommand struct {
 	debug bool
 	trace bool
 
-	Driver     string
-	Datasource string
-	namespace  string
+	Driver         string
+	Datasource     string
+	namespace      string
+	repositoryList string
 
 	downgrade bool
 
@@ -76,15 +78,21 @@ func (c *migrateCommand) run(*kingpin.ParseContext) error {
 		return err
 	}
 
+	var repository []string
+	if c.repositoryList != "" {
+		repository = strings.Split(c.repositoryList, ",")
+	}
+
 	tracer_ := tracer.New()
 	defer tracer_.Close()
 
 	// extract the data
 	exporter := &drone.Exporter{
-		Repository: droneRepo,
-		Namespace:  c.namespace,
-		Tracer:     tracer_,
-		ScmClient:  client,
+		Repository:     droneRepo,
+		Namespace:      c.namespace,
+		Tracer:         tracer_,
+		ScmClient:      client,
+		RepositoryList: repository,
 	}
 	data, err := exporter.Export(ctx)
 	if err != nil {
@@ -143,6 +151,11 @@ func registerMigrate(app *kingpin.CmdClause) {
 		Envar("HARNESS_ADDRESS").
 		Default("https://app.harness.io").
 		StringVar(&c.harnessAddress)
+
+	cmd.Flag("repository-list", "optional list of repositories to export").
+		Required().
+		Envar("REPOSITORY_LIST").
+		StringVar(&c.repositoryList)
 
 	cmd.Flag("github-token", "github token").
 		Envar("GITHUB_TOKEN").

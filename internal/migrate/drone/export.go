@@ -31,9 +31,10 @@ import (
 
 // Exporter exports data from drone.
 type Exporter struct {
-	Repository repo.Repository
-	Namespace  string
-	Downgrade  bool
+	Repository     repo.Repository
+	Namespace      string
+	Downgrade      bool
+	RepositoryList []string
 
 	ScmClient *scm.Client
 	ScmLogin  string
@@ -73,6 +74,11 @@ func (m *Exporter) Export(ctx context.Context) (*types.Org, error) {
 	for _, repo := range repos {
 		// Skip repositories that are not in the specified namespace
 		if !strings.HasPrefix(repo.Namespace, m.Namespace) {
+			continue
+		}
+
+		// Skip repositories that are not in the m.RepositoryList
+		if len(m.RepositoryList) > 0 && !m.repositoryInList(repo.Name) {
 			continue
 		}
 
@@ -155,4 +161,14 @@ func convertOrgSecretsToSecrets(orgSecrets []*repo.OrgSecret) []*types.Secret {
 		secrets[i] = secret
 	}
 	return secrets
+}
+
+func (m *Exporter) repositoryInList(repoName string) bool {
+	lowerRepoName := strings.ToLower(repoName)
+	for _, name := range m.RepositoryList {
+		if strings.ToLower(name) == lowerRepoName {
+			return true
+		}
+	}
+	return false
 }

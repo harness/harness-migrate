@@ -19,6 +19,7 @@ import (
 	"encoding/json"
 	"errors"
 	"os"
+	"strings"
 
 	"github.com/harness/harness-migrate/cmd/util"
 	"github.com/harness/harness-migrate/internal/migrate/drone"
@@ -36,9 +37,10 @@ type exportCommand struct {
 	trace     bool
 	file      string
 
-	Driver     string
-	Datasource string
-	namespace  string
+	Driver         string
+	Datasource     string
+	namespace      string
+	repositoryList string
 
 	githubToken    string
 	gitlabToken    string
@@ -78,14 +80,20 @@ func (c *exportCommand) run(*kingpin.ParseContext) error {
 		return err
 	}
 
+	var repository []string
+	if c.repositoryList != "" {
+		repository = strings.Split(c.repositoryList, ",")
+	}
+
 	// extract the data
 	exporter := &drone.Exporter{
-		Downgrade:  c.downgrade,
-		Repository: droneRepo,
-		Namespace:  c.namespace,
-		Tracer:     tracer_,
-		ScmClient:  client,
-		ScmLogin:   user.Login,
+		Downgrade:      c.downgrade,
+		Repository:     droneRepo,
+		Namespace:      c.namespace,
+		Tracer:         tracer_,
+		ScmClient:      client,
+		ScmLogin:       user.Login,
+		RepositoryList: repository,
 	}
 	data, err := exporter.Export(ctx)
 	if err != nil {
@@ -127,6 +135,11 @@ func registerExport(app *kingpin.CmdClause) {
 		Required().
 		Envar("DRONE_NAMESPACE").
 		StringVar(&c.namespace)
+
+	cmd.Flag("repository-list", "optional list of repositories to export").
+		Required().
+		Envar("REPOSITORY_LIST").
+		StringVar(&c.repositoryList)
 
 	cmd.Flag("driver", "drone db type").
 		Default("sqlite3").

@@ -47,6 +47,11 @@ type migrateCommand struct {
 	githubToken    string
 	gitlabToken    string
 	bitbucketToken string
+
+	dockerConn string
+	kubeName   string
+	kubeConn   string
+	repoConn   string
 }
 
 func (c *migrateCommand) run(*kingpin.ParseContext) error {
@@ -88,11 +93,16 @@ func (c *migrateCommand) run(*kingpin.ParseContext) error {
 
 	// extract the data
 	exporter := &drone.Exporter{
+		Downgrade:      c.downgrade,
 		Repository:     droneRepo,
 		Namespace:      c.namespace,
 		Tracer:         tracer_,
 		ScmClient:      client,
 		RepositoryList: repository,
+		DockerConn:     c.dockerConn,
+		KubeName:       c.kubeName,
+		KubeConn:       c.kubeConn,
+		RepoConn:       c.repoConn,
 	}
 	data, err := exporter.Export(ctx)
 	if err != nil {
@@ -192,4 +202,20 @@ func registerMigrate(app *kingpin.CmdClause) {
 
 	cmd.Flag("trace", "enable trace logging").
 		BoolVar(&c.trace)
+
+	cmd.Flag("repo-connector", "repository connector").
+		Default("").
+		StringVar(&c.repoConn)
+
+	cmd.Flag("kube-connector", "kubernetes connector").
+		Default("").
+		StringVar(&c.kubeConn)
+
+	cmd.Flag("kube-namespace", "kubernetes namespace").
+		Default("").
+		StringVar(&c.kubeName)
+
+	cmd.Flag("docker-connector", "dockerhub connector").
+		Default("").
+		StringVar(&c.kubeName)
 }

@@ -185,22 +185,27 @@ func registerExport(app *kingpin.CmdClause) {
 		StringVar(&c.org)
 
 	cmd.Flag("project", "harness project").
+		Envar("HARNESS_PROJECT").
 		Default("default").
 		StringVar(&c.proj)
 
 	cmd.Flag("repo-connector", "repository connector").
+		Envar("HARNESS_REPO_CONNECTOR").
 		Default("").
 		StringVar(&c.repoConn)
 
 	cmd.Flag("kube-connector", "kubernetes connector").
+		Envar("HARNESS_KUBE_CONNECTOR").
 		Default("").
 		StringVar(&c.kubeConn)
 
 	cmd.Flag("kube-namespace", "kubernetes namespace").
+		Envar("HARNESS_KUBE_NAMESPACE").
 		Default("").
 		StringVar(&c.kubeName)
 
 	cmd.Flag("docker-connector", "dockerhub connector").
+		Envar("HARNESS_DOCKER_CONNECTOR").
 		Default("").
 		StringVar(&c.kubeName)
 }

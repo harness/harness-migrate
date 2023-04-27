@@ -24,6 +24,7 @@ import (
 
 	"github.com/harness/harness-migrate/internal/slug"
 	"github.com/harness/harness-migrate/internal/types"
+	"gopkg.in/yaml.v2"
 
 	"github.com/alecthomas/chroma/quick"
 	"github.com/alecthomas/kingpin/v2"
@@ -41,9 +42,11 @@ type terraformCommand struct {
 	output string
 	tmpl   string
 
-	account  string
-	endpoint string
-	token    string
+	account         string
+	endpoint        string
+	organization    string
+	providerSource  string
+	providerVersion string
 
 	color bool
 	theme string
@@ -65,10 +68,14 @@ func (c *terraformCommand) run(ctx *kingpin.ParseContext) error {
 		Org: org,
 		Auth: auth{
 			Endpoint: c.endpoint,
-			Token:    c.token,
 		},
 		Account: account{
-			ID: c.account,
+			ID:           c.account,
+			Organization: c.organization,
+		},
+		Provider: provider{
+			Source:  c.providerSource,
+			Version: c.providerVersion,
 		},
 	}
 
@@ -89,6 +96,17 @@ func (c *terraformCommand) run(ctx *kingpin.ParseContext) error {
 		Funcs(funcmap.Funcs).
 		Funcs(template.FuncMap{
 			"slugify": slug.Create,
+			// TODO: drone/funcmap has its own toYaml which is incompatible,
+			//       can we add fromYaml and make toYaml compatible?
+			"fromYaml": func(in []byte) map[string]interface{} {
+				out := map[string]interface{}{}
+				yaml.Unmarshal(in, out)
+				return out
+			},
+			"toYaml": func(in interface{}) string {
+				out, _ := yaml.Marshal(in)
+				return string(out)
+			},
 		}).
 		Parse(tmpl)
 	if err != nil {
@@ -134,15 +152,16 @@ func Register(app *kingpin.Application) {
 	cmd.Flag("template", "path to the terraform template").
 		StringVar(&c.tmpl)
 
-	cmd.Flag("account", "harness account").
+	cmd.Flag("account", "harness account ID").
 		StringVar(&c.account)
 
 	cmd.Flag("endpoint", "harness endpoint").
 		Default("https://app.harness.io/gateway").
 		StringVar(&c.endpoint)
 
-	cmd.Flag("token", "harness token").
-		StringVar(&c.token)
+	cmd.Flag("org", "harness organization").
+		Default("default").
+		StringVar(&c.organization)
 
 	cmd.Flag("color", "print with syntax highlighting").
 		Envar("COLOR").
@@ -153,22 +172,36 @@ func Register(app *kingpin.Application) {
 		Envar("THEME").
 		Default("friendly").
 		StringVar(&c.theme)
+
+	cmd.Flag("provider-source", "harness terraform provider source").
+		Default("harness/harness").
+		StringVar(&c.providerSource)
+
+	cmd.Flag("provider-version", "harness terraform provider version").
+		Default("0.17.5").
+		StringVar(&c.providerVersion)
 }
 
 type (
 	input struct {
-		Account account
-		Auth    auth
-		Org     *types.Org
+		Account  account
+		Auth     auth
+		Org      *types.Org
+		Provider provider
 	}
 
 	account struct {
-		ID  string
-		Key string
+		ID           string
+		Key          string
+		Organization string
 	}
 
 	auth struct {
 		Endpoint string
-		Token    string
+	}
+
+	provider struct {
+		Source  string
+		Version string
 	}
 )

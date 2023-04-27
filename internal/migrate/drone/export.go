@@ -36,6 +36,12 @@ type Exporter struct {
 	Downgrade      bool
 	RepositoryList []string
 
+	RepoConn   string
+	DockerConn string
+	KubeName   string
+	KubeConn   string
+	Org        string
+
 	ScmClient *scm.Client
 	ScmLogin  string
 
@@ -115,7 +121,11 @@ func (m *Exporter) Export(ctx context.Context) (*types.Org, error) {
 		if m.Downgrade {
 			// downgrade to the v0 yaml
 			d := downgrader.New(
+				downgrader.WithCodebase(repo.Name, m.RepoConn),
+				downgrader.WithDockerhub(m.DockerConn),
+				downgrader.WithKubernetes(m.KubeName, m.KubeConn),
 				downgrader.WithName(repo.Name),
+				downgrader.WithOrganization(m.Org),
 				downgrader.WithProject(repo.Name),
 			)
 			newYaml, err = d.Downgrade(newYaml)

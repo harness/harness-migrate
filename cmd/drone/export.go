@@ -45,6 +45,13 @@ type exportCommand struct {
 	githubToken    string
 	gitlabToken    string
 	bitbucketToken string
+
+	proj       string
+	org        string
+	repoConn   string
+	kubeName   string
+	kubeConn   string
+	dockerConn string
 }
 
 func (c *exportCommand) run(*kingpin.ParseContext) error {
@@ -94,6 +101,11 @@ func (c *exportCommand) run(*kingpin.ParseContext) error {
 		ScmClient:      client,
 		ScmLogin:       user.Login,
 		RepositoryList: repository,
+		DockerConn:     c.dockerConn,
+		KubeName:       c.kubeName,
+		KubeConn:       c.kubeConn,
+		Org:            c.org,
+		RepoConn:       c.repoConn,
 	}
 	data, err := exporter.Export(ctx)
 	if err != nil {
@@ -167,4 +179,28 @@ func registerExport(app *kingpin.CmdClause) {
 
 	cmd.Flag("trace", "enable trace logging").
 		BoolVar(&c.trace)
+
+	cmd.Flag("org", "harness organization").
+		Default("default").
+		StringVar(&c.org)
+
+	cmd.Flag("project", "harness project").
+		Default("default").
+		StringVar(&c.proj)
+
+	cmd.Flag("repo-connector", "repository connector").
+		Default("").
+		StringVar(&c.repoConn)
+
+	cmd.Flag("kube-connector", "kubernetes connector").
+		Default("").
+		StringVar(&c.kubeConn)
+
+	cmd.Flag("kube-namespace", "kubernetes namespace").
+		Default("").
+		StringVar(&c.kubeName)
+
+	cmd.Flag("docker-connector", "dockerhub connector").
+		Default("").
+		StringVar(&c.kubeName)
 }

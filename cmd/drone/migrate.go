@@ -153,7 +153,6 @@ func registerMigrate(app *kingpin.CmdClause) {
 		StringVar(&c.harnessAddress)
 
 	cmd.Flag("repository-list", "optional list of repositories to export").
-		Required().
 		Envar("REPOSITORY_LIST").
 		StringVar(&c.repositoryList)
 

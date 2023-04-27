@@ -149,7 +149,7 @@ func registerExport(app *kingpin.CmdClause) {
 		StringVar(&c.namespace)
 
 	cmd.Flag("repository-list", "optional list of repositories to export").
-d ,.		Envar("REPOSITORY_LIST").
+		Envar("REPOSITORY_LIST").
 		StringVar(&c.repositoryList)
 
 	cmd.Flag("driver", "drone db type").

@@ -35,6 +35,9 @@ type Importer struct {
 	ScmLogin string
 	ScmToken string
 
+	KubeName string
+	KubeConn string
+
 	Tracer tracer.Tracer
 }
 
@@ -173,7 +176,7 @@ func (m *Importer) Import(ctx context.Context, data *types.Org) error {
 		d := downgrader.New(
 			downgrader.WithCodebase(project.Name, connector.Identifier),
 			downgrader.WithDockerhub(dockerConnectorName),
-			//downgrader.WithKubernetes(c.kubeName, c.kubeConn), //TODO add kubernetes?
+			downgrader.WithKubernetes(m.KubeName, m.KubeConn),
 			downgrader.WithName(project.Name),
 			downgrader.WithIdentifier(projectSlug),
 			downgrader.WithOrganization(project.Orgidentifier),

@@ -81,8 +81,8 @@ func (m *Exporter) Export(ctx context.Context) (*types.Org, error) {
 
 		// convert the circle project to a common format.
 		dstProject := &types.Project{
-			Name:         srcProject.Name,
-			OriginalYaml: []byte(config.Source),
+			Name: srcProject.Name,
+			Yaml: []byte(config.Source),
 		}
 
 		converter := circle.New()

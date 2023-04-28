@@ -19,9 +19,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/drone/go-convert/convert/drone"
-	"github.com/drone/go-convert/convert/harness/downgrader"
-
 	"github.com/drone/go-scm/scm"
 
 	"github.com/harness/harness-migrate/internal/migrate/drone/repo"
@@ -108,33 +105,7 @@ func (m *Exporter) Export(ctx context.Context) (*types.Org, error) {
 			return nil, err
 		}
 
-		dstProject.OriginalYaml = yamlFile.Data
-
-		converter := drone.New()
-		newYaml, err := converter.ConvertBytes(yamlFile.Data)
-		if err != nil {
-			return nil, err
-		}
-
-		// downgrade from the v1 harness yaml format
-		// to the v0 harness yaml format.
-		if m.Downgrade {
-			// downgrade to the v0 yaml
-			d := downgrader.New(
-				downgrader.WithCodebase(repo.Name, m.RepoConn),
-				downgrader.WithDockerhub(m.DockerConn),
-				downgrader.WithKubernetes(m.KubeName, m.KubeConn),
-				downgrader.WithName(repo.Name),
-				downgrader.WithOrganization(m.Org),
-				downgrader.WithProject(repo.Name),
-			)
-			newYaml, err = d.Downgrade(newYaml)
-			if err != nil {
-				return nil, err
-			}
-		}
-
-		dstProject.Yaml = newYaml
+		dstProject.Yaml = yamlFile.Data
 
 		// find Drone secrets
 		secrets, secretErr := m.Repository.GetSecrets(ctx, repo.ID)

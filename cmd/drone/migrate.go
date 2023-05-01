@@ -18,10 +18,11 @@ import (
 	"context"
 	"strings"
 
-	gcDrone "github.com/drone/go-convert/convert/drone"
+	convert "github.com/drone/go-convert/convert/drone"
+	migrate "github.com/harness/harness-migrate/internal/migrate/drone"
+
 	"github.com/drone/go-convert/convert/harness/downgrader"
 	"github.com/harness/harness-migrate/cmd/util"
-	"github.com/harness/harness-migrate/internal/migrate/drone"
 	"github.com/harness/harness-migrate/internal/migrate/drone/repo"
 	"github.com/harness/harness-migrate/internal/tracer"
 
@@ -96,7 +97,7 @@ func (c *migrateCommand) run(*kingpin.ParseContext) error {
 	defer tracer_.Close()
 
 	// extract the data
-	exporter := &drone.Exporter{
+	exporter := &migrate.Exporter{
 		Repository:     droneRepo,
 		Namespace:      c.namespace,
 		Tracer:         tracer_,
@@ -109,9 +110,9 @@ func (c *migrateCommand) run(*kingpin.ParseContext) error {
 	}
 
 	// convert all yaml into v1 or v0 format
-	converter := gcDrone.New(
-		gcDrone.WithDockerhub(c.dockerConn),
-		gcDrone.WithKubernetes(c.kubeName, c.kubeConn),
+	converter := convert.New(
+		convert.WithDockerhub(c.dockerConn),
+		convert.WithKubernetes(c.kubeName, c.kubeConn),
 	)
 	for _, project := range data.Projects {
 		// convert to v1
@@ -123,8 +124,6 @@ func (c *migrateCommand) run(*kingpin.ParseContext) error {
 		if c.downgrade {
 			d := downgrader.New(
 				downgrader.WithCodebase(project.Name, c.repoConn),
-				downgrader.WithDockerhub(c.dockerConn),
-				downgrader.WithKubernetes(c.kubeName, c.kubeConn),
 				downgrader.WithName(project.Name),
 				downgrader.WithOrganization(c.harnessOrg),
 				downgrader.WithProject(project.Name),

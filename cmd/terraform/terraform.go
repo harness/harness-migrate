@@ -115,8 +115,6 @@ func (c *terraformCommand) run(ctx *kingpin.ParseContext) error {
 		if c.downgrade {
 			d := downgrader.New(
 				downgrader.WithCodebase(project.Name, c.repoConn),
-				downgrader.WithDockerhub(c.dockerConn),
-				downgrader.WithKubernetes(c.kubeName, c.kubeConn),
 				downgrader.WithName(project.Name),
 				downgrader.WithOrganization(c.organization),
 				downgrader.WithProject(project.Name),

@@ -91,6 +91,8 @@ func (c *importCommand) run(*kingpin.ParseContext) error {
 		if c.downgrade {
 			d := downgrader.New(
 				downgrader.WithCodebase(project.Name, c.repoConn),
+				downgrader.WithDockerhub(c.dockerConn),
+				downgrader.WithKubernetes(c.kubeName, c.kubeConn),
 				downgrader.WithName(project.Name),
 				downgrader.WithOrganization(c.harnessOrg),
 				downgrader.WithProject(project.Name),
@@ -177,14 +179,6 @@ func registerImport(app *kingpin.CmdClause) {
 		Required().
 		Envar("HARNESS_TOKEN").
 		StringVar(&c.harnessToken)
-
-	cmd.Flag("kube-namespace", "kubernetes namespace").
-		Envar("KUBE_NAMESPACE").
-		StringVar(&c.KubeName)
-
-	cmd.Flag("kube-connector", "kubernetes connector").
-		Envar("KUBE_CONN").
-		StringVar(&c.KubeConn)
 
 	cmd.Flag("harness-address", "harness address").
 		Envar("HARNESS_ADDRESS").

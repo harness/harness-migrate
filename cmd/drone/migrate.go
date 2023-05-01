@@ -124,6 +124,8 @@ func (c *migrateCommand) run(*kingpin.ParseContext) error {
 		if c.downgrade {
 			d := downgrader.New(
 				downgrader.WithCodebase(project.Name, c.repoConn),
+				downgrader.WithDockerhub(c.dockerConn),
+				downgrader.WithKubernetes(c.kubeName, c.kubeConn),
 				downgrader.WithName(project.Name),
 				downgrader.WithOrganization(c.harnessOrg),
 				downgrader.WithProject(project.Name),
@@ -214,14 +216,6 @@ func registerMigrate(app *kingpin.CmdClause) {
 	cmd.Flag("downgrade", "downgrade to the legacy yaml format").
 		Default("true").
 		BoolVar(&c.downgrade)
-
-	cmd.Flag("kube-namespace", "kubernetes namespace").
-		Envar("KUBE_NAMESPACE").
-		StringVar(&c.KubeName)
-
-	cmd.Flag("kube-connector", "kubernetes connector").
-		Envar("KUBE_CONN").
-		StringVar(&c.KubeConn)
 
 	cmd.Flag("namespace", "drone namespace").
 		Required().

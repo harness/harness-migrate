@@ -17,7 +17,6 @@ package migrate
 import (
 	"context"
 
-	"github.com/drone/go-convert/convert/harness/downgrader"
 	"github.com/drone/go-scm/scm"
 	"github.com/harness/harness-migrate/internal/harness"
 	"github.com/harness/harness-migrate/internal/slug"
@@ -172,23 +171,8 @@ func (m *Importer) Import(ctx context.Context, data *types.Org) error {
 			}
 		}
 
-		// downgrade to the v0 yaml
-		d := downgrader.New(
-			downgrader.WithCodebase(project.Name, connector.Identifier),
-			downgrader.WithDockerhub(dockerConnectorName),
-			downgrader.WithKubernetes(m.KubeName, m.KubeConn),
-			downgrader.WithName(project.Name),
-			downgrader.WithIdentifier(projectSlug),
-			downgrader.WithOrganization(project.Orgidentifier),
-			downgrader.WithProject(projectSlug),
-		)
-		after, err := d.Downgrade(srcProject.Yaml)
-		if err != nil {
-			return err
-		}
-
 		//create the harness pipeline with an inline yaml
-		err = m.Harness.CreatePipeline(org.ID, projectSlug, after)
+		err = m.Harness.CreatePipeline(org.ID, projectSlug, srcProject.Yaml)
 		if err != nil {
 			// if the error indicates the pipeline already
 			// exists we can continue with the import, else

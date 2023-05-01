@@ -119,7 +119,7 @@ func (c *terraformCommand) run(ctx *kingpin.ParseContext) error {
 				downgrader.WithKubernetes(c.kubeName, c.kubeConn),
 				downgrader.WithName(project.Name),
 				downgrader.WithOrganization(c.organization),
-				downgrader.WithProject(project.Name),
+				downgrader.WithProject(slug.Create(project.Name)),
 			)
 			convertedYaml, err = d.Downgrade(convertedYaml)
 			if err != nil {

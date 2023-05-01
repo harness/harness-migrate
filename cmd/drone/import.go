@@ -22,6 +22,7 @@ import (
 	"github.com/drone/go-convert/convert/drone"
 	"github.com/drone/go-convert/convert/harness/downgrader"
 	"github.com/harness/harness-migrate/cmd/util"
+	"github.com/harness/harness-migrate/internal/slug"
 	"github.com/harness/harness-migrate/internal/tracer"
 	"github.com/harness/harness-migrate/internal/types"
 
@@ -95,7 +96,7 @@ func (c *importCommand) run(*kingpin.ParseContext) error {
 				downgrader.WithKubernetes(c.kubeName, c.kubeConn),
 				downgrader.WithName(project.Name),
 				downgrader.WithOrganization(c.harnessOrg),
-				downgrader.WithProject(project.Name),
+				downgrader.WithProject(slug.Create(project.Name)),
 			)
 			convertedYaml, err = d.Downgrade(convertedYaml)
 			if err != nil {

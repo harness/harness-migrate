@@ -38,6 +38,8 @@ type migrateCommand struct {
 	repositoryList string
 
 	downgrade bool
+	KubeName  string
+	KubeConn  string
 
 	harnessToken   string
 	harnessAccount string
@@ -109,6 +111,12 @@ func (c *migrateCommand) run(*kingpin.ParseContext) error {
 		c.harnessAddress,
 	)
 
+	// map the kube namespace and kube connector
+	if c.KubeName == "" && c.KubeConn == "" {
+		importer.KubeName = c.KubeName
+		importer.KubeConn = c.KubeConn
+	}
+
 	importer.Tracer = tracer_
 
 	// provide the user id to the importer. the user id
@@ -171,6 +179,14 @@ func registerMigrate(app *kingpin.CmdClause) {
 	cmd.Flag("downgrade", "downgrade to the legacy yaml format").
 		Default("true").
 		BoolVar(&c.downgrade)
+
+	cmd.Flag("kube-namespace", "kubernetes namespace").
+		Envar("KUBE_NAMESPACE").
+		StringVar(&c.KubeName)
+
+	cmd.Flag("kube-connector", "kubernetes connector").
+		Envar("KUBE_CONN").
+		StringVar(&c.KubeConn)
 
 	cmd.Flag("namespace", "drone namespace").
 		Required().

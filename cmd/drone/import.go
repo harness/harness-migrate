@@ -36,6 +36,9 @@ type importCommand struct {
 	harnessOrg     string
 	harnessAddress string
 
+	KubeName string
+	KubeConn string
+
 	githubToken    string
 	gitlabToken    string
 	bitbucketToken string
@@ -76,6 +79,12 @@ func (c *importCommand) run(*kingpin.ParseContext) error {
 		c.bitbucketToken,
 		c.harnessAddress,
 	)
+
+	// map the kube namespace and kube connector
+	if c.KubeName == "" && c.KubeConn == "" {
+		importer.KubeName = c.KubeName
+		importer.KubeConn = c.KubeConn
+	}
 	importer.Tracer = tracer_
 	// create scm client to verify the token
 	// and retrieve the user id.
@@ -131,6 +140,14 @@ func registerImport(app *kingpin.CmdClause) {
 		Required().
 		Envar("HARNESS_TOKEN").
 		StringVar(&c.harnessToken)
+
+	cmd.Flag("kube-namespace", "kubernetes namespace").
+		Envar("KUBE_NAMESPACE").
+		StringVar(&c.KubeName)
+
+	cmd.Flag("kube-connector", "kubernetes connector").
+		Envar("KUBE_CONN").
+		StringVar(&c.KubeConn)
 
 	cmd.Flag("harness-address", "harness address").
 		Envar("HARNESS_ADDRESS").

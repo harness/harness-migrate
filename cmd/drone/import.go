@@ -18,6 +18,7 @@ import (
 	"context"
 	"encoding/json"
 	"os"
+	"strings"
 
 	"github.com/drone/go-convert/convert/drone"
 	"github.com/drone/go-convert/convert/harness/downgrader"
@@ -41,6 +42,8 @@ type importCommand struct {
 
 	KubeName string
 	KubeConn string
+
+	repositoryList string
 
 	githubToken    string
 	gitlabToken    string
@@ -126,6 +129,13 @@ func (c *importCommand) run(*kingpin.ParseContext) error {
 		importer.KubeConn = c.KubeConn
 	}
 	importer.Tracer = tracer_
+
+	var repository []string
+	if c.repositoryList != "" {
+		repository = strings.Split(c.repositoryList, ",")
+	}
+	importer.RepositoryList = repository
+
 	// create scm client to verify the token
 	// and retrieve the user id.
 	client := util.CreateClient(
@@ -220,4 +230,8 @@ func registerImport(app *kingpin.CmdClause) {
 	cmd.Flag("repo-connector", "repository connector").
 		Default("").
 		StringVar(&c.repoConn)
+
+	cmd.Flag("repository-list", "optional list of repositories to export").
+		Envar("REPOSITORY_LIST").
+		StringVar(&c.repositoryList)
 }

@@ -16,6 +16,7 @@ package migrate
 
 import (
 	"context"
+	"strings"
 
 	"github.com/drone/go-scm/scm"
 	"github.com/harness/harness-migrate/internal/harness"
@@ -33,6 +34,8 @@ type Importer struct {
 	ScmType  string // github, gitlab, bitbucket
 	ScmLogin string
 	ScmToken string
+
+	RepositoryList []string
 
 	KubeName string
 	KubeConn string
@@ -124,6 +127,11 @@ func (m *Importer) Import(ctx context.Context, data *types.Org) error {
 	// convert each drone repo to a harness project.
 	for _, srcProject := range data.Projects {
 
+		// Skip repositories that are not in the m.RepositoryList
+		if len(m.RepositoryList) > 0 && !m.repositoryInList(srcProject.Name) {
+			continue
+		}
+
 		m.Tracer.Start("create project %s", srcProject.Name)
 		projectSlug := slug.Create(srcProject.Name)
 
@@ -185,4 +193,14 @@ func (m *Importer) Import(ctx context.Context, data *types.Org) error {
 		m.Tracer.Stop("create project %s [done]", srcProject.Name)
 	}
 	return nil
+}
+
+func (m *Importer) repositoryInList(repoName string) bool {
+	lowerRepoName := strings.ToLower(repoName)
+	for _, name := range m.RepositoryList {
+		if strings.ToLower(name) == lowerRepoName {
+			return true
+		}
+	}
+	return false
 }

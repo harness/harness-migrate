@@ -18,8 +18,12 @@ import (
 	"context"
 	"strings"
 
+	convert "github.com/drone/go-convert/convert/drone"
+	migrate "github.com/harness/harness-migrate/internal/migrate/drone"
+	"github.com/harness/harness-migrate/internal/slug"
+
+	"github.com/drone/go-convert/convert/harness/downgrader"
 	"github.com/harness/harness-migrate/cmd/util"
-	"github.com/harness/harness-migrate/internal/migrate/drone"
 	"github.com/harness/harness-migrate/internal/migrate/drone/repo"
 	"github.com/harness/harness-migrate/internal/tracer"
 
@@ -49,6 +53,11 @@ type migrateCommand struct {
 	githubToken    string
 	gitlabToken    string
 	bitbucketToken string
+
+	repoConn   string
+	kubeName   string
+	kubeConn   string
+	dockerConn string
 }
 
 func (c *migrateCommand) run(*kingpin.ParseContext) error {
@@ -89,7 +98,7 @@ func (c *migrateCommand) run(*kingpin.ParseContext) error {
 	defer tracer_.Close()
 
 	// extract the data
-	exporter := &drone.Exporter{
+	exporter := &migrate.Exporter{
 		Repository:     droneRepo,
 		Namespace:      c.namespace,
 		Tracer:         tracer_,
@@ -99,6 +108,35 @@ func (c *migrateCommand) run(*kingpin.ParseContext) error {
 	data, err := exporter.Export(ctx)
 	if err != nil {
 		return err
+	}
+
+	// convert all yaml into v1 or v0 format
+	converter := convert.New(
+		convert.WithDockerhub(c.dockerConn),
+		convert.WithKubernetes(c.kubeName, c.kubeConn),
+	)
+	for _, project := range data.Projects {
+		// convert to v1
+		convertedYaml, err := converter.ConvertBytes(project.Yaml)
+		if err != nil {
+			return err
+		}
+		// downgrade to v0 if needed
+		if c.downgrade {
+			d := downgrader.New(
+				downgrader.WithCodebase(project.Name, c.repoConn),
+				downgrader.WithDockerhub(c.dockerConn),
+				downgrader.WithKubernetes(c.kubeName, c.kubeConn),
+				downgrader.WithName(project.Name),
+				downgrader.WithOrganization(c.harnessOrg),
+				downgrader.WithProject(slug.Create(project.Name)),
+			)
+			convertedYaml, err = d.Downgrade(convertedYaml)
+			if err != nil {
+				return nil
+			}
+		}
+		project.Yaml = convertedYaml
 	}
 
 	importer := util.CreateImporter(
@@ -180,14 +218,6 @@ func registerMigrate(app *kingpin.CmdClause) {
 		Default("true").
 		BoolVar(&c.downgrade)
 
-	cmd.Flag("kube-namespace", "kubernetes namespace").
-		Envar("KUBE_NAMESPACE").
-		StringVar(&c.KubeName)
-
-	cmd.Flag("kube-connector", "kubernetes connector").
-		Envar("KUBE_CONN").
-		StringVar(&c.KubeConn)
-
 	cmd.Flag("namespace", "drone namespace").
 		Required().
 		Envar("DRONE_NAMESPACE").
@@ -207,4 +237,20 @@ func registerMigrate(app *kingpin.CmdClause) {
 
 	cmd.Flag("trace", "enable trace logging").
 		BoolVar(&c.trace)
+
+	cmd.Flag("kube-connector", "kubernetes connector").
+		Envar("KUBE_CONN").
+		StringVar(&c.kubeConn)
+
+	cmd.Flag("kube-namespace", "kubernetes namespace").
+		Envar("KUBE_NAMESPACE").
+		StringVar(&c.kubeName)
+
+	cmd.Flag("docker-connector", "dockerhub connector").
+		Default("").
+		StringVar(&c.dockerConn)
+
+	cmd.Flag("repo-connector", "repository connector").
+		Default("").
+		StringVar(&c.repoConn)
 }

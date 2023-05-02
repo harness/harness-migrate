@@ -19,7 +19,10 @@ import (
 	"encoding/json"
 	"os"
 
+	"github.com/drone/go-convert/convert/drone"
+	"github.com/drone/go-convert/convert/harness/downgrader"
 	"github.com/harness/harness-migrate/cmd/util"
+	"github.com/harness/harness-migrate/internal/slug"
 	"github.com/harness/harness-migrate/internal/tracer"
 	"github.com/harness/harness-migrate/internal/types"
 
@@ -42,6 +45,13 @@ type importCommand struct {
 	githubToken    string
 	gitlabToken    string
 	bitbucketToken string
+
+	repoConn   string
+	kubeName   string
+	kubeConn   string
+	dockerConn string
+
+	downgrade bool
 }
 
 func (c *importCommand) run(*kingpin.ParseContext) error {
@@ -66,6 +76,36 @@ func (c *importCommand) run(*kingpin.ParseContext) error {
 		log.Error("cannot unmarshal data file", nil)
 		return err
 	}
+
+	// convert all yaml into v1 or v0 format
+	converter := drone.New(
+		drone.WithDockerhub(c.dockerConn),
+		drone.WithKubernetes(c.kubeName, c.kubeConn),
+	)
+	for _, project := range org.Projects {
+		// convert to v1
+		convertedYaml, err := converter.ConvertBytes(project.Yaml)
+		if err != nil {
+			return err
+		}
+		// downgrade to v0 if needed
+		if c.downgrade {
+			d := downgrader.New(
+				downgrader.WithCodebase(project.Name, c.repoConn),
+				downgrader.WithDockerhub(c.dockerConn),
+				downgrader.WithKubernetes(c.kubeName, c.kubeConn),
+				downgrader.WithName(project.Name),
+				downgrader.WithOrganization(c.harnessOrg),
+				downgrader.WithProject(slug.Create(project.Name)),
+			)
+			convertedYaml, err = d.Downgrade(convertedYaml)
+			if err != nil {
+				return nil
+			}
+		}
+		project.Yaml = convertedYaml
+	}
+
 	// create the tracer
 	tracer_ := tracer.New()
 	defer tracer_.Close()
@@ -141,14 +181,6 @@ func registerImport(app *kingpin.CmdClause) {
 		Envar("HARNESS_TOKEN").
 		StringVar(&c.harnessToken)
 
-	cmd.Flag("kube-namespace", "kubernetes namespace").
-		Envar("KUBE_NAMESPACE").
-		StringVar(&c.KubeName)
-
-	cmd.Flag("kube-connector", "kubernetes connector").
-		Envar("KUBE_CONN").
-		StringVar(&c.KubeConn)
-
 	cmd.Flag("harness-address", "harness address").
 		Envar("HARNESS_ADDRESS").
 		Default("https://app.harness.io").
@@ -168,4 +200,24 @@ func registerImport(app *kingpin.CmdClause) {
 
 	cmd.Flag("debug", "enable debug logging").
 		BoolVar(&c.debug)
+
+	cmd.Flag("downgrade", "downgrade to the legacy yaml format").
+		Default("true").
+		BoolVar(&c.downgrade)
+
+	cmd.Flag("kube-connector", "kubernetes connector").
+		Envar("KUBE_CONN").
+		StringVar(&c.kubeConn)
+
+	cmd.Flag("kube-namespace", "kubernetes namespace").
+		Envar("KUBE_NAMESPACE").
+		StringVar(&c.kubeName)
+
+	cmd.Flag("docker-connector", "dockerhub connector").
+		Default("").
+		StringVar(&c.dockerConn)
+
+	cmd.Flag("repo-connector", "repository connector").
+		Default("").
+		StringVar(&c.repoConn)
 }

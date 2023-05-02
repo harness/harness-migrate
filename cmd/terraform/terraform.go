@@ -22,8 +22,11 @@ import (
 	"os"
 	"text/template"
 
+	"github.com/drone/go-convert/convert/drone"
+	"github.com/drone/go-convert/convert/harness/downgrader"
 	"github.com/harness/harness-migrate/internal/slug"
 	"github.com/harness/harness-migrate/internal/types"
+
 	"gopkg.in/yaml.v2"
 
 	"github.com/alecthomas/chroma/quick"
@@ -47,6 +50,12 @@ type terraformCommand struct {
 	organization    string
 	providerSource  string
 	providerVersion string
+	repoConn        string
+	kubeName        string
+	kubeConn        string
+	dockerConn      string
+
+	downgrade bool
 
 	color bool
 	theme string
@@ -89,6 +98,35 @@ func (c *terraformCommand) run(ctx *kingpin.ParseContext) error {
 			return err
 		}
 		tmpl = string(t)
+	}
+
+	// convert all yaml into v1 or v0 format
+	converter := drone.New(
+		drone.WithDockerhub(c.dockerConn),
+		drone.WithKubernetes(c.kubeName, c.kubeConn),
+	)
+	for _, project := range org.Projects {
+		// convert to v1
+		convertedYaml, err := converter.ConvertBytes(project.Yaml)
+		if err != nil {
+			return err
+		}
+		// downgrade to v0 if needed
+		if c.downgrade {
+			d := downgrader.New(
+				downgrader.WithCodebase(project.Name, c.repoConn),
+				downgrader.WithDockerhub(c.dockerConn),
+				downgrader.WithKubernetes(c.kubeName, c.kubeConn),
+				downgrader.WithName(project.Name),
+				downgrader.WithOrganization(c.organization),
+				downgrader.WithProject(slug.Create(project.Name)),
+			)
+			convertedYaml, err = d.Downgrade(convertedYaml)
+			if err != nil {
+				return nil
+			}
+		}
+		project.Yaml = convertedYaml
 	}
 
 	// parse the terraform template
@@ -149,6 +187,13 @@ func Register(app *kingpin.Application) {
 	cmd.Arg("output", "path to save the terraform file").
 		StringVar(&c.output)
 
+	cmd.Flag("downgrade", "downgrade to the legacy yaml format").
+		// TODO: unhide when the pipeline tf resource supports v1 yaml,
+		//       until then, all pipelines must be downgraded to v0
+		Hidden().
+		Default("true").
+		BoolVar(&c.downgrade)
+
 	cmd.Flag("template", "path to the terraform template").
 		StringVar(&c.tmpl)
 
@@ -180,6 +225,22 @@ func Register(app *kingpin.Application) {
 	cmd.Flag("provider-version", "harness terraform provider version").
 		Default("0.17.5").
 		StringVar(&c.providerVersion)
+
+	cmd.Flag("kube-connector", "kubernetes connector").
+		Envar("KUBE_CONN").
+		StringVar(&c.kubeConn)
+
+	cmd.Flag("kube-namespace", "kubernetes namespace").
+		Envar("KUBE_NAMESPACE").
+		StringVar(&c.kubeName)
+
+	cmd.Flag("docker-connector", "dockerhub connector").
+		Default("").
+		StringVar(&c.dockerConn)
+
+	cmd.Flag("repo-connector", "repository connector").
+		Default("").
+		StringVar(&c.repoConn)
 }
 
 type (

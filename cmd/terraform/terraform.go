@@ -227,11 +227,11 @@ func Register(app *kingpin.Application) {
 		StringVar(&c.providerVersion)
 
 	cmd.Flag("kube-connector", "kubernetes connector").
-		Default("").
+		Envar("KUBE_CONN").
 		StringVar(&c.kubeConn)
 
 	cmd.Flag("kube-namespace", "kubernetes namespace").
-		Default("").
+		Envar("KUBE_NAMESPACE").
 		StringVar(&c.kubeName)
 
 	cmd.Flag("docker-connector", "dockerhub connector").

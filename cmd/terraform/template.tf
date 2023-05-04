@@ -1,16 +1,16 @@
 terraform {
   required_providers {
     harness = {
-      source  = "{{ .Provider.Source }}"
-      version = "= {{ .Provider.Version }}"
+      source  = "{{ $.Provider.Source }}"
+      version = "= {{ $.Provider.Version }}"
     }
   }
 }
 
 provider "harness" {
-  endpoint         = "{{ .Auth.Endpoint }}"
+  endpoint = "{{ $.Auth.Endpoint }}"
 {{- if .Account.ID }}
-  account_id       = "{{ .Account.ID }}"
+  account_id = "{{ $.Account.ID }}"
 {{- end }}
 }
 
@@ -18,7 +18,7 @@ module "organization" {
   source  = "harness-community/structure/harness//modules/organizations"
   version = "~> 0.1"
 
-  name = "{{ .Account.Organization }}"
+  name = "{{ $.Account.Organization }}"
 }
 
 {{- /* Create organization secrets */}}
@@ -81,6 +81,46 @@ properties:
 stages:
 {{ indent (toYaml $yaml.pipeline.stages) 2 -}}
 {{- end }}
+EOT
+}
+
+{{- /* Create pipeline triggers */}}
+module "trigger_push_{{ slugify .Name }}" {
+  source  = "harness-community/content/harness//modules/triggers"
+  version = "~> 0.1"
+
+  name            = "Push"
+  organization_id = module.organization.details.id
+  project_id      = module.project_{{ slugify .Name }}.details.id
+  pipeline_id     = module.pipeline_{{ slugify .Name }}.details.id
+  {{- /* TODO: support more than GitHub */}}
+  yaml_data       = <<EOT
+source:
+  type: "Webhook"
+  spec:
+    type: "Github"
+    spec:
+      type: "Push"
+      spec:
+        connectorRef: "{{- $.Connectors.Repo -}}"
+        autoAbortPreviousExecutions: false
+        payloadConditions:
+          - key: targetBranch
+            operator: Equals
+            value: main
+        headerConditions: []
+        repoName: "{{ $.Account.Organization }}/{{ .Name }}"
+        actions: []
+inputYaml: |
+  pipeline:
+    identifier: "module.pipeline_{{ slugify .Name }}.details.id"
+    properties:
+      ci:
+        codebase:
+          build:
+            type: branch
+            spec:
+              branch: <+trigger.branch>"
 EOT
 }
 {{ end }}

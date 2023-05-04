@@ -44,6 +44,7 @@ type importCommand struct {
 	gitlabURL      string
 	bitbucketToken string
 	bitbucketURL   string
+	skipVerify     bool
 }
 
 func (c *importCommand) run(*kingpin.ParseContext) error {
@@ -94,6 +95,7 @@ func (c *importCommand) run(*kingpin.ParseContext) error {
 		c.githubURL,
 		c.gitlabURL,
 		c.bitbucketURL,
+		c.skipVerify,
 	)
 
 	// get the current user id.
@@ -170,6 +172,10 @@ func registerImport(app *kingpin.CmdClause) {
 	cmd.Flag("bitbucket-url", "bitbucket url").
 		Envar("BITBUCKET_URL").
 		StringVar(&c.bitbucketURL)
+
+	cmd.Flag("skip-tls-verify", "skip TLS verification for SCM").
+		Envar("SKIP_TLS_VERIFY").
+		BoolVar(&c.skipVerify)
 
 	cmd.Flag("debug", "enable debug logging").
 		BoolVar(&c.debug)

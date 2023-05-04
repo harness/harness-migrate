@@ -56,6 +56,7 @@ type migrateCommand struct {
 	gitlabURL      string
 	bitbucketToken string
 	bitbucketURL   string
+	skipVerify     bool
 
 	repoConn   string
 	kubeName   string
@@ -86,6 +87,7 @@ func (c *migrateCommand) run(*kingpin.ParseContext) error {
 		c.githubURL,
 		c.gitlabURL,
 		c.bitbucketURL,
+		c.skipVerify,
 	)
 
 	// get the current user id.
@@ -231,6 +233,10 @@ func registerMigrate(app *kingpin.CmdClause) {
 	cmd.Flag("bitbucket-url", "bitbucket url").
 		Envar("BITBUCKET_URL").
 		StringVar(&c.bitbucketURL)
+
+	cmd.Flag("skip-tls-verify", "skip TLS verification for SCM").
+		Envar("SKIP_TLS_VERIFY").
+		BoolVar(&c.skipVerify)
 
 	cmd.Flag("downgrade", "downgrade to the legacy yaml format").
 		Default("true").

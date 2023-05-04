@@ -61,14 +61,16 @@ func CreateImporter(harnessAccount, harnessOrg, harnessToken, githubToken, gitla
 	return importer
 }
 
-// CreateClient helper function creates an scm client
-func CreateClient(githubToken, gitlabToken, bitbucketToken string) *scm.Client {
+// CreateClient helper function creates a scm client
+func CreateClient(githubToken, gitlabToken, bitbucketToken, githubURL, gitlabURL, bitbucketURL string) *scm.Client {
 	var client *scm.Client
 	switch {
 	case githubToken != "":
-		// create the gitHub client and create an oauth2
-		// transport to authenticate requests using the token
-		client = github.NewDefault()
+		if githubURL != "" {
+			client, _ = github.New(githubURL)
+		} else {
+			client = github.NewDefault()
+		}
 		client.Client = &http.Client{
 			Transport: &oauth2.Transport{
 				Source: oauth2.StaticTokenSource(
@@ -79,18 +81,22 @@ func CreateClient(githubToken, gitlabToken, bitbucketToken string) *scm.Client {
 			},
 		}
 	case gitlabToken != "":
-		// create the gitlab client and create an oauth2
-		// transport to authenticate requests using the token
-		client = gitlab.NewDefault()
+		if gitlabURL != "" {
+			client, _ = gitlab.New(gitlabURL)
+		} else {
+			client = gitlab.NewDefault()
+		}
 		client.Client = &http.Client{
 			Transport: &transport.PrivateToken{
 				Token: gitlabToken,
 			},
 		}
 	case bitbucketToken != "":
-		// create the bitbucket client and create an oauth2
-		// transport to authenticate requests using the token
-		client = bitbucket.NewDefault()
+		if bitbucketURL != "" {
+			client, _ = bitbucket.New(bitbucketURL)
+		} else {
+			client = bitbucket.NewDefault()
+		}
 		client.Client = &http.Client{
 			Transport: &oauth2.Transport{
 				Source: oauth2.StaticTokenSource(

@@ -42,8 +42,11 @@ type exportCommand struct {
 	repositoryList string
 
 	githubToken    string
+	githubURL      string
 	gitlabToken    string
+	gitlabURL      string
 	bitbucketToken string
+	bitbucketURL   string
 }
 
 func (c *exportCommand) run(*kingpin.ParseContext) error {
@@ -67,6 +70,9 @@ func (c *exportCommand) run(*kingpin.ParseContext) error {
 		c.githubToken,
 		c.gitlabToken,
 		c.bitbucketToken,
+		c.githubURL,
+		c.gitlabURL,
+		c.bitbucketURL,
 	)
 
 	if c.githubToken == "" && c.gitlabToken == "" && c.bitbucketToken == "" {
@@ -147,13 +153,25 @@ func registerExport(app *kingpin.CmdClause) {
 		Envar("GITHUB_TOKEN").
 		StringVar(&c.githubToken)
 
+	cmd.Flag("github-url", "github url").
+		Envar("GITHUB_URL").
+		StringVar(&c.githubURL)
+
 	cmd.Flag("gitlab-token", "gitlab token").
 		Envar("GITLAB_TOKEN").
 		StringVar(&c.gitlabToken)
 
+	cmd.Flag("gitlab-url", "gitlab url").
+		Envar("GITLAB_URL").
+		StringVar(&c.gitlabURL)
+
 	cmd.Flag("bitbucket-token", "bitbucket token").
 		Envar("BITBUCKET_TOKEN").
 		StringVar(&c.bitbucketToken)
+
+	cmd.Flag("bitbucket-url", "bitbucket url").
+		Envar("BITBUCKET_URL").
+		StringVar(&c.bitbucketURL)
 
 	cmd.Flag("debug", "enable debug logging").
 		BoolVar(&c.debug)

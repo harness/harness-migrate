@@ -15,6 +15,7 @@
 package util
 
 import (
+	"crypto/tls"
 	"net/http"
 	"os"
 
@@ -62,7 +63,7 @@ func CreateImporter(harnessAccount, harnessOrg, harnessToken, githubToken, gitla
 }
 
 // CreateClient helper function creates a scm client
-func CreateClient(githubToken, gitlabToken, bitbucketToken, githubURL, gitlabURL, bitbucketURL string) *scm.Client {
+func CreateClient(githubToken, gitlabToken, bitbucketToken, githubURL, gitlabURL, bitbucketURL string, skipVerify bool) *scm.Client {
 	var client *scm.Client
 	switch {
 	case githubToken != "":
@@ -78,6 +79,12 @@ func CreateClient(githubToken, gitlabToken, bitbucketToken, githubURL, gitlabURL
 						Token: githubToken,
 					},
 				),
+				Base: &http.Transport{
+					Proxy: http.ProxyFromEnvironment,
+					TLSClientConfig: &tls.Config{
+						InsecureSkipVerify: skipVerify,
+					},
+				},
 			},
 		}
 	case gitlabToken != "":
@@ -86,6 +93,8 @@ func CreateClient(githubToken, gitlabToken, bitbucketToken, githubURL, gitlabURL
 		} else {
 			client = gitlab.NewDefault()
 		}
+		// TODO: handle skipVerify
+		//       see https://github.com/harness/harness-migrate/issues/73
 		client.Client = &http.Client{
 			Transport: &transport.PrivateToken{
 				Token: gitlabToken,
@@ -97,6 +106,8 @@ func CreateClient(githubToken, gitlabToken, bitbucketToken, githubURL, gitlabURL
 		} else {
 			client = bitbucket.NewDefault()
 		}
+		// TODO: handle skipVerify
+		//       see https://github.com/harness/harness-migrate/issues/73
 		client.Client = &http.Client{
 			Transport: &oauth2.Transport{
 				Source: oauth2.StaticTokenSource(

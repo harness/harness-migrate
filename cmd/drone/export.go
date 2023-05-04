@@ -47,6 +47,7 @@ type exportCommand struct {
 	gitlabURL      string
 	bitbucketToken string
 	bitbucketURL   string
+	skipVerify     bool
 }
 
 func (c *exportCommand) run(*kingpin.ParseContext) error {
@@ -73,6 +74,7 @@ func (c *exportCommand) run(*kingpin.ParseContext) error {
 		c.githubURL,
 		c.gitlabURL,
 		c.bitbucketURL,
+		c.skipVerify,
 	)
 
 	if c.githubToken == "" && c.gitlabToken == "" && c.bitbucketToken == "" {
@@ -172,6 +174,10 @@ func registerExport(app *kingpin.CmdClause) {
 	cmd.Flag("bitbucket-url", "bitbucket url").
 		Envar("BITBUCKET_URL").
 		StringVar(&c.bitbucketURL)
+
+	cmd.Flag("skip-tls-verify", "skip TLS verification for SCM").
+		Envar("SKIP_TLS_VERIFY").
+		BoolVar(&c.skipVerify)
 
 	cmd.Flag("debug", "enable debug logging").
 		BoolVar(&c.debug)

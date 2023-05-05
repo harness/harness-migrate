@@ -82,9 +82,6 @@ func (c *terraformCommand) run(ctx *kingpin.ParseContext) error {
 			ID:           c.account,
 			Organization: c.organization,
 		},
-		Connectors: connectors{
-			Repo: c.repoConn,
-		},
 		Provider: provider{
 			Source:  c.providerSource,
 			Version: c.providerVersion,
@@ -248,11 +245,10 @@ func Register(app *kingpin.Application) {
 
 type (
 	input struct {
-		Account    account
-		Auth       auth
-		Connectors connectors
-		Org        *types.Org
-		Provider   provider
+		Account  account
+		Auth     auth
+		Org      *types.Org
+		Provider provider
 	}
 
 	account struct {
@@ -263,10 +259,6 @@ type (
 
 	auth struct {
 		Endpoint string
-	}
-
-	connectors struct {
-		Repo string
 	}
 
 	provider struct {

@@ -18,7 +18,6 @@ import (
 	"context"
 	"strings"
 
-	"github.com/drone/go-scm/scm"
 	"github.com/harness/harness-migrate/internal/harness"
 	"github.com/harness/harness-migrate/internal/slug"
 	"github.com/harness/harness-migrate/internal/tracer"
@@ -28,12 +27,7 @@ import (
 
 type Importer struct {
 	Harness    harness.Client
-	ScmClient  *scm.Client
 	HarnessOrg string
-
-	ScmType  string // github, gitlab, bitbucket
-	ScmLogin string
-	ScmToken string
 
 	RepositoryList []string
 
@@ -69,20 +63,6 @@ func (m *Importer) Import(ctx context.Context, data *types.Org) error {
 	}
 	m.Tracer.Stop("create organization %s [done]", m.HarnessOrg)
 
-	m.Tracer.Start("create provider secret %s", m.ScmType)
-	// create if the secret does not already exist.
-	if _, err = m.Harness.FindSecretOrg(org.ID, m.ScmType); err != nil {
-		// create the scm secret as an inline secret using
-		// the harness secret manager.
-		secret := util.CreateSecretOrg(org.ID, m.ScmType, m.ScmToken)
-		// save the secret to the organization
-		if err := m.Harness.CreateSecretOrg(secret); err != nil {
-			return err
-		}
-	}
-
-	m.Tracer.Stop("create provider secret %s [done]", m.ScmType)
-
 	m.Tracer.Start("create organisation secrets if they exist")
 	// create org secrets
 	for _, secret := range data.Secrets {
@@ -97,22 +77,7 @@ func (m *Importer) Import(ctx context.Context, data *types.Org) error {
 
 	m.Tracer.Stop("create organisation secrets [done]")
 
-	m.Tracer.Start("create connector %s", m.ScmType)
-	connector, _ := m.Harness.FindConnectorOrg(org.ID, m.ScmType)
-	if connector == nil {
-		switch m.ScmType {
-		case "gitlab":
-			conn := util.CreateGitlabConnector(org.ID, m.ScmType, m.ScmLogin, "org."+m.ScmType)
-			if err := m.Harness.CreateConnectorOrg(conn); err != nil {
-				return err
-			}
-		default:
-			conn := util.CreateGithubConnector(org.ID, m.ScmType, m.ScmLogin, "org."+m.ScmType)
-			if err := m.Harness.CreateConnectorOrg(conn); err != nil {
-				return err
-			}
-		}
-	}
+	m.Tracer.Start("create docker connector")
 
 	dockerConnector, _ := m.Harness.FindConnectorOrg(org.ID, dockerConnectorName)
 	if dockerConnector == nil {
@@ -122,7 +87,7 @@ func (m *Importer) Import(ctx context.Context, data *types.Org) error {
 		}
 	}
 
-	m.Tracer.Stop("create connector %s [done]", m.ScmType)
+	m.Tracer.Stop("create docker connector [done]")
 
 	// convert each drone repo to a harness project.
 	for _, srcProject := range data.Projects {
@@ -135,8 +100,8 @@ func (m *Importer) Import(ctx context.Context, data *types.Org) error {
 		m.Tracer.Start("create project %s", srcProject.Name)
 		projectSlug := slug.Create(srcProject.Name)
 
-		// convert the circle project to a harness project
-		// structure and convert the circle project name to
+		// convert the project to a harness project
+		// structure and convert the project name to
 		// a harness project identifier.
 		project := &harness.Project{
 			Orgidentifier: org.ID,

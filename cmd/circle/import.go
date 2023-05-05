@@ -79,40 +79,9 @@ func (c *importCommand) run(*kingpin.ParseContext) error {
 		c.harnessAccount,
 		c.harnessOrg,
 		c.harnessToken,
-		c.githubToken,
-		c.gitlabToken,
-		c.bitbucketToken,
 		c.harnessAddress,
 	)
 	importer.Tracer = tracer_
-
-	// create a scm client to verify the token
-	// and retrieve the user id.
-	client := util.CreateClient(
-		c.githubToken,
-		c.gitlabToken,
-		c.bitbucketToken,
-		c.githubURL,
-		c.gitlabURL,
-		c.bitbucketURL,
-		c.skipVerify,
-	)
-
-	// get the current user id.
-	user, _, err := client.Users.Find(ctx)
-	if err != nil {
-		log.Error("cannot retrieve git user", nil)
-		return err
-	}
-
-	// provide the user id to the importer. the user id
-	// is required by the connector despite the fact that
-	// it can be retrieved using the token itself (like we just did)
-	importer.ScmLogin = user.Login
-
-	log.Debug("verified user and token",
-		slog.String("user", user.Login),
-	)
 
 	// execute the import routine.
 	return importer.Import(ctx, org)
@@ -148,34 +117,6 @@ func registerImport(app *kingpin.CmdClause) {
 		Envar("HARNESS_ADDRESS").
 		Default("https://app.harness.io").
 		StringVar(&c.harnessAddress)
-
-	cmd.Flag("github-token", "github token").
-		Envar("GITHUB_TOKEN").
-		StringVar(&c.githubToken)
-
-	cmd.Flag("github-url", "github url").
-		Envar("GITHUB_URL").
-		StringVar(&c.githubURL)
-
-	cmd.Flag("gitlab-token", "gitlab token").
-		Envar("GITLAB_TOKEN").
-		StringVar(&c.gitlabToken)
-
-	cmd.Flag("gitlab-url", "gitlab url").
-		Envar("GITLAB_URL").
-		StringVar(&c.gitlabURL)
-
-	cmd.Flag("bitbucket-token", "bitbucket token").
-		Envar("BITBUCKET_TOKEN").
-		StringVar(&c.bitbucketToken)
-
-	cmd.Flag("bitbucket-url", "bitbucket url").
-		Envar("BITBUCKET_URL").
-		StringVar(&c.bitbucketURL)
-
-	cmd.Flag("skip-tls-verify", "skip TLS verification for SCM").
-		Envar("SKIP_TLS_VERIFY").
-		BoolVar(&c.skipVerify)
 
 	cmd.Flag("debug", "enable debug logging").
 		BoolVar(&c.debug)

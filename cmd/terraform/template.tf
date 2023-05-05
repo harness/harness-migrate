@@ -1,14 +1,25 @@
 locals {
   projects = {
 {{- range .Org.Projects }}
-    "{{ printf "%s" .Name }}" = {
-      base64yaml = "{{ base64Encode (printf "%s" .Yaml) }}"
+{{- $yaml := fromYaml .Yaml }}
+    {{ printf "%s" .Name }} = {
+      yaml_properties = <<-EOT
+        properties:
+{{ indent (toYaml $yaml.pipeline.properties) 10 -}}
+      EOT
+      yaml_stages = <<-EOT
+        stages:
+{{- /* Escape variable references which conflict with terraform */}}
+{{ indent (replace (toYaml $yaml.pipeline.stages) "${" "$${") 10 -}}
+      EOT
       branch = "{{ printf "%s" .Branch }}"
       repo = "{{ printf "%s" .Repo }}"
+      slug = "{{ slugify .Name }}"
 {{- if .Secrets }}
       secrets = {
 {{- range .Secrets }}
-        "{{ printf "%s" .Name }}" = {
+        {{ printf "%s" .Name }} = {
+          slug = "{{ slugify .Name }}"
           value = "{{ printf "%s" .Value }}"
         }
 {{- end }}
@@ -17,6 +28,16 @@ locals {
     }
 {{- end }}
   }
+{{- if .Org.Secrets }}
+  secrets = {
+{{- range .Org.Secrets }}
+    {{ printf "%s" .Name }} = {
+      slug = "{{ slugify .Name }}"
+      value = "{{ printf "%s" .Value }}"
+    }
+{{- end }}
+  }
+{{- end }}
 }
 
 terraform {
@@ -42,106 +63,56 @@ module "organization" {
   name = "{{ $.Account.Organization }}"
 }
 
-{{- /* Create organization secrets */}}
-{{- range .Org.Secrets -}}
-resource "harness_platform_secret_text" "organization_{{ slugify .Name }}" {
-  identifier  = "{{ slugify .Name }}"
-  name        = "{{ .Name }}"
-  org_id      = module.organization.details.id
-  description = "{{ .Desc }}"
-  value_type  = "Inline"
-  value       = "{{ .Value }}"
+{{ if .Org.Secrets -}}
+module "organization_secrets" {
+  for_each = local.secrets
 
-  secret_manager_identifier = "harnessSecretManager"
+  source  = "harness-community/structure/harness//modules/secrets/text"
+  version = "~> 0.1"
+
+  name            = each.key
+  organization_id = module.organization.details.id
+  value           = each.value.value
 }
-{{- end -}}
+{{- end }}
 
-{{- /* Create projects */}}
-{{- range .Org.Projects -}}
-{{- /* Read in pipeline yaml so its values can be referenced */}}
-{{ $yaml := fromYaml .Yaml }}
-{{ $projectSlug := (slugify .Name) -}}
-module "project_{{ $projectSlug }}" {
+module "projects" {
+  for_each = local.projects
+
   source  = "harness-community/structure/harness//modules/projects"
   version = "~> 0.1"
 
-  name            = "{{- printf "%s" $yaml.pipeline.name -}}"
+  name            = each.key
   organization_id = module.organization.details.id
 }
 
-{{/* Create project secrets */}}
-{{- range .Secrets -}}
-resource "harness_platform_secret_text" "project_{{ slugify .Name }}" {
-  identifier  = "{{ slugify .Name }}"
-  name        = "{{ .Name }}"
-  org_id      = module.organization.details.id
-  project_id  = module.project_{{ $projectSlug }}.details.id
-  description = "{{ .Desc }}"
-  value_type  = "Inline"
-  value       = "{{ .Value }}"
-
-  secret_manager_identifier = "harnessSecretManager"  
-}
-{{ end }}
-
-{{- /* Create project pipeline */}}
-module "pipeline_{{ slugify .Name }}" {
+module "pipelines" {
+  for_each = local.projects
+  
   source  = "harness-community/content/harness//modules/pipelines"
   version = "~> 0.1"
 
-  name            = "{{- printf "%s" $yaml.pipeline.name -}}"
+  name            = each.key
   organization_id = module.organization.details.id
-  project_id      = module.project_{{ slugify .Name }}.details.id
-  {{- /* TODO: could values other than 'properties' or 'stages' be needed? */}}
+  project_id      = module.projects[each.key].details.id
   yaml_data       = <<-EOT
-{{ if $yaml.pipeline.properties }}
-properties:
-{{ indent (toYaml $yaml.pipeline.properties) 2 }}
-{{- end }}
-{{- if $yaml.pipeline.stages }}
-stages:
-{{ indent (toYaml $yaml.pipeline.stages) 2 -}}
-{{- end }}
+${each.value.yaml_properties}
+${each.value.yaml_stages}
 EOT
 }
 
-{{- /* Create pipeline triggers */}}
-module "trigger_push_{{ slugify .Name }}" {
-  source  = "harness-community/content/harness//modules/triggers"
+{{ range .Org.Projects -}}
+{{ if .Secrets -}}
+module "project_{{ slugify .Name }}_secrets" {
+  for_each = local.projects["{{ .Name }}"].secrets
+
+  source  = "harness-community/structure/harness//modules/secrets/text"
   version = "~> 0.1"
 
-  name            = "Push"
+  name            = each.key
   organization_id = module.organization.details.id
-  project_id      = module.project_{{ slugify .Name }}.details.id
-  pipeline_id     = module.pipeline_{{ slugify .Name }}.details.id
-  {{- /* TODO: support more than GitHub */}}
-  yaml_data       = <<EOT
-source:
-  type: "Webhook"
-  spec:
-    type: "Github"
-    spec:
-      type: "Push"
-      spec:
-        connectorRef: "{{- $.Connectors.Repo -}}"
-        autoAbortPreviousExecutions: false
-        payloadConditions:
-          - key: targetBranch
-            operator: Equals
-            value: main
-        headerConditions: []
-        repoName: "{{ $.Account.Organization }}/{{ .Name }}"
-        actions: []
-inputYaml: |
-  pipeline:
-    identifier: "module.pipeline_{{ slugify .Name }}.details.id"
-    properties:
-      ci:
-        codebase:
-          build:
-            type: branch
-            spec:
-              branch: <+trigger.branch>"
-EOT
+  project_id      = module.projects["{{ .Name }}"].details.id
+  value           = each.value.value
 }
-{{ end }}
+{{ end -}}
+{{ end -}}

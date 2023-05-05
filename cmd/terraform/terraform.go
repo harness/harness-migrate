@@ -223,7 +223,7 @@ func Register(app *kingpin.Application) {
 		StringVar(&c.providerSource)
 
 	cmd.Flag("provider-version", "harness terraform provider version").
-		Default("0.17.5").
+		Default("0.19.1").
 		StringVar(&c.providerVersion)
 
 	cmd.Flag("kube-connector", "kubernetes connector").

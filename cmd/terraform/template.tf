@@ -43,16 +43,16 @@ locals {
 terraform {
   required_providers {
     harness = {
-      source  = "{{ $.Provider.Source }}"
-      version = "= {{ $.Provider.Version }}"
+      source  = "{{ .Provider.Source }}"
+      version = "= {{ .Provider.Version }}"
     }
   }
 }
 
 provider "harness" {
-  endpoint = "{{ $.Auth.Endpoint }}"
+  endpoint = "{{ .Auth.Endpoint }}"
 {{- if .Account.ID }}
-  account_id = "{{ $.Account.ID }}"
+  account_id = "{{ .Account.ID }}"
 {{- end }}
 }
 
@@ -60,7 +60,7 @@ module "organization" {
   source  = "harness-community/structure/harness//modules/organizations"
   version = "~> 0.1"
 
-  name = "{{ $.Account.Organization }}"
+  name = "{{ .Account.Organization }}"
 }
 
 {{ if .Org.Secrets -}}

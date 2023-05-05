@@ -1,17 +1,23 @@
 locals {
   projects = {
 {{- range .Org.Projects }}
-{{ $yaml := fromYaml .Yaml }}
-    "{{ printf "%s" .Name }}" = {
-      b64_yaml_properties = "{{ base64Encode (toYaml $yaml.pipeline.properties) }}"
-      b64_yaml_stages = "{{ base64Encode (toYaml $yaml.pipeline.stages) }}"
+{{- $yaml := fromYaml .Yaml }}
+    {{ printf "%s" .Name }} = {
+      yaml_properties = <<-EOT
+        properties:
+{{ indent (toYaml $yaml.pipeline.properties) 10 -}}
+      EOT
+      yaml_stages = <<-EOT
+        stages:
+{{ indent (replace (toYaml $yaml.pipeline.stages) "${" "$${") 10 -}}
+      EOT
       branch = "{{ printf "%s" .Branch }}"
       repo = "{{ printf "%s" .Repo }}"
       slug = "{{ slugify .Name }}"
 {{- if .Secrets }}
       secrets = {
 {{- range .Secrets }}
-        "{{ printf "%s" .Name }}" = {
+        {{ printf "%s" .Name }} = {
           slug = "{{ slugify .Name }}"
           value = "{{ printf "%s" .Value }}"
         }
@@ -24,7 +30,7 @@ locals {
 {{- if .Org.Secrets }}
   secrets = {
 {{- range .Org.Secrets }}
-    "{{ printf "%s" .Name }}" = {
+    {{ printf "%s" .Name }} = {
       slug = "{{ slugify .Name }}"
       value = "{{ printf "%s" .Value }}"
     }
@@ -56,6 +62,7 @@ module "organization" {
   name = "{{ $.Account.Organization }}"
 }
 
+{{ if .Org.Secrets -}}
 resource "harness_platform_secret_text" "organization_secrets" {
   for_each = local.secrets
 
@@ -67,6 +74,7 @@ resource "harness_platform_secret_text" "organization_secrets" {
 
   secret_manager_identifier = "harnessSecretManager"
 }
+{{ end -}}
 
 module "projects" {
   for_each = local.projects
@@ -88,14 +96,13 @@ module "pipelines" {
   organization_id = module.organization.details.id
   project_id      = module.projects[each.key].details.id
   yaml_data       = <<-EOT
-properties:
-  ${base64decode(local.projects[each.key].b64_yaml_properties)}
-stages:
-  ${base64decode(local.projects[each.key].b64_yaml_stages)}
+${each.value.yaml_properties}
+${each.value.yaml_stages}
 EOT
 }
 
-{{ range .Org.Projects }}
+{{ range .Org.Projects -}}
+{{ if .Secrets -}}
 resource "harness_platform_secret_text" "project_{{ slugify .Name }}_secrets" {
    for_each = local.projects["{{ .Name }}"].secrets
 
@@ -108,4 +115,5 @@ resource "harness_platform_secret_text" "project_{{ slugify .Name }}_secrets" {
    secret_manager_identifier = "harnessSecretManager"
    value_type                = "Inline"
 }
-{{- end }}
+{{ end -}}
+{{ end -}}

@@ -1,0 +1,124 @@
+locals {
+  projects = {
+    hello-world = {
+      yaml_properties = <<-EOT
+        properties:
+          ci:
+            codebase:
+              build: <+input>
+              repoName: hello-world
+          EOT
+      yaml_stages = <<-EOT
+        stages:
+          - stage:
+              identifier: default
+              name: default
+              spec:
+                cloneCodebase: true
+                execution:
+                  steps:
+                  - step:
+                      identifier: hello
+                      name: hello
+                      spec:
+                        command: echo hello world
+                        image: busybox
+                      timeout: ""
+                      type: Run
+                platform:
+                  arch: Amd64
+                  os: Linux
+                runtime:
+                  spec: {}
+                  type: Cloud
+              type: CI
+              when:
+                condition: <+trigger.branch> == "main"
+                pipelineStatus: Success
+          EOT
+      branch = "main"
+      repo = "https://github.com/octocat/hello-world.git"
+      slug = "helloworld"
+      secrets = {
+        PROJECT_SECRET = {
+          slug = "projectsecret"
+          value = "topsecret"
+        }
+      }
+    }
+  }
+  secrets = {
+    ORG_SECRET = {
+      slug = "orgsecret"
+      value = "confidential"
+    }
+  }
+}
+
+terraform {
+  required_providers {
+    harness = {
+      source  = "harness/harness"
+      version = "= 0.19.1"
+    }
+  }
+}
+
+provider "harness" {
+  endpoint = "https://app.harness.io/gateway"
+}
+
+module "organization" {
+  source  = "harness-community/structure/harness//modules/organizations"
+  version = "~> 0.1"
+
+  name = "example"
+}
+
+module "organization_secrets" {
+  for_each = local.secrets
+
+  source  = "harness-community/structure/harness//modules/secrets/text"
+  version = "~> 0.1"
+
+  name            = each.key
+  organization_id = module.organization.details.id
+  value           = each.value.value
+}
+
+module "projects" {
+  for_each = local.projects
+
+  source  = "harness-community/structure/harness//modules/projects"
+  version = "~> 0.1"
+
+  name            = each.key
+  organization_id = module.organization.details.id
+}
+
+module "pipelines" {
+  for_each = local.projects
+
+  source  = "harness-community/content/harness//modules/pipelines"
+  version = "~> 0.1"
+
+  name            = each.key
+  organization_id = module.organization.details.id
+  project_id      = module.projects[each.key].details.id
+  yaml_data       = <<-EOT
+${each.value.yaml_properties}
+${each.value.yaml_stages}
+EOT
+}
+
+module "project_helloworld_secrets" {
+  for_each = local.projects["hello-world"].secrets
+
+  source  = "harness-community/structure/harness//modules/secrets/text"
+  version = "~> 0.1"
+
+  name            = each.key
+  organization_id = module.organization.details.id
+  project_id      = module.projects["hello-world"].details.id
+  value           = each.value.value
+}

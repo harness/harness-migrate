@@ -1,3 +1,24 @@
+locals {
+  projects = {
+{{- range .Org.Projects }}
+    "{{ printf "%s" .Name }}" = {
+      base64yaml = "{{ base64Encode (printf "%s" .Yaml) }}"
+      branch = "{{ printf "%s" .Branch }}"
+      repo = "{{ printf "%s" .Repo }}"
+{{- if .Secrets }}
+      secrets = {
+{{- range .Secrets }}
+        "{{ printf "%s" .Name }}" = {
+          value = "{{ printf "%s" .Value }}"
+        }
+{{- end }}
+      }
+{{- end }}
+    }
+{{- end }}
+  }
+}
+
 terraform {
   required_providers {
     harness = {

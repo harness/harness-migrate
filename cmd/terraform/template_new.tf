@@ -9,6 +9,7 @@ locals {
       EOT
       yaml_stages = <<-EOT
         stages:
+{{- /* Escape variable references which conflict with terraform */}}
 {{ indent (replace (toYaml $yaml.pipeline.stages) "${" "$${") 10 -}}
       EOT
       branch = "{{ printf "%s" .Branch }}"
@@ -63,18 +64,17 @@ module "organization" {
 }
 
 {{ if .Org.Secrets -}}
-resource "harness_platform_secret_text" "organization_secrets" {
+module "organization_secrets" {
   for_each = local.secrets
 
-  identifier  = each.value.slug
-  name        = each.key
-  org_id      = module.organization.details.id
-  value_type  = "Inline"
-  value       = each.value.value
+  source  = "harness-community/structure/harness//modules/secrets/text"
+  version = "~> 0.1"
 
-  secret_manager_identifier = "harnessSecretManager"
+  name            = each.key
+  organization_id = module.organization.details.id
+  value           = each.value.value
 }
-{{ end -}}
+{{- end }}
 
 module "projects" {
   for_each = local.projects
@@ -103,17 +103,16 @@ EOT
 
 {{ range .Org.Projects -}}
 {{ if .Secrets -}}
-resource "harness_platform_secret_text" "project_{{ slugify .Name }}_secrets" {
-   for_each = local.projects["{{ .Name }}"].secrets
+module "project_{{ slugify .Name }}_secrets" {
+  for_each = local.projects["{{ .Name }}"].secrets
 
-   identifier = each.value.slug
-   name       = each.key
-   org_id     = module.organization.details.id
-   project_id = module.projects["{{ .Name }}"].details.id
-   value      = each.value.value
+  source  = "harness-community/structure/harness//modules/secrets/text"
+  version = "~> 0.1"
 
-   secret_manager_identifier = "harnessSecretManager"
-   value_type                = "Inline"
+  name            = each.key
+  organization_id = module.organization.details.id
+  project_id      = module.projects["{{ .Name }}"].details.id
+  value           = each.value.value
 }
 {{ end -}}
 {{ end -}}

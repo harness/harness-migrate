@@ -2,7 +2,7 @@ locals {
   projects = {
 {{- range .Org.Projects }}
 {{- $yaml := fromYaml .Yaml }}
-    {{ printf "%s" .Name }} = {
+    {{ .Name }} = {
       yaml_properties = <<-EOT
         properties:
 {{ indent (toYaml $yaml.pipeline.properties) 10 -}}
@@ -12,15 +12,15 @@ locals {
 {{- /* Escape variable references which conflict with terraform */}}
 {{ indent (replace (toYaml $yaml.pipeline.stages) "${" "$${") 10 -}}
       EOT
-      branch = "{{ printf "%s" .Branch }}"
-      repo = "{{ printf "%s" .Repo }}"
-      slug = "{{ slugify .Name }}"
+      branch = "{{ .Branch }}"
+      {{- $repo := split .Repo "/" }}
+      namespace = "{{ index $repo 3 }}"
+      repo = "{{ trimSuffix (index $repo 4) ".git" }}"
 {{- if .Secrets }}
       secrets = {
 {{- range .Secrets }}
-        {{ printf "%s" .Name }} = {
-          slug = "{{ slugify .Name }}"
-          value = "{{ printf "%s" .Value }}"
+        {{ .Name }} = {
+          value = "{{ .Value }}"
         }
 {{- end }}
       }
@@ -31,9 +31,8 @@ locals {
 {{- if .Org.Secrets }}
   secrets = {
 {{- range .Org.Secrets }}
-    {{ printf "%s" .Name }} = {
-      slug = "{{ slugify .Name }}"
-      value = "{{ printf "%s" .Value }}"
+    {{ .Name }} = {
+      value = "{{ .Value }}"
     }
 {{- end }}
   }
@@ -127,7 +126,7 @@ source:
             operator: Equals
             value: ${each.value.branch}
         headerConditions: []
-        repoName: {{ $.Org.Name }}/${each.key}
+        repoName: ${each.value.namespace}/${each.value.repo}
         actions:
           - Open
           - Reopen
@@ -171,7 +170,7 @@ source:
             operator: Equals
             value: ${each.value.branch}
         headerConditions: []
-        repoName: {{ $.Org.Name }}/${each.key}
+        repoName: ${each.value.namespace}/${each.value.repo}
         actions: []
 inputYaml: |
   pipeline:
@@ -212,7 +211,7 @@ source:
             operator: StartsWith
             value: refs/tags/
         headerConditions: []
-        repoName: {{ $.Org.Name }}/${each.key}
+        repoName: ${each.value.namespace}/${each.value.repo}
         actions: []
 inputYaml: |
   pipeline:

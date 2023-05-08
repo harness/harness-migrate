@@ -1,3 +1,4 @@
+// Locals
 locals {
   projects = {
 {{- range .Org.Projects }}
@@ -55,6 +56,7 @@ provider "harness" {
 {{- end }}
 }
 
+// Organization
 module "organization" {
   source  = "harness-community/structure/harness//modules/organizations"
   version = "~> 0.1"
@@ -62,6 +64,7 @@ module "organization" {
   name = "{{ .Account.Organization }}"
 }
 
+// Organization secrets
 {{ if .Org.Secrets -}}
 module "organization_secrets" {
   for_each = local.secrets
@@ -75,6 +78,7 @@ module "organization_secrets" {
 }
 {{- end }}
 
+// Projects
 module "projects" {
   for_each = local.projects
 
@@ -85,6 +89,7 @@ module "projects" {
   organization_id = module.organization.details.id
 }
 
+// Pipelines
 module "pipelines" {
   for_each = local.projects
   
@@ -100,6 +105,24 @@ ${each.value.yaml_stages}
 EOT
 }
 
+// Project secrets
+{{ range .Org.Projects -}}
+{{ if .Secrets -}}
+module "project_{{ slugify .Name }}_secrets" {
+  for_each = local.projects["{{ .Name }}"].secrets
+
+  source  = "harness-community/structure/harness//modules/secrets/text"
+  version = "~> 0.1"
+
+  name            = each.key
+  organization_id = module.organization.details.id
+  project_id      = module.projects["{{ .Name }}"].details.id
+  value           = each.value.value
+}
+{{ end -}}
+{{ end -}}
+
+// Pull request trigger
 module "trigger_pr" {
   for_each = local.projects
   
@@ -119,7 +142,7 @@ source:
     spec:
       type: PullRequest
       spec:
-        connectorRef: {{ $.Connectors.Repo }}
+        connectorRef: {{ .Connectors.Repo }}
         autoAbortPreviousExecutions: false
         payloadConditions:
           - key: targetBranch
@@ -144,6 +167,7 @@ inputYaml: |
   EOT
 }
 
+// Push trigger
 module "trigger_push" {
   for_each = local.projects
   
@@ -163,7 +187,7 @@ source:
     spec:
       type: Push
       spec:
-        connectorRef: {{ $.Connectors.Repo }}
+        connectorRef: {{ .Connectors.Repo }}
         autoAbortPreviousExecutions: false
         payloadConditions:
           - key: targetBranch
@@ -185,6 +209,7 @@ inputYaml: |
   EOT  
 }
 
+// Tag trigger
 module "trigger_tag" {
   for_each = local.projects
   
@@ -204,7 +229,7 @@ source:
     spec:
       type: Push
       spec:
-        connectorRef: {{ $.Connectors.Repo }}
+        connectorRef: {{ .Connectors.Repo }}
         autoAbortPreviousExecutions: false
         payloadConditions:
           - key: <+trigger.payload.ref>
@@ -225,19 +250,3 @@ inputYaml: |
               branch: <+trigger.branch>
   EOT
 }
-
-{{ range .Org.Projects -}}
-{{ if .Secrets -}}
-module "project_{{ slugify .Name }}_secrets" {
-  for_each = local.projects["{{ .Name }}"].secrets
-
-  source  = "harness-community/structure/harness//modules/secrets/text"
-  version = "~> 0.1"
-
-  name            = each.key
-  organization_id = module.organization.details.id
-  project_id      = module.projects["{{ .Name }}"].details.id
-  value           = each.value.value
-}
-{{ end -}}
-{{ end -}}

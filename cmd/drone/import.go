@@ -114,14 +114,11 @@ func (c *importCommand) createImporter(log slog.Logger, ctx context.Context) (*m
 		c.harnessAddress,
 	)
 
-	if c.kubeName == "" && c.kubeConn == "" {
-		importer.KubeName = c.kubeName
-		importer.KubeConn = c.kubeConn
-	}
-
 	importer.Tracer = tracer_
 	importer.Downgrade = c.downgrade
 	importer.DockerConn = c.dockerConn
+	importer.KubeName = c.kubeName
+	importer.KubeConn = c.kubeConn
 
 	if c.repositoryList != "" {
 		importer.RepositoryList = strings.Split(c.repositoryList, ",")

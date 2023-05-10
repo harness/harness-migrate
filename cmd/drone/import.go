@@ -68,7 +68,7 @@ func (c *importCommand) run(*kingpin.ParseContext) error {
 	ctx := slog.NewContext(context.Background(), log)
 
 	if c.repoConn == "" && (c.gitlabToken == "" && c.githubToken == "" && c.bitbucketToken == "") {
-		return errors.New("either specific a repo connector or a gitlab/github/bitbucket token")
+		return errors.New("either specify a repo connector or a gitlab/github/bitbucket token")
 	}
 
 	org, err := c.readAndUnmarshalOrg(c.file, log)

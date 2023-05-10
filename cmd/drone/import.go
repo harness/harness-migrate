@@ -20,11 +20,9 @@ import (
 	"os"
 	"strings"
 
-	"github.com/harness/harness-migrate/internal/migrate"
-
 	"github.com/drone/go-scm/scm"
-
 	"github.com/harness/harness-migrate/cmd/util"
+	"github.com/harness/harness-migrate/internal/migrate"
 	"github.com/harness/harness-migrate/internal/tracer"
 	"github.com/harness/harness-migrate/internal/types"
 

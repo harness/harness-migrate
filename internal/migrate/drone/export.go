@@ -71,8 +71,7 @@ func (m *Exporter) Export(ctx context.Context) (*types.Org, error) {
 	dstOrg.Secrets = convertOrgSecretsToSecrets(orgSecrets)
 
 	m.Tracer.Stop("export organization secrets [done]")
-	m.Tracer.Stop("export organization %s [done]", repos[0].Name)
-
+	m.Tracer.Stop("export organization %s [done]", repos[0].Namespace)
 	// convert each repository to a harness project
 	for _, repo := range repos {
 		// Skip repositories that are not in the specified namespace

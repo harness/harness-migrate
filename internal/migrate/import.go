@@ -18,6 +18,9 @@ import (
 	"context"
 	"strings"
 
+	"github.com/drone/go-convert/convert/drone"
+	"github.com/drone/go-convert/convert/harness/downgrader"
+
 	"github.com/drone/go-scm/scm"
 	"github.com/harness/harness-migrate/internal/harness"
 	"github.com/harness/harness-migrate/internal/slug"
@@ -36,11 +39,15 @@ type Importer struct {
 	ScmToken string
 
 	RepositoryList []string
+	DockerConn     string
+	RepoConn       string
 
 	KubeName string
 	KubeConn string
 
 	Tracer tracer.Tracer
+
+	Downgrade bool
 }
 
 const dockerConnectorName = "docker"
@@ -97,36 +104,46 @@ func (m *Importer) Import(ctx context.Context, data *types.Org) error {
 
 	m.Tracer.Stop("create organisation secrets [done]")
 
-	m.Tracer.Start("create connector %s", m.ScmType)
-	connector, _ := m.Harness.FindConnectorOrg(org.ID, m.ScmType)
-	if connector == nil {
-		switch m.ScmType {
-		case "gitlab":
-			conn := util.CreateGitlabConnector(org.ID, m.ScmType, m.ScmLogin, "org."+m.ScmType)
+	repoConn := m.RepoConn
+	if repoConn == "" {
+		foundConnector, err := m.Harness.FindConnectorOrg(org.ID, m.ScmType)
+		if err != nil || foundConnector == nil {
+			m.Tracer.Start("create connector %s", m.ScmType)
+			var conn *harness.Connector
+			switch m.ScmType {
+			case "gitlab":
+				conn = util.CreateGitlabConnector(org.ID, m.ScmType, m.ScmLogin, "org."+m.ScmType)
+			default:
+				conn = util.CreateGithubConnector(org.ID, m.ScmType, m.ScmLogin, "org."+m.ScmType)
+			}
 			if err := m.Harness.CreateConnectorOrg(conn); err != nil {
 				return err
 			}
-		default:
-			conn := util.CreateGithubConnector(org.ID, m.ScmType, m.ScmLogin, "org."+m.ScmType)
+			m.Tracer.Stop("create connector %s [done]", m.ScmType)
+			repoConn = m.ScmType
+		} else {
+			repoConn = foundConnector.Name
+		}
+	}
+
+	dockerConn := m.DockerConn
+	if dockerConn == "" {
+		existingConnector, err := m.Harness.FindConnectorOrg(org.ID, dockerConnectorName)
+		if err != nil || existingConnector == nil {
+			m.Tracer.Start("create docker connector %s [Started]", dockerConnectorName)
+			conn := util.CreateDockerConnector(org.ID, dockerConnectorName)
 			if err := m.Harness.CreateConnectorOrg(conn); err != nil {
 				return err
 			}
+			m.Tracer.Stop("create docker connector %s [done]", m.ScmType)
+			dockerConn = dockerConnectorName
+		} else {
+			dockerConn = existingConnector.Name
 		}
 	}
-
-	dockerConnector, _ := m.Harness.FindConnectorOrg(org.ID, dockerConnectorName)
-	if dockerConnector == nil {
-		conn := util.CreateDockerConnector(org.ID, dockerConnectorName)
-		if err := m.Harness.CreateConnectorOrg(conn); err != nil {
-			return err
-		}
-	}
-
-	m.Tracer.Stop("create connector %s [done]", m.ScmType)
 
 	// convert each drone repo to a harness project.
 	for _, srcProject := range data.Projects {
-
 		// Skip repositories that are not in the m.RepositoryList
 		if len(m.RepositoryList) > 0 && !m.repositoryInList(srcProject.Name) {
 			continue
@@ -178,6 +195,32 @@ func (m *Importer) Import(ctx context.Context, data *types.Org) error {
 				}
 			}
 		}
+
+		converter := drone.New(
+			drone.WithDockerhub(dockerConn),
+			drone.WithKubernetes(m.KubeName, m.KubeConn),
+		)
+
+		convertedYaml, err := converter.ConvertBytes(srcProject.Yaml)
+		if err != nil {
+			return err
+		}
+		// downgrade to v0 if needed
+		if m.Downgrade {
+			d := downgrader.New(
+				downgrader.WithCodebase(project.Name, repoConn),
+				downgrader.WithDockerhub(dockerConn),
+				downgrader.WithKubernetes(m.KubeName, m.KubeConn),
+				downgrader.WithName(project.Name),
+				downgrader.WithOrganization(m.HarnessOrg),
+				downgrader.WithProject(slug.Create(project.Name)),
+			)
+			convertedYaml, err = d.Downgrade(convertedYaml)
+			if err != nil {
+				return nil
+			}
+		}
+		srcProject.Yaml = convertedYaml
 
 		//create the harness pipeline with an inline yaml
 		err = m.Harness.CreatePipeline(org.ID, projectSlug, srcProject.Yaml)

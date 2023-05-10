@@ -20,10 +20,11 @@ import (
 	"os"
 	"strings"
 
-	"github.com/drone/go-convert/convert/drone"
-	"github.com/drone/go-convert/convert/harness/downgrader"
+	"github.com/harness/harness-migrate/internal/migrate"
+
+	"github.com/drone/go-scm/scm"
+
 	"github.com/harness/harness-migrate/cmd/util"
-	"github.com/harness/harness-migrate/internal/slug"
 	"github.com/harness/harness-migrate/internal/tracer"
 	"github.com/harness/harness-migrate/internal/types"
 
@@ -40,9 +41,6 @@ type importCommand struct {
 	harnessOrg     string
 	harnessAddress string
 
-	KubeName string
-	KubeConn string
-
 	repositoryList string
 
 	githubToken    string
@@ -53,67 +51,53 @@ type importCommand struct {
 	bitbucketURL   string
 	skipVerify     bool
 
-	repoConn   string
-	kubeName   string
-	kubeConn   string
+	// repo connector
+	repoConn string
+
+	// kube connector
+	kubeName string
+	kubeConn string
+
+	// docker connector
 	dockerConn string
 
 	downgrade bool
 }
 
 func (c *importCommand) run(*kingpin.ParseContext) error {
-
-	// create the logger
 	log := util.CreateLogger(c.debug)
+	ctx := slog.NewContext(context.Background(), log)
 
-	// attach the logger to the context
-	ctx := context.Background()
-	ctx = slog.NewContext(ctx, log)
-
-	// read the data file
-	data, err := os.ReadFile(c.file)
+	org, err := c.readAndUnmarshalOrg(c.file, log)
 	if err != nil {
-		log.Error("cannot read data file", nil)
 		return err
 	}
 
-	// unmarshal the data file
+	importer, err := c.createImporter(log, ctx)
+	if err != nil {
+		return err
+	}
+
+	return importer.Import(ctx, org)
+}
+
+func (c *importCommand) readAndUnmarshalOrg(filename string, log slog.Logger) (*types.Org, error) {
+	data, err := os.ReadFile(filename)
+	if err != nil {
+		log.Error("cannot read data file", nil)
+		return nil, err
+	}
+
 	org := new(types.Org)
 	if err := json.Unmarshal(data, org); err != nil {
 		log.Error("cannot unmarshal data file", nil)
-		return err
+		return nil, err
 	}
 
-	// convert all yaml into v1 or v0 format
-	converter := drone.New(
-		drone.WithDockerhub(c.dockerConn),
-		drone.WithKubernetes(c.kubeName, c.kubeConn),
-	)
-	for _, project := range org.Projects {
-		// convert to v1
-		convertedYaml, err := converter.ConvertBytes(project.Yaml)
-		if err != nil {
-			return err
-		}
-		// downgrade to v0 if needed
-		if c.downgrade {
-			d := downgrader.New(
-				downgrader.WithCodebase(project.Name, c.repoConn),
-				downgrader.WithDockerhub(c.dockerConn),
-				downgrader.WithKubernetes(c.kubeName, c.kubeConn),
-				downgrader.WithName(project.Name),
-				downgrader.WithOrganization(c.harnessOrg),
-				downgrader.WithProject(slug.Create(project.Name)),
-			)
-			convertedYaml, err = d.Downgrade(convertedYaml)
-			if err != nil {
-				return nil
-			}
-		}
-		project.Yaml = convertedYaml
-	}
+	return org, nil
+}
 
-	// create the tracer
+func (c *importCommand) createImporter(log slog.Logger, ctx context.Context) (*migrate.Importer, error) {
 	tracer_ := tracer.New()
 	defer tracer_.Close()
 
@@ -127,21 +111,34 @@ func (c *importCommand) run(*kingpin.ParseContext) error {
 		c.harnessAddress,
 	)
 
-	// map the kube namespace and kube connector
-	if c.KubeName == "" && c.KubeConn == "" {
-		importer.KubeName = c.KubeName
-		importer.KubeConn = c.KubeConn
+	if c.kubeName == "" && c.kubeConn == "" {
+		importer.KubeName = c.kubeName
+		importer.KubeConn = c.kubeConn
 	}
+
 	importer.Tracer = tracer_
+	importer.Downgrade = c.downgrade
+	importer.DockerConn = c.dockerConn
 
-	var repository []string
 	if c.repositoryList != "" {
-		repository = strings.Split(c.repositoryList, ",")
+		importer.RepositoryList = strings.Split(c.repositoryList, ",")
 	}
-	importer.RepositoryList = repository
 
-	// create scm client to verify the token
-	// and retrieve the user id.
+	if c.repoConn == "" {
+		client, err := c.createAndVerifyScmClient(log, ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		importer.ScmClient = client
+	} else {
+		importer.RepoConn = c.repoConn
+	}
+
+	return importer, nil
+}
+
+func (c *importCommand) createAndVerifyScmClient(log slog.Logger, ctx context.Context) (*scm.Client, error) {
 	client := util.CreateClient(
 		c.githubToken,
 		c.gitlabToken,
@@ -152,26 +149,14 @@ func (c *importCommand) run(*kingpin.ParseContext) error {
 		c.skipVerify,
 	)
 
-	// get the current user id.
 	user, _, err := client.Users.Find(ctx)
 	if err != nil {
 		log.Error("cannot retrieve git user", nil)
-		return err
+		return nil, err
 	}
 
-	// provide the user id to the importer. the user id
-	// is required by the connector despite the fact that
-	// it can be retrieved using the token itself (like we just did)
-	importer.ScmLogin = user.Login
-
-	log.Debug("verified user and token",
-		slog.String("user", user.Login),
-	)
-
-	importer.ScmClient = client
-
-	// execute the import routine.
-	return importer.Import(ctx, org)
+	log.Debug("verified user and token", slog.String("user", user.Login))
+	return client, nil
 }
 
 // helper function registers the import command.

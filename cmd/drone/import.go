@@ -17,6 +17,7 @@ package drone
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"os"
 	"strings"
 
@@ -65,6 +66,10 @@ type importCommand struct {
 func (c *importCommand) run(*kingpin.ParseContext) error {
 	log := util.CreateLogger(c.debug)
 	ctx := slog.NewContext(context.Background(), log)
+
+	if c.repoConn == "" && (c.gitlabToken == "" && c.githubToken == "" && c.bitbucketToken == "") {
+		return errors.New("either specific a repo connector or a gitlab/github/bitbucket token")
+	}
 
 	org, err := c.readAndUnmarshalOrg(c.file, log)
 	if err != nil {

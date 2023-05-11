@@ -89,6 +89,7 @@ func (m *Importer) Import(ctx context.Context, data *types.Org) error {
 				return err
 			}
 		}
+		m.Tracer.Stop("create provider secret %s [done]", m.ScmType)
 	}
 
 	m.Tracer.Start("create organisation secrets if they exist")

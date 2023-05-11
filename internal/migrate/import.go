@@ -89,10 +89,6 @@ func (m *Importer) Import(ctx context.Context, data *types.Org) error {
 				return err
 			}
 		}
-		// set RepoConn so it can be referenced
-		m.RepoConn = "org." + m.ScmType
-
-		m.Tracer.Stop("create provider secret %s [done]", m.ScmType)
 	}
 
 	m.Tracer.Start("create organisation secrets if they exist")
@@ -126,7 +122,7 @@ func (m *Importer) Import(ctx context.Context, data *types.Org) error {
 				return err
 			}
 			m.Tracer.Stop("create connector %s [done]", m.ScmType)
-			repoConn = m.ScmType
+			repoConn = "org." + m.ScmType
 		} else {
 			m.Tracer.Stop("check for connector %s [done]", m.ScmType)
 			repoConn = foundConnector.Name

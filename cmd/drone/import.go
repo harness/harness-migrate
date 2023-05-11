@@ -125,11 +125,11 @@ func (c *importCommand) createImporter(log slog.Logger, ctx context.Context) (*m
 	}
 
 	if c.repoConn == "" {
-		client, err := c.createAndVerifyScmClient(log, ctx)
+		client, user, err := c.createAndVerifyScmClient(log, ctx)
 		if err != nil {
 			return nil, err
 		}
-
+		importer.ScmLogin = user.Login
 		importer.ScmClient = client
 	} else {
 		importer.RepoConn = c.repoConn
@@ -138,7 +138,7 @@ func (c *importCommand) createImporter(log slog.Logger, ctx context.Context) (*m
 	return importer, nil
 }
 
-func (c *importCommand) createAndVerifyScmClient(log slog.Logger, ctx context.Context) (*scm.Client, error) {
+func (c *importCommand) createAndVerifyScmClient(log slog.Logger, ctx context.Context) (*scm.Client, *scm.User, error) {
 	client := util.CreateClient(
 		c.githubToken,
 		c.gitlabToken,
@@ -152,11 +152,11 @@ func (c *importCommand) createAndVerifyScmClient(log slog.Logger, ctx context.Co
 	user, _, err := client.Users.Find(ctx)
 	if err != nil {
 		log.Error("cannot retrieve git user", nil)
-		return nil, err
+		return nil, nil, err
 	}
 
 	log.Debug("verified user and token", slog.String("user", user.Login))
-	return client, nil
+	return client, user, nil
 }
 
 // helper function registers the import command.

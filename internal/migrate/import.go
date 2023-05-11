@@ -89,6 +89,9 @@ func (m *Importer) Import(ctx context.Context, data *types.Org) error {
 				return err
 			}
 		}
+		// set RepoConn so it can be referenced
+		m.RepoConn = "org." + m.ScmType
+
 		m.Tracer.Stop("create provider secret %s [done]", m.ScmType)
 	}
 

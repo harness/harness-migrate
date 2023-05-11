@@ -123,7 +123,7 @@ func (m *Importer) Import(ctx context.Context, data *types.Org) error {
 				return err
 			}
 			m.Tracer.Stop("create connector %s [done]", m.ScmType)
-			repoConn = m.ScmType
+			repoConn = "org." + m.ScmType
 		} else {
 			m.Tracer.Stop("check for connector %s [done]", m.ScmType)
 			repoConn = foundConnector.Name

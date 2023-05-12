@@ -79,12 +79,7 @@ func CreateClient(githubToken, gitlabToken, bitbucketToken, githubURL, gitlabURL
 						Token: githubToken,
 					},
 				),
-				Base: &http.Transport{
-					Proxy: http.ProxyFromEnvironment,
-					TLSClientConfig: &tls.Config{
-						InsecureSkipVerify: skipVerify,
-					},
-				},
+				Base: defaultTransport(skipVerify),
 			},
 		}
 	case gitlabToken != "":
@@ -93,11 +88,10 @@ func CreateClient(githubToken, gitlabToken, bitbucketToken, githubURL, gitlabURL
 		} else {
 			client = gitlab.NewDefault()
 		}
-		// TODO: handle skipVerify
-		//       see https://github.com/harness/harness-migrate/issues/73
 		client.Client = &http.Client{
 			Transport: &transport.PrivateToken{
 				Token: gitlabToken,
+				Base:  defaultTransport(skipVerify),
 			},
 		}
 	case bitbucketToken != "":
@@ -106,8 +100,6 @@ func CreateClient(githubToken, gitlabToken, bitbucketToken, githubURL, gitlabURL
 		} else {
 			client = bitbucket.NewDefault()
 		}
-		// TODO: handle skipVerify
-		//       see https://github.com/harness/harness-migrate/issues/73
 		client.Client = &http.Client{
 			Transport: &oauth2.Transport{
 				Source: oauth2.StaticTokenSource(
@@ -115,8 +107,20 @@ func CreateClient(githubToken, gitlabToken, bitbucketToken, githubURL, gitlabURL
 						Token: bitbucketToken,
 					},
 				),
+				Base: defaultTransport(skipVerify),
 			},
 		}
 	}
 	return client
+}
+
+// defaultTransport provides a default http.Transport. If
+// skipVerify is true, the transport will skip ssl verification.
+func defaultTransport(skipVerify bool) http.RoundTripper {
+	return &http.Transport{
+		Proxy: http.ProxyFromEnvironment,
+		TLSClientConfig: &tls.Config{
+			InsecureSkipVerify: skipVerify,
+		},
+	}
 }

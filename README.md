@@ -40,20 +40,62 @@ $ go build
 
 ## Usage
 
-Convert a circle pipeline:
-
-```term
-$ harness-migrate circle convert /path/to/.circle/config.yml
-```
-
-Convert a github pipeline:
-
-```term
-$ harness-migrate github convert /path/to/.github/workflows/main.yml
-```
+### Drone
 
 Convert a drone pipeline:
 
 ```term
-$ harness-migrate drone convert /path/to/.drone.yml
+harness-migrate drone convert /path/to/.drone.yml
+```
+
+Export a github namespace from drone:
+
+```term
+harness-migrate drone export \
+  --namespace example \
+  --github-token $GITHUB_TOKEN \
+  export.json
+```
+
+Import a drone namespace:
+
+```term
+harness-migrate drone import \
+  --harness-account $HARNESS_ACCOUNT \
+  --harness-org example \
+  --docker-connector account.harnessImage \
+  --github-token $GITHUB_TOKEN \
+  export.json
+```
+
+### CircleCI
+
+Convert a circle pipeline:
+
+```term
+harness-migrate circle convert /path/to/.circle/config.yml
+```
+
+### GitHub Actions
+
+Convert a github pipeline:
+
+```term
+harness-migrate github convert /path/to/.github/workflows/main.yml
+```
+
+### Terraform
+
+Generate terraform configuration from an export, and apply it to your Harness account:
+
+```term
+$ harness-migrate terraform \
+  --account $HARNESS_ACCOUNT \
+  --docker-connector account.harnessImage \
+  --org $HARNESS_ORG \
+  --repo-connector $HARNESS_REPO_CONNECTOR \
+  export.json \
+  output.tf
+$ terraform init
+$ terraform apply
 ```

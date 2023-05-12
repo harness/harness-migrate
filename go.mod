@@ -21,6 +21,7 @@ require (
 	github.com/schollz/progressbar/v3 v3.13.0
 	golang.org/x/exp v0.0.0-20221019170559-20944726eadf
 	golang.org/x/text v0.9.0
+	gopkg.in/yaml.v2 v2.4.0
 )
 
 require (
@@ -30,7 +31,7 @@ require (
 	github.com/alecthomas/units v0.0.0-20151022065526-2efee857e7cf // indirect
 	github.com/bmatcuk/doublestar v1.3.4 // indirect
 	github.com/buildkite/yaml v2.1.0+incompatible // indirect
-	github.com/cloudflare/circl v1.1.0 // indirect
+	github.com/cloudflare/circl v1.3.3 // indirect
 	github.com/dlclark/regexp2 v1.4.0 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/drone/spec v0.0.0-20230405164936-2404edb2a1af // indirect
@@ -58,7 +59,6 @@ require (
 	golang.org/x/sys v0.6.0 // indirect
 	golang.org/x/term v0.5.0 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
-	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	sigs.k8s.io/yaml v1.2.0 // indirect
 )

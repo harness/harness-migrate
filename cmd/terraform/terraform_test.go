@@ -1,7 +1,6 @@
 package terraform
 
 import (
-	"encoding/json"
 	"os"
 	"path/filepath"
 	"testing"
@@ -17,13 +16,18 @@ func TestRun(t *testing.T) {
 	}
 
 	for _, test := range tests {
+		testDir, testFile := filepath.Split(test)
 		t.Run(test, func(t *testing.T) {
 			c := terraformCommand{
-				input:  test,
-				output: "testdata/output.tf",
-				// ... other necessary fields ...
+				input:        test,
+				account:      "DNVIhrzCr9SnPHMQUEvRspB",
+				output:       testDir + "output/" + testFile + ".out",
+				organization: "exampleOrg",
+				dockerConn:   "exampleDockerConn",
+				downgrade:    true,
 			}
 
+			// Run the terraform config generation
 			err = c.run(nil)
 			if err != nil {
 				t.Error(err)
@@ -31,25 +35,15 @@ func TestRun(t *testing.T) {
 			}
 
 			// Read the output file
-			got := map[string]interface{}{}
-			outputData, err := os.ReadFile(c.output)
+			got, err := os.ReadFile(c.output)
 			if err != nil {
-				t.Error(err)
-				return
-			}
-			if err := json.Unmarshal(outputData, &got); err != nil {
 				t.Error(err)
 				return
 			}
 
 			// Read the golden file
-			want := map[string]interface{}{}
-			goldenData, err := os.ReadFile(test + ".golden")
+			want, err := os.ReadFile(test + ".golden")
 			if err != nil {
-				t.Error(err)
-				return
-			}
-			if err := json.Unmarshal(goldenData, &want); err != nil {
 				t.Error(err)
 				return
 			}

@@ -4,11 +4,39 @@ locals {
     hello-world = {
       yaml_properties = <<-EOT
         properties:
-          null
+          ci:
+            codebase:
+              build: <+input>
+              repoName: hello-world
           EOT
       yaml_stages = <<-EOT
         stages:
-          null
+          - stage:
+              identifier: default
+              name: default
+              spec:
+                cloneCodebase: true
+                execution:
+                  steps:
+                  - step:
+                      identifier: hello
+                      name: hello
+                      spec:
+                        command: echo hello world
+                        connectorRef: exampleDockerConn
+                        image: busybox
+                      timeout: ""
+                      type: Run
+                platform:
+                  arch: Amd64
+                  os: Linux
+                runtime:
+                  spec: {}
+                  type: Cloud
+              type: CI
+              when:
+                condition: <+trigger.branch> == "main"
+                pipelineStatus: Success
           EOT
       branch = "main"
       namespace = "octocat"
@@ -38,6 +66,7 @@ terraform {
 
 provider "harness" {
   endpoint = ""
+  account_id = "DNVIhrzCr9SnPHMQUEvRspB"
 }
 
 // Organization
@@ -45,7 +74,7 @@ module "organization" {
   source  = "harness-community/structure/harness//modules/organizations"
   version = "~> 0.1"
 
-  name = ""
+  name = "exampleOrg"
 }
 
 // Organization secrets

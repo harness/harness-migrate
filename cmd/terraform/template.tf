@@ -78,6 +78,41 @@ module "organization_secrets" {
 }
 {{- end }}
 
+{{ if ne .Connector.Token "" -}}
+{{ if eq .Connector.Type "github" -}}
+module "organization_secret_github_token" {
+  source  = "harness-community/structure/harness//modules/secrets/text"
+  version = "~> 0.1"
+
+  name            = "${module.organization.details.name} GitHub Token"
+  organization_id = module.organization.details.id
+  value           = "{{ .Connector.Token }}"
+}
+
+module "organization_connector_github" {
+  source  = "harness-community/connectors/harness//modules/scms/github"
+  version = "~> 0.1"
+
+  name            = "${module.organization.details.name} GitHub Connector"
+  organization_id = module.organization.details.id
+{{ if eq .Connector.URL "" }}
+  url = "https://github.com"
+{{ else }}
+  url = "{{ .Connector.URL }}"
+{{ end }}
+  github_credentials = {
+    type     = "http"
+    password = module.organization_secret_github_token.details.name
+    username = "{{ .Connector.User }}"
+  }
+  api_credentials = {
+    type       = "token"
+    token_name = module.organization_secret_github_token.details.name
+  }
+}
+{{ end -}}
+{{ end -}}
+
 // Projects
 module "projects" {
   for_each = local.projects
@@ -142,7 +177,7 @@ source:
     spec:
       type: PullRequest
       spec:
-        connectorRef: {{ .Connectors.Repo }}
+        connectorRef: {{ .Connector.Repo }}
         autoAbortPreviousExecutions: false
         payloadConditions:
           - key: targetBranch
@@ -187,7 +222,7 @@ source:
     spec:
       type: Push
       spec:
-        connectorRef: {{ .Connectors.Repo }}
+        connectorRef: {{ .Connector.Repo }}
         autoAbortPreviousExecutions: false
         payloadConditions:
           - key: targetBranch
@@ -229,7 +264,7 @@ source:
     spec:
       type: Push
       spec:
-        connectorRef: {{ .Connectors.Repo }}
+        connectorRef: {{ .Connector.Repo }}
         autoAbortPreviousExecutions: false
         payloadConditions:
           - key: <+trigger.payload.ref>

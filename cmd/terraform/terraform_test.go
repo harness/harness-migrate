@@ -19,12 +19,12 @@ func TestRun(t *testing.T) {
 		testDir, testFile := filepath.Split(test)
 		t.Run(test, func(t *testing.T) {
 			c := terraformCommand{
-				input:        test,
-				account:      "DNVIhrzCr9SnPHMQUEvRspB",
-				output:       testDir + "output/" + testFile + ".out",
-				organization: "exampleOrg",
-				dockerConn:   "exampleDockerConn",
-				downgrade:    true,
+				input:          test,
+				output:         testDir + "output/" + testFile + ".out",
+				harnessAccount: "DNVIhrzCr9SnPHMQUEvRspB",
+				harnessOrg:     "exampleOrg",
+				dockerConn:     "exampleDockerConn",
+				downgrade:      true,
 			}
 
 			// Run the terraform config generation

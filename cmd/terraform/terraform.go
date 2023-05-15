@@ -17,9 +17,11 @@ package terraform
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
+	"strings"
 	"text/template"
 
 	"github.com/drone/funcmap"
@@ -44,34 +46,79 @@ type terraformCommand struct {
 	output string
 	tmpl   string
 
-	account         string
-	endpoint        string
-	organization    string
-	providerSource  string
-	providerVersion string
-	repoConn        string
-	kubeName        string
-	kubeConn        string
-	dockerConn      string
+	// harness info
+	harnessAccount         string
+	harnessOrg             string
+	harnessAddress         string
+	harnessProviderSource  string
+	harnessProviderVersion string
 
+	// TODO: support passing list of repos
+	//repositoryList string
+
+	githubToken    string
+	githubURL      string
+	githubUser     string
+	gitlabToken    string
+	gitlabURL      string
+	bitbucketToken string
+	bitbucketURL   string
+
+	// repo connector
+	repoConn string
+
+	// kube connector
+	kubeName   string
+	kubeConn   string
+	dockerConn string
+
+	// docker connector
 	downgrade bool
 
+	// output formatting
 	color bool
 	theme string
 }
 
 func (c *terraformCommand) run(ctx *kingpin.ParseContext) error {
+	// validate flags
+	if len(strings.Fields(fmt.Sprintf("%s %s %s", c.bitbucketToken, c.githubToken, c.gitlabToken))) > 1 {
+		return errors.New("multiple repository tokens passed")
+	}
+	if c.bitbucketURL != "" && c.bitbucketToken == "" {
+		return errors.New("--bitbucket-url requires flag --bitbucket-token")
+	}
+	if c.githubURL != "" && c.githubToken == "" {
+		return errors.New("--github-url requires flag --github-token")
+	}
+	if c.githubToken != "" && c.githubUser == "" {
+		return errors.New("--github-url requires flag --github-user")
+	}
+	if c.gitlabURL != "" && c.gitlabToken == "" {
+		return errors.New("--gitlab-url requires flag --gitlab-token")
+	}
+	if c.repoConn == "" && (c.gitlabToken == "" && c.githubToken == "" && c.bitbucketToken == "") {
+		return errors.New("either specify a repo connector or a token")
+	}
+	if c.repoConn != "" && (c.gitlabToken != "" || c.githubToken != "" || c.bitbucketToken != "") {
+		return errors.New("token not required when passing repo connector")
+	}
+
+	// read exported json file
 	org, err := c.readAndUnmarshal(c.input)
 	if err != nil {
 		return err
 	}
 
+	// create input for template
 	in := c.createTemplateInput(org)
 
+	// convert all yaml files
 	if err := c.convertYaml(org); err != nil {
 		return err
 	}
 
+	// read in conversion template
 	tmpl := defaultTmpl
 	if c.tmpl != "" {
 		t, err := ioutil.ReadFile(c.tmpl)
@@ -81,16 +128,19 @@ func (c *terraformCommand) run(ctx *kingpin.ParseContext) error {
 		tmpl = string(t)
 	}
 
+	// parse terraform template
 	t, err := c.parseTemplate(tmpl)
 	if err != nil {
 		return err
 	}
 
+	// generate terraform file
 	buf, err := c.generateTerraformFile(t, &in)
 	if err != nil {
 		return err
 	}
 
+	// write terraform file
 	return c.writeTerraformFile(buf, c.output)
 }
 
@@ -107,21 +157,43 @@ func (c *terraformCommand) readAndUnmarshal(input string) (*types.Org, error) {
 }
 
 func (c *terraformCommand) createTemplateInput(org *types.Org) input {
+	repoToken := ""
+	repoType := ""
+	repoURL := ""
+
+	if c.bitbucketToken != "" {
+		repoToken = c.bitbucketToken
+		repoType = "bitbucket"
+		repoURL = c.bitbucketURL
+	} else if c.githubToken != "" {
+		repoToken = c.githubToken
+		repoType = "github"
+		repoURL = c.githubURL
+	} else if c.gitlabToken != "" {
+		repoToken = c.gitlabToken
+		repoType = "gitlab"
+		repoURL = c.gitlabURL
+	}
+
 	return input{
 		Org: org,
 		Auth: auth{
-			Endpoint: c.endpoint,
+			Endpoint: c.harnessAddress,
 		},
 		Account: account{
-			ID:           c.account,
-			Organization: c.organization,
+			ID:           c.harnessAccount,
+			Organization: c.harnessOrg,
 		},
-		Connectors: connectors{
-			Repo: c.repoConn,
+		Connector: connector{
+			Repo:  c.repoConn,
+			Token: repoToken,
+			Type:  repoType,
+			URL:   repoURL,
+			User:  c.githubUser,
 		},
 		Provider: provider{
-			Source:  c.providerSource,
-			Version: c.providerVersion,
+			Source:  c.harnessProviderSource,
+			Version: c.harnessProviderVersion,
 		},
 	}
 }
@@ -144,7 +216,7 @@ func (c *terraformCommand) convertYaml(org *types.Org) error {
 				downgrader.WithDockerhub(c.dockerConn),
 				downgrader.WithKubernetes(c.kubeName, c.kubeConn),
 				downgrader.WithName(project.Name),
-				downgrader.WithOrganization(c.organization),
+				downgrader.WithOrganization(c.harnessOrg),
 				downgrader.WithProject(slug.Create(project.Name)),
 			)
 			convertedYaml, err = d.Downgrade(convertedYaml)
@@ -227,15 +299,52 @@ func Register(app *kingpin.Application) {
 		StringVar(&c.tmpl)
 
 	cmd.Flag("account", "harness account ID").
-		StringVar(&c.account)
+		StringVar(&c.harnessAccount)
 
 	cmd.Flag("endpoint", "harness endpoint").
 		Default("https://app.harness.io/gateway").
-		StringVar(&c.endpoint)
+		StringVar(&c.harnessAddress)
 
-	cmd.Flag("org", "harness organization").
-		Default("default").
-		StringVar(&c.organization)
+	cmd.Flag("harness-org", "harness organization").
+		Required().
+		Envar("HARNESS_ORG").
+		StringVar(&c.harnessOrg)
+
+	cmd.Flag("github-token", "github token").
+		Envar("GITHUB_TOKEN").
+		StringVar(&c.githubToken)
+
+	cmd.Flag("github-url", "github url").
+		Envar("GITHUB_URL").
+		StringVar(&c.githubURL)
+
+	cmd.Flag("github-user", "github username associated with token").
+		Envar("GITHUB_USER").
+		StringVar(&c.githubUser)
+
+	cmd.Flag("gitlab-token", "gitlab token").
+		// TODO: add gitlab support to template
+		Hidden().
+		Envar("GITLAB_TOKEN").
+		StringVar(&c.gitlabToken)
+
+	cmd.Flag("gitlab-url", "gitlab url").
+		// TODO: add gitlab support to template
+		Hidden().
+		Envar("GITLAB_URL").
+		StringVar(&c.gitlabURL)
+
+	cmd.Flag("bitbucket-token", "bitbucket token").
+		// TODO: add bitbucket support to template
+		Hidden().
+		Envar("BITBUCKET_TOKEN").
+		StringVar(&c.bitbucketToken)
+
+	cmd.Flag("bitbucket-url", "bitbucket url").
+		// TODO: add bitbucket support to template
+		Hidden().
+		Envar("BITBUCKET_URL").
+		StringVar(&c.bitbucketURL)
 
 	cmd.Flag("color", "print with syntax highlighting").
 		Envar("COLOR").
@@ -249,11 +358,11 @@ func Register(app *kingpin.Application) {
 
 	cmd.Flag("provider-source", "harness terraform provider source").
 		Default("harness/harness").
-		StringVar(&c.providerSource)
+		StringVar(&c.harnessProviderSource)
 
 	cmd.Flag("provider-version", "harness terraform provider version").
 		Default("0.19.1").
-		StringVar(&c.providerVersion)
+		StringVar(&c.harnessProviderVersion)
 
 	cmd.Flag("kube-connector", "kubernetes connector").
 		Envar("KUBE_CONN").
@@ -274,11 +383,11 @@ func Register(app *kingpin.Application) {
 
 type (
 	input struct {
-		Account    account
-		Auth       auth
-		Connectors connectors
-		Org        *types.Org
-		Provider   provider
+		Account   account
+		Auth      auth
+		Connector connector
+		Org       *types.Org
+		Provider  provider
 	}
 
 	account struct {
@@ -291,8 +400,12 @@ type (
 		Endpoint string
 	}
 
-	connectors struct {
-		Repo string
+	connector struct {
+		Repo  string
+		Token string
+		Type  string
+		URL   string
+		User  string
 	}
 
 	provider struct {

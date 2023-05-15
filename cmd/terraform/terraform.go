@@ -22,17 +22,16 @@ import (
 	"os"
 	"text/template"
 
+	"github.com/drone/funcmap"
 	"github.com/drone/go-convert/convert/drone"
 	"github.com/drone/go-convert/convert/harness/downgrader"
 	"github.com/harness/harness-migrate/internal/slug"
 	"github.com/harness/harness-migrate/internal/types"
 
-	"gopkg.in/yaml.v2"
-
 	"github.com/alecthomas/chroma/quick"
 	"github.com/alecthomas/kingpin/v2"
-	"github.com/drone/funcmap"
 	"github.com/mattn/go-isatty"
+	"gopkg.in/yaml.v2"
 
 	_ "embed"
 )
@@ -62,18 +61,53 @@ type terraformCommand struct {
 }
 
 func (c *terraformCommand) run(ctx *kingpin.ParseContext) error {
-	// open the export file and unmarshal
-	f, err := os.ReadFile(c.input)
+	org, err := c.readAndUnmarshal(c.input)
 	if err != nil {
 		return err
 	}
-	org := new(types.Org)
-	if err := json.Unmarshal(f, org); err != nil {
+
+	in := c.createTemplateInput(org)
+
+	if err := c.convertYaml(org); err != nil {
 		return err
 	}
 
-	// create the template input
-	in := input{
+	tmpl := defaultTmpl
+	if c.tmpl != "" {
+		t, err := ioutil.ReadFile(c.tmpl)
+		if err != nil {
+			return err
+		}
+		tmpl = string(t)
+	}
+
+	t, err := c.parseTemplate(tmpl)
+	if err != nil {
+		return err
+	}
+
+	buf, err := c.generateTerraformFile(t, &in)
+	if err != nil {
+		return err
+	}
+
+	return c.writeTerraformFile(buf, c.output)
+}
+
+func (c *terraformCommand) readAndUnmarshal(input string) (*types.Org, error) {
+	f, err := os.ReadFile(input)
+	if err != nil {
+		return nil, err
+	}
+	org := new(types.Org)
+	if err := json.Unmarshal(f, org); err != nil {
+		return nil, err
+	}
+	return org, nil
+}
+
+func (c *terraformCommand) createTemplateInput(org *types.Org) input {
+	return input{
 		Org: org,
 		Auth: auth{
 			Endpoint: c.endpoint,
@@ -90,20 +124,9 @@ func (c *terraformCommand) run(ctx *kingpin.ParseContext) error {
 			Version: c.providerVersion,
 		},
 	}
+}
 
-	tmpl := defaultTmpl
-
-	// if the user provides an alternate template,
-	// read and parse.
-	if c.tmpl != "" {
-		t, err := ioutil.ReadFile(c.tmpl)
-		if err != nil {
-			return err
-		}
-		tmpl = string(t)
-	}
-
-	// convert all yaml into v1 or v0 format
+func (c *terraformCommand) convertYaml(org *types.Org) error {
 	converter := drone.New(
 		drone.WithDockerhub(c.dockerConn),
 		drone.WithKubernetes(c.kubeName, c.kubeConn),
@@ -126,14 +149,16 @@ func (c *terraformCommand) run(ctx *kingpin.ParseContext) error {
 			)
 			convertedYaml, err = d.Downgrade(convertedYaml)
 			if err != nil {
-				return nil
+				return err
 			}
 		}
 		project.Yaml = convertedYaml
 	}
+	return nil
+}
 
-	// parse the terraform template
-	t, err := template.New("_").
+func (c *terraformCommand) parseTemplate(tmpl string) (*template.Template, error) {
+	return template.New("_").
 		Funcs(funcmap.Funcs).
 		Funcs(template.FuncMap{
 			"slugify": slug.Create,
@@ -141,7 +166,7 @@ func (c *terraformCommand) run(ctx *kingpin.ParseContext) error {
 			//       can we add fromYaml and make toYaml compatible?
 			"fromYaml": func(in []byte) map[string]interface{} {
 				out := map[string]interface{}{}
-				yaml.Unmarshal(in, out)
+				yaml.Unmarshal(in, &out)
 				return out
 			},
 			"toYaml": func(in interface{}) string {
@@ -150,18 +175,19 @@ func (c *terraformCommand) run(ctx *kingpin.ParseContext) error {
 			},
 		}).
 		Parse(tmpl)
-	if err != nil {
-		return err
-	}
-	// generate the terraform file from template
-	var buf bytes.Buffer
-	if err := t.Execute(&buf, &in); err != nil {
-		return err
-	}
+}
 
-	// write the tf to the output file
-	if c.output != "" && c.output != "-" {
-		return os.WriteFile(c.output, buf.Bytes(), 0644)
+func (c *terraformCommand) generateTerraformFile(t *template.Template, in *input) (bytes.Buffer, error) {
+	var buf bytes.Buffer
+	if err := t.Execute(&buf, in); err != nil {
+		return buf, err
+	}
+	return buf, nil
+}
+
+func (c *terraformCommand) writeTerraformFile(buf bytes.Buffer, output string) error {
+	if output != "" && output != "-" {
+		return os.WriteFile(output, buf.Bytes(), 0644)
 	}
 
 	if c.color {
@@ -169,8 +195,8 @@ func (c *terraformCommand) run(ctx *kingpin.ParseContext) error {
 		return quick.Highlight(os.Stdout, buf.String(), "hcl", "terminal", c.theme)
 	} else {
 		// write to stdout
-		os.Stdout.Write(buf.Bytes())
-		return nil
+		_, err := os.Stdout.Write(buf.Bytes())
+		return err
 	}
 }
 

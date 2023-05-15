@@ -1,3 +1,4 @@
+// Locals
 locals {
   projects = {
     hello-world = {
@@ -6,7 +7,6 @@ locals {
           ci:
             codebase:
               build: <+input>
-              connectorRef: account.Example
               repoName: hello-world
           EOT
       yaml_stages = <<-EOT
@@ -23,6 +23,7 @@ locals {
                       name: hello
                       spec:
                         command: echo hello world
+                        connectorRef: exampleDockerConn
                         image: busybox
                       timeout: ""
                       type: Run
@@ -38,11 +39,10 @@ locals {
                 pipelineStatus: Success
           EOT
       branch = "main"
-      repo = "https://github.com/octocat/hello-world.git"
-      slug = "helloworld"
+      namespace = "octocat"
+      repo = "hello-world"
       secrets = {
         PROJECT_SECRET = {
-          slug = "projectsecret"
           value = "topsecret"
         }
       }
@@ -50,7 +50,6 @@ locals {
   }
   secrets = {
     ORG_SECRET = {
-      slug = "orgsecret"
       value = "confidential"
     }
   }
@@ -59,23 +58,26 @@ locals {
 terraform {
   required_providers {
     harness = {
-      source  = "harness/harness"
-      version = "= 0.19.1"
+      source  = ""
+      version = "= "
     }
   }
 }
 
 provider "harness" {
-  endpoint = "https://app.harness.io/gateway"
+  endpoint = ""
+  account_id = "DNVIhrzCr9SnPHMQUEvRspB"
 }
 
+// Organization
 module "organization" {
   source  = "harness-community/structure/harness//modules/organizations"
   version = "~> 0.1"
 
-  name = "octocat"
+  name = "exampleOrg"
 }
 
+// Organization secrets
 module "organization_secrets" {
   for_each = local.secrets
 
@@ -87,6 +89,7 @@ module "organization_secrets" {
   value           = each.value.value
 }
 
+// Projects
 module "projects" {
   for_each = local.projects
 
@@ -97,6 +100,7 @@ module "projects" {
   organization_id = module.organization.details.id
 }
 
+// Pipelines
 module "pipelines" {
   for_each = local.projects
   
@@ -112,6 +116,19 @@ ${each.value.yaml_stages}
 EOT
 }
 
+// Project secrets
+module "project_helloworld_secrets" {
+  for_each = local.projects["hello-world"].secrets
+
+  source  = "harness-community/structure/harness//modules/secrets/text"
+  version = "~> 0.1"
+
+  name            = each.key
+  organization_id = module.organization.details.id
+  project_id      = module.projects["hello-world"].details.id
+  value           = each.value.value
+}
+// Pull request trigger
 module "trigger_pr" {
   for_each = local.projects
   
@@ -131,14 +148,14 @@ source:
     spec:
       type: PullRequest
       spec:
-        connectorRef: account.Example
+        connectorRef: 
         autoAbortPreviousExecutions: false
         payloadConditions:
           - key: targetBranch
             operator: Equals
             value: ${each.value.branch}
         headerConditions: []
-        repoName: octocat/${each.key}
+        repoName: ${each.value.namespace}/${each.value.repo}
         actions:
           - Open
           - Reopen
@@ -156,6 +173,7 @@ inputYaml: |
   EOT
 }
 
+// Push trigger
 module "trigger_push" {
   for_each = local.projects
   
@@ -175,14 +193,14 @@ source:
     spec:
       type: Push
       spec:
-        connectorRef: account.Example
+        connectorRef: 
         autoAbortPreviousExecutions: false
         payloadConditions:
           - key: targetBranch
             operator: Equals
             value: ${each.value.branch}
         headerConditions: []
-        repoName: octocat/${each.key}
+        repoName: ${each.value.namespace}/${each.value.repo}
         actions: []
 inputYaml: |
   pipeline:
@@ -197,6 +215,7 @@ inputYaml: |
   EOT  
 }
 
+// Tag trigger
 module "trigger_tag" {
   for_each = local.projects
   
@@ -216,14 +235,14 @@ source:
     spec:
       type: Push
       spec:
-        connectorRef: account.Example
+        connectorRef: 
         autoAbortPreviousExecutions: false
         payloadConditions:
           - key: <+trigger.payload.ref>
             operator: StartsWith
             value: refs/tags/
         headerConditions: []
-        repoName: octocat/${each.key}
+        repoName: ${each.value.namespace}/${each.value.repo}
         actions: []
 inputYaml: |
   pipeline:
@@ -236,16 +255,4 @@ inputYaml: |
             spec:
               branch: <+trigger.branch>
   EOT
-}
-
-module "project_helloworld_secrets" {
-  for_each = local.projects["hello-world"].secrets
-
-  source  = "harness-community/structure/harness//modules/secrets/text"
-  version = "~> 0.1"
-
-  name            = each.key
-  organization_id = module.organization.details.id
-  project_id      = module.projects["hello-world"].details.id
-  value           = each.value.value
 }

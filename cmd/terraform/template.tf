@@ -65,7 +65,7 @@ module "organization" {
 }
 
 // Organization secrets
-{{ if .Org.Secrets -}}
+{{- if .Org.Secrets }}
 module "organization_secrets" {
   for_each = local.secrets
 
@@ -78,22 +78,24 @@ module "organization_secrets" {
 }
 {{- end }}
 
-{{ if ne .Connector.Token "" -}}
-{{ if eq .Connector.Type "github" -}}
+{{- if ne .Connector.Token "" }}
+{{- if eq .Connector.Type "github" }}
+// Organization secret for GitHub connector
 module "organization_secret_github_token" {
   source  = "harness-community/structure/harness//modules/secrets/text"
   version = "~> 0.1"
 
-  name            = "${module.organization.details.name} GitHub Token"
+  name            = "github"
   organization_id = module.organization.details.id
   value           = "{{ .Connector.Token }}"
 }
 
+// Organization GitHub connector
 module "organization_connector_github" {
   source  = "harness-community/connectors/harness//modules/scms/github"
   version = "~> 0.1"
 
-  name            = "${module.organization.details.name} GitHub Connector"
+  name            = "github"
   organization_id = module.organization.details.id
 {{ if eq .Connector.URL "" }}
   url = "https://github.com"
@@ -106,12 +108,13 @@ module "organization_connector_github" {
     username = "{{ .Connector.User }}"
   }
   api_credentials = {
-    type       = "token"
-    token_name = module.organization_secret_github_token.details.name
+    type           = "token"
+    token_location = "org"
+    token_name     = module.organization_secret_github_token.details.name
   }
 }
-{{ end -}}
-{{ end -}}
+{{- end }}
+{{- end }}
 
 // Projects
 module "projects" {
@@ -141,7 +144,7 @@ EOT
 }
 
 // Project secrets
-{{ range .Org.Projects -}}
+{{ range .Org.Projects }}
 {{ if .Secrets -}}
 module "project_{{ slugify .Name }}_secrets" {
   for_each = local.projects["{{ .Name }}"].secrets
@@ -157,6 +160,7 @@ module "project_{{ slugify .Name }}_secrets" {
 {{ end -}}
 {{ end -}}
 
+{{- if eq .Connector.Type "github" }}
 // Pull request trigger
 module "trigger_pr" {
   for_each = local.projects
@@ -177,7 +181,11 @@ source:
     spec:
       type: PullRequest
       spec:
+{{- if ne .Connector.Token "" }}
+        connectorRef: module.organization_connector_github.details.id
+{{- else }}
         connectorRef: {{ .Connector.Repo }}
+{{- end }}
         autoAbortPreviousExecutions: false
         payloadConditions:
           - key: targetBranch
@@ -222,7 +230,11 @@ source:
     spec:
       type: Push
       spec:
+{{- if ne .Connector.Token "" }}
+        connectorRef: module.organization_connector_github.details.id
+{{- else }}
         connectorRef: {{ .Connector.Repo }}
+{{- end }}
         autoAbortPreviousExecutions: false
         payloadConditions:
           - key: targetBranch
@@ -264,7 +276,11 @@ source:
     spec:
       type: Push
       spec:
+{{- if ne .Connector.Token "" }}
+        connectorRef: module.organization_connector_github.details.id
+{{- else }}
         connectorRef: {{ .Connector.Repo }}
+{{- end }}
         autoAbortPreviousExecutions: false
         payloadConditions:
           - key: <+trigger.payload.ref>
@@ -285,3 +301,4 @@ inputYaml: |
               branch: <+trigger.branch>
   EOT
 }
+{{ end -}}

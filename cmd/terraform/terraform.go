@@ -66,6 +66,7 @@ type terraformCommand struct {
 
 	// repo connector
 	repoConn string
+	repoType string
 
 	// kube connector
 	kubeName   string
@@ -83,7 +84,10 @@ type terraformCommand struct {
 func (c *terraformCommand) run(ctx *kingpin.ParseContext) error {
 	// validate flags
 	if len(strings.Fields(fmt.Sprintf("%s %s %s", c.bitbucketToken, c.githubToken, c.gitlabToken))) > 1 {
-		return errors.New("multiple repository tokens passed")
+		return errors.New("multiple repository tokens set")
+	}
+	if c.repoType == "" && (c.gitlabToken != "" || c.githubToken != "" || c.bitbucketToken != "") {
+		return errors.New("--repo-type required when token is set")
 	}
 	if c.bitbucketURL != "" && c.bitbucketToken == "" {
 		return errors.New("--bitbucket-url requires flag --bitbucket-token")
@@ -101,7 +105,7 @@ func (c *terraformCommand) run(ctx *kingpin.ParseContext) error {
 		return errors.New("either specify a repo connector or a token")
 	}
 	if c.repoConn != "" && (c.gitlabToken != "" || c.githubToken != "" || c.bitbucketToken != "") {
-		return errors.New("token not required when passing repo connector")
+		return errors.New("token not required when using --repo-connector")
 	}
 
 	// read exported json file
@@ -157,19 +161,40 @@ func (c *terraformCommand) readAndUnmarshal(input string) (*types.Org, error) {
 }
 
 func (c *terraformCommand) createTemplateInput(org *types.Org) input {
+	// name of existing connector, if passed
+	//	repoConn := c.repoConn
+	// repo token, if passed
 	repoToken := ""
-	repoType := ""
+	// repo type, determined by repo token
+	repoType := c.repoType
+	// repo url, if passed
 	repoURL := ""
 
+	// if token is passed, set values to create connector
 	if c.bitbucketToken != "" {
+		// set org connector name in terraformCommand for conversion
+		c.repoConn = "org.bitbucket"
+
+		// input values for terraform template
+		//		repoConn = "bitbucket"
 		repoToken = c.bitbucketToken
 		repoType = "bitbucket"
 		repoURL = c.bitbucketURL
 	} else if c.githubToken != "" {
+		// set org connector name in terraformCommand for conversion
+		c.repoConn = "org.github"
+
+		// input values for terraform template
+		//		repoConn = "github"
 		repoToken = c.githubToken
 		repoType = "github"
 		repoURL = c.githubURL
 	} else if c.gitlabToken != "" {
+		// set org connector name in terraformCommand for conversion
+		c.repoConn = "org.gitlab"
+
+		// input values for terraform template
+		//		repoConn = "gitlab"
 		repoToken = c.gitlabToken
 		repoType = "gitlab"
 		repoURL = c.gitlabURL
@@ -212,7 +237,7 @@ func (c *terraformCommand) convertYaml(org *types.Org) error {
 		// downgrade to v0 if needed
 		if c.downgrade {
 			d := downgrader.New(
-				downgrader.WithCodebase(project.Name, c.repoConn),
+				downgrader.WithCodebase(org.Name+"/"+project.Name, c.repoConn),
 				downgrader.WithDockerhub(c.dockerConn),
 				downgrader.WithKubernetes(c.kubeName, c.kubeConn),
 				downgrader.WithName(project.Name),
@@ -379,6 +404,12 @@ func Register(app *kingpin.Application) {
 	cmd.Flag("repo-connector", "repository connector").
 		Default("").
 		StringVar(&c.repoConn)
+
+	cmd.Flag("repo-type", "repository type").
+		// TODO: unhide when other providers are supported
+		Hidden().
+		Default("github").
+		StringVar(&c.repoType)
 }
 
 type (

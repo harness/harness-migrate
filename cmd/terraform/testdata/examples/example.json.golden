@@ -7,7 +7,8 @@ locals {
           ci:
             codebase:
               build: <+input>
-              repoName: hello-world
+              connectorRef: org.github
+              repoName: octocat/hello-world
           EOT
       yaml_stages = <<-EOT
         stages:
@@ -58,14 +59,14 @@ locals {
 terraform {
   required_providers {
     harness = {
-      source  = ""
-      version = "= "
+      source  = "harness/harness"
+      version = "= 0.19.1"
     }
   }
 }
 
 provider "harness" {
-  endpoint = ""
+  endpoint = "https://app.harness.io/gateway"
   account_id = "DNVIhrzCr9SnPHMQUEvRspB"
 }
 
@@ -87,6 +88,37 @@ module "organization_secrets" {
   name            = each.key
   organization_id = module.organization.details.id
   value           = each.value.value
+}
+// Organization secret for GitHub connector
+module "organization_secret_github_token" {
+  source  = "harness-community/structure/harness//modules/secrets/text"
+  version = "~> 0.1"
+
+  name            = "github"
+  organization_id = module.organization.details.id
+  value           = "abcdefghijklmnop"
+}
+
+// Organization GitHub connector
+module "organization_connector_github" {
+  source  = "harness-community/connectors/harness//modules/scms/github"
+  version = "~> 0.1"
+
+  name            = "github"
+  organization_id = module.organization.details.id
+
+  url = "https://github.com"
+
+  github_credentials = {
+    type     = "http"
+    password = module.organization_secret_github_token.details.name
+    username = "octocat"
+  }
+  api_credentials = {
+    type           = "token"
+    token_location = "org"
+    token_name     = module.organization_secret_github_token.details.name
+  }
 }
 
 // Projects
@@ -117,6 +149,7 @@ EOT
 }
 
 // Project secrets
+
 module "project_helloworld_secrets" {
   for_each = local.projects["hello-world"].secrets
 
@@ -128,6 +161,7 @@ module "project_helloworld_secrets" {
   project_id      = module.projects["hello-world"].details.id
   value           = each.value.value
 }
+
 // Pull request trigger
 module "trigger_pr" {
   for_each = local.projects
@@ -148,7 +182,7 @@ source:
     spec:
       type: PullRequest
       spec:
-        connectorRef: 
+        connectorRef: module.organization_connector_github.details.id
         autoAbortPreviousExecutions: false
         payloadConditions:
           - key: targetBranch
@@ -193,7 +227,7 @@ source:
     spec:
       type: Push
       spec:
-        connectorRef: 
+        connectorRef: module.organization_connector_github.details.id
         autoAbortPreviousExecutions: false
         payloadConditions:
           - key: targetBranch
@@ -235,7 +269,7 @@ source:
     spec:
       type: Push
       spec:
-        connectorRef: 
+        connectorRef: module.organization_connector_github.details.id
         autoAbortPreviousExecutions: false
         payloadConditions:
           - key: <+trigger.payload.ref>

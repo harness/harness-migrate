@@ -161,8 +161,6 @@ func (c *terraformCommand) readAndUnmarshal(input string) (*types.Org, error) {
 }
 
 func (c *terraformCommand) createTemplateInput(org *types.Org) input {
-	// name of existing connector, if passed
-	//	repoConn := c.repoConn
 	// repo token, if passed
 	repoToken := ""
 	// repo type, determined by repo token
@@ -176,7 +174,6 @@ func (c *terraformCommand) createTemplateInput(org *types.Org) input {
 		c.repoConn = "org.bitbucket"
 
 		// input values for terraform template
-		//		repoConn = "bitbucket"
 		repoToken = c.bitbucketToken
 		repoType = "bitbucket"
 		repoURL = c.bitbucketURL
@@ -185,7 +182,6 @@ func (c *terraformCommand) createTemplateInput(org *types.Org) input {
 		c.repoConn = "org.github"
 
 		// input values for terraform template
-		//		repoConn = "github"
 		repoToken = c.githubToken
 		repoType = "github"
 		repoURL = c.githubURL
@@ -194,7 +190,6 @@ func (c *terraformCommand) createTemplateInput(org *types.Org) input {
 		c.repoConn = "org.gitlab"
 
 		// input values for terraform template
-		//		repoConn = "gitlab"
 		repoToken = c.gitlabToken
 		repoType = "gitlab"
 		repoURL = c.gitlabURL

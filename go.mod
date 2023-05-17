@@ -7,7 +7,7 @@ require (
 	github.com/alecthomas/chroma v0.10.0
 	github.com/alecthomas/kingpin/v2 v2.3.1
 	github.com/drone/funcmap v0.0.0-20220929084810-72602997d16f
-	github.com/drone/go-convert v0.0.0-20230411160400-6042ba828cf3
+	github.com/drone/go-convert v0.0.0-20230517142929-e64a953ce733
 	github.com/drone/go-scm v1.28.1
 	github.com/go-git/go-git/v5 v5.5.2
 	github.com/google/go-cmp v0.5.9
@@ -34,7 +34,7 @@ require (
 	github.com/cloudflare/circl v1.3.3 // indirect
 	github.com/dlclark/regexp2 v1.4.0 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
-	github.com/drone/spec v0.0.0-20230405164936-2404edb2a1af // indirect
+	github.com/drone/spec v0.0.0-20230502132237-74a82693b5d7 // indirect
 	github.com/emirpasic/gods v1.18.1 // indirect
 	github.com/ghodss/yaml v1.0.0 // indirect
 	github.com/go-git/gcfg v1.5.0 // indirect

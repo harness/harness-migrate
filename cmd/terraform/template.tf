@@ -21,7 +21,7 @@ locals {
       secrets = {
 {{- range .Secrets }}
         {{ .Name }} = {
-          value = "{{ .Value }}"
+          value = "{{ base64Encode .Value }}"
         }
 {{- end }}
       }
@@ -29,14 +29,16 @@ locals {
     }
 {{- end }}
   }
+{{- if .Selections.OrgSecrets }}
 {{- if .Org.Secrets }}
   secrets = {
 {{- range .Org.Secrets }}
     {{ .Name }} = {
-      value = "{{ .Value }}"
+      value = "{{ base64Encode .Value }}"
     }
 {{- end }}
   }
+{{- end }}
 {{- end }}
 }
 
@@ -64,8 +66,9 @@ module "organization" {
   name = "{{ .Account.Organization }}"
 }
 
+{{- if .Selections.OrgSecrets }}
 // Organization secrets
-{{ if .Org.Secrets -}}
+{{- if .Org.Secrets }}
 module "organization_secrets" {
   for_each = local.secrets
 
@@ -74,8 +77,9 @@ module "organization_secrets" {
 
   name            = each.key
   organization_id = module.organization.details.id
-  value           = each.value.value
+  value           = base64decode(each.value.value)
 }
+{{- end }}
 {{- end }}
 
 // Projects
@@ -117,7 +121,7 @@ module "project_{{ slugify .Name }}_secrets" {
   name            = each.key
   organization_id = module.organization.details.id
   project_id      = module.projects["{{ .Name }}"].details.id
-  value           = each.value.value
+  value           = base64decode(each.value.value)
 }
 {{ end -}}
 {{ end -}}

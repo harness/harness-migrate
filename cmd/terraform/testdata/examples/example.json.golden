@@ -43,14 +43,14 @@ locals {
       repo = "hello-world"
       secrets = {
         PROJECT_SECRET = {
-          value = "topsecret"
+          value = "dG9wc2VjcmV0"
         }
       }
     }
   }
   secrets = {
     ORG_SECRET = {
-      value = "confidential"
+      value = "Y29uZmlkZW50aWFs"
     }
   }
 }
@@ -58,14 +58,14 @@ locals {
 terraform {
   required_providers {
     harness = {
-      source  = ""
-      version = "= "
+      source  = "harness/harness"
+      version = "= 0.19.1"
     }
   }
 }
 
 provider "harness" {
-  endpoint = ""
+  endpoint = "https://app.harness.io/gateway"
   account_id = "DNVIhrzCr9SnPHMQUEvRspB"
 }
 
@@ -76,7 +76,6 @@ module "organization" {
 
   name = "exampleOrg"
 }
-
 // Organization secrets
 module "organization_secrets" {
   for_each = local.secrets
@@ -86,7 +85,7 @@ module "organization_secrets" {
 
   name            = each.key
   organization_id = module.organization.details.id
-  value           = each.value.value
+  value           = base64decode(each.value.value)
 }
 
 // Projects
@@ -126,7 +125,7 @@ module "project_helloworld_secrets" {
   name            = each.key
   organization_id = module.organization.details.id
   project_id      = module.projects["hello-world"].details.id
-  value           = each.value.value
+  value           = base64decode(each.value.value)
 }
 // Pull request trigger
 module "trigger_pr" {

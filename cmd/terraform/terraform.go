@@ -54,7 +54,8 @@ type terraformCommand struct {
 	kubeConn        string
 	dockerConn      string
 
-	downgrade bool
+	downgrade  bool
+	orgSecrets bool
 
 	color bool
 	theme string
@@ -122,6 +123,9 @@ func (c *terraformCommand) createTemplateInput(org *types.Org) input {
 		Provider: provider{
 			Source:  c.providerSource,
 			Version: c.providerVersion,
+		},
+		Selections: selections{
+			OrgSecrets: c.orgSecrets,
 		},
 	}
 }
@@ -270,6 +274,10 @@ func Register(app *kingpin.Application) {
 	cmd.Flag("repo-connector", "repository connector").
 		Default("").
 		StringVar(&c.repoConn)
+
+	cmd.Flag("org-secrets", "generate organization secrets").
+		Default("true").
+		BoolVar(&c.orgSecrets)
 }
 
 type (
@@ -279,6 +287,7 @@ type (
 		Connectors connectors
 		Org        *types.Org
 		Provider   provider
+		Selections selections
 	}
 
 	account struct {
@@ -298,5 +307,9 @@ type (
 	provider struct {
 		Source  string
 		Version string
+	}
+
+	selections struct {
+		OrgSecrets bool
 	}
 )

@@ -1,0 +1,34 @@
+{
+ "name": "octocat",
+ "project": [
+  {
+   "name": "test-repo1",
+   "repo": "https://github.com/octocat/test-repo1.git",
+   "branch": "gh-pages",
+   "type": "drone",
+   "yaml": "a2luZDogcGlwZWxpbmUKdHlwZToga3ViZXJuZXRlcwpuYW1lOiBkZWZhdWx0CgpzdGVwczoKLSBuYW1lOiBoZWxsbwogIGltYWdlOiBidXN5Ym94CiAgY29tbWFuZHM6CiAgLSBlY2hvIGhlbGxvIHdvcmxkCiAgCnRyaWdnZXI6CiAgYnJhbmNoOgogIC0gbWFpbgo=",
+   "secrets": [
+    {                                                                           
+     "name": "PROJECT_SECRET_ONE",                                              
+     "desc": "PROJECT_SECRET_ONE",                                              
+     "value": "topsecret"                                                       
+    },                                                                          
+    {                                                                           
+     "name": "PROJECT_SECRET_TWO",                                              
+     "desc": "PROJECT_SECRET_TWO",                                              
+     "value": "super-secret"                                                    
+    } 
+   ]
+  }
+ ],
+ "secrets": [
+  {
+   "name": "ORG_SECRET_ONE",
+   "value": "confidential"
+  },
+  {
+   "name": "ORG_SECRET_TWO",
+   "value": "sensitive"
+  }
+ ]
+}

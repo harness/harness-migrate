@@ -38,10 +38,10 @@ locals {
                 condition: <+trigger.branch> == "main"
                 pipelineStatus: Success
           EOT
-      branch = "main"
+      branch    = "main"
       namespace = "octocat"
-      repo = "hello-world"
-      secrets = {
+      repo      = "hello-world"
+      secrets   = {
         PROJECT_SECRET = {
           value = "dG9wc2VjcmV0"
         }

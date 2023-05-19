@@ -13,7 +13,7 @@ locals {
 {{ $pipelineStages := toYaml $yaml.pipeline.stages }}
 {{- /* Escape variable references which conflict with terraform */}}
 {{- $pipelineStages = replace $pipelineStages "${" "$${" }}
-{{- indent $pipelineStages 10 }}
+{{- indent $pipelineStages 10 -}}
       EOT
       branch = "{{ .Branch }}"
       {{- $repo := split .Repo "/" }}

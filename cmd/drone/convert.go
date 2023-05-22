@@ -198,7 +198,7 @@ func registerConvert(app *kingpin.CmdClause) {
 		Default("").
 		StringVar(&c.kubeName)
 
-	cmd.Flag("org-secrets", "optional list of organization secrets for pipelines with org secrets").
+	cmd.Flag("org-secrets", "optional list of secrets for pipelines with organization secrets").
 		Envar("ORG_SECRETS").
 		StringVar(&c.orgSecrets)
 }

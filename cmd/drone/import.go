@@ -240,7 +240,7 @@ func registerImport(app *kingpin.CmdClause) {
 		Default("").
 		StringVar(&c.repoConn)
 
-	cmd.Flag("repository-list", "optional list of repositories to export").
+	cmd.Flag("repository-list", "optional list of repositories to import").
 		Envar("REPOSITORY_LIST").
 		StringVar(&c.repositoryList)
 }

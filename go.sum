@@ -34,8 +34,10 @@ github.com/docker/go-units v0.5.0 h1:69rxXcBk27SvSaaxTtLh/8llcHD8vYHT7WSdRZ/jvr4
 github.com/docker/go-units v0.5.0/go.mod h1:fgPhTUdO+D/Jk86RDLlptpiXQzgHJF7gydDDbaIK4Dk=
 github.com/drone/funcmap v0.0.0-20220929084810-72602997d16f h1:/jEs7lulqVO2u1+XI5rW4oFwIIusxuDOVKD9PAzlW2E=
 github.com/drone/funcmap v0.0.0-20220929084810-72602997d16f/go.mod h1:nDRkX7PHq+p39AD5/usv3KZMerxZTYU/9rfLS5IDspU=
-github.com/drone/go-convert v0.0.0-20230517142929-e64a953ce733 h1:bErGIYeJ7luPdcGzetaTZACXpKoabdSrwqIBLEmZvIQ=
-github.com/drone/go-convert v0.0.0-20230517142929-e64a953ce733/go.mod h1:aGyq3jDZrHPuHY26DDXNgIMtY70N4XVSBig7wwQE9ZE=
+github.com/drone/go-convert v0.0.0-20230522132101-c914f21e3558 h1:Dfqk39VKtXJuyi8fkp5bDcDw5M33/JZC/dNsqMqgrvA=
+github.com/drone/go-convert v0.0.0-20230522132101-c914f21e3558/go.mod h1:aGyq3jDZrHPuHY26DDXNgIMtY70N4XVSBig7wwQE9ZE=
+github.com/drone/go-convert v0.0.0-20230522142935-f3e18b4fe32a h1:URzb9xOv1RfOBxeZgcucejVy9yQjE4gf77bXf0DhVd8=
+github.com/drone/go-convert v0.0.0-20230522142935-f3e18b4fe32a/go.mod h1:aGyq3jDZrHPuHY26DDXNgIMtY70N4XVSBig7wwQE9ZE=
 github.com/drone/go-scm v1.28.1 h1:3WukxtsFFU5omHfp8dU3EXjEQCmtqAZkCj9pHHs+Xus=
 github.com/drone/go-scm v1.28.1/go.mod h1:DFIJJjhMj0TSXPz+0ni4nyZ9gtTtC40Vh/TGRugtyWw=
 github.com/drone/spec v0.0.0-20230502132237-74a82693b5d7 h1:DxYvZru67kAmJWYnwYMcL2ixEEMRlf4K/mQ0OatCrd4=
@@ -61,6 +63,8 @@ github.com/go-sql-driver/mysql v1.7.0/go.mod h1:OXbVy3sEdcQ2Doequ6Z5BW6fXNQTmx+9
 github.com/google/go-cmp v0.2.0/go.mod h1:oXzfMopK8JAjlY9xF4vHSVASa0yLyX7SntLO5aqRK0M=
 github.com/google/go-cmp v0.5.9 h1:O2Tfq5qg4qc4AmwVlvv0oLiVAGB7enBSJ2x2DqQFi38=
 github.com/google/go-cmp v0.5.9/go.mod h1:17dUlkBOakJ0+DkrSSNjCkIjxS6bF9zb3elmeNGIjoY=
+github.com/google/subcommands v1.2.0 h1:vWQspBTo2nEqTUFita5/KeEWlUL8kQObDFbub/EN9oE=
+github.com/google/subcommands v1.2.0/go.mod h1:ZjhPrFU+Olkh9WazFPsl27BQ4UPiG37m3yTrtFlrHVk=
 github.com/gotidy/ptr v1.4.0 h1:7++suUs+HNHMnyz6/AW3SE+4EnBhupPSQTSI7QNijVc=
 github.com/gotidy/ptr v1.4.0/go.mod h1:MjRBG6/IETiiZGWI8LrRtISXEji+8b/jigmj2q0mEyM=
 github.com/h2non/gock v1.0.9/go.mod h1:CZMcB0Lg5IWnr9bF79pPMg9WeV6WumxQiUJ1UvdO1iE=

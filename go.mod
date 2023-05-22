@@ -7,7 +7,7 @@ require (
 	github.com/alecthomas/chroma v0.10.0
 	github.com/alecthomas/kingpin/v2 v2.3.1
 	github.com/drone/funcmap v0.0.0-20220929084810-72602997d16f
-	github.com/drone/go-convert v0.0.0-20230517142929-e64a953ce733
+	github.com/drone/go-convert v0.0.0-20230522142935-f3e18b4fe32a
 	github.com/drone/go-scm v1.28.1
 	github.com/go-git/go-git/v5 v5.5.2
 	github.com/google/go-cmp v0.5.9
@@ -40,6 +40,7 @@ require (
 	github.com/go-git/gcfg v1.5.0 // indirect
 	github.com/go-git/go-billy/v5 v5.4.0 // indirect
 	github.com/go-sql-driver/mysql v1.7.0 // indirect
+	github.com/google/subcommands v1.2.0 // indirect
 	github.com/h2non/parth v0.0.0-20190131123155-b4df798d6542 // indirect
 	github.com/imdario/mergo v0.3.13 // indirect
 	github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99 // indirect

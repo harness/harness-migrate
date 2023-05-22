@@ -86,6 +86,14 @@ Convert a github pipeline:
 harness-migrate github convert /path/to/.github/workflows/main.yml
 ```
 
+### GitLab
+
+Convert a gitlab pipeline:
+
+```term
+harness-migrate gitlab convert /path/to/.gitlab-ci.yml
+```
+
 ### Terraform
 
 Generate terraform configuration from an export, and apply it to your Harness account:

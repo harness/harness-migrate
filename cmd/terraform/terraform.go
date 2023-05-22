@@ -131,10 +131,18 @@ func (c *terraformCommand) createTemplateInput(org *types.Org) input {
 }
 
 func (c *terraformCommand) convertYaml(org *types.Org) error {
+	// read all organization secrets
+	var orgSecrets []string
+	for _, secret := range org.Secrets {
+		orgSecrets = append(orgSecrets, secret.Name)
+	}
+
 	converter := drone.New(
 		drone.WithDockerhub(c.dockerConn),
 		drone.WithKubernetes(c.kubeName, c.kubeConn),
+		drone.WithOrgSecrets(orgSecrets...),
 	)
+
 	for _, project := range org.Projects {
 		// convert to v1
 		convertedYaml, err := converter.ConvertBytes(project.Yaml)

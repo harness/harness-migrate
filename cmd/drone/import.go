@@ -41,7 +41,6 @@ type importCommand struct {
 	harnessAddress string
 
 	repositoryList string
-	orgSecrets     string
 
 	githubToken    string
 	githubURL      string
@@ -123,10 +122,6 @@ func (c *importCommand) createImporter(log slog.Logger, ctx context.Context) (*m
 
 	if c.repositoryList != "" {
 		importer.RepositoryList = strings.Split(c.repositoryList, ",")
-	}
-
-	if c.orgSecrets != "" {
-		importer.OrgSecrets = strings.Split(c.orgSecrets, ",")
 	}
 
 	if c.repoConn == "" {
@@ -248,8 +243,4 @@ func registerImport(app *kingpin.CmdClause) {
 	cmd.Flag("repository-list", "optional list of repositories to import").
 		Envar("REPOSITORY_LIST").
 		StringVar(&c.repositoryList)
-
-	cmd.Flag("org-secrets", "optional list of organization secrets convert required when converting pipelines with org secrets").
-		Envar("ORG_SECRETS").
-		StringVar(&c.orgSecrets)
 }

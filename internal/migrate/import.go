@@ -39,9 +39,9 @@ type Importer struct {
 	ScmToken string
 
 	RepositoryList []string
-	OrgSecrets     []string
-	DockerConn     string
-	RepoConn       string
+
+	DockerConn string
+	RepoConn   string
 
 	KubeName string
 	KubeConn string
@@ -95,6 +95,7 @@ func (m *Importer) Import(ctx context.Context, data *types.Org) error {
 
 	m.Tracer.Start("create organisation secrets if they exist")
 	// create org secrets
+	var orgSecrets []string
 	for _, secret := range data.Secrets {
 		if _, err = m.Harness.FindSecretOrg(org.ID, secret.Name); err != nil {
 			s := util.CreateSecretOrg(org.ID, secret.Name, secret.Value)
@@ -103,6 +104,7 @@ func (m *Importer) Import(ctx context.Context, data *types.Org) error {
 				return err
 			}
 		}
+		orgSecrets = append(orgSecrets, secret.Name)
 	}
 
 	m.Tracer.Stop("create organisation secrets [done]")
@@ -207,7 +209,7 @@ func (m *Importer) Import(ctx context.Context, data *types.Org) error {
 		converter := drone.New(
 			drone.WithDockerhub(dockerConn),
 			drone.WithKubernetes(m.KubeName, m.KubeConn),
-			drone.WithOrgSecrets(m.OrgSecrets...),
+			drone.WithOrgSecrets(orgSecrets...),
 		)
 
 		convertedYaml, err := converter.ConvertBytes(srcProject.Yaml)

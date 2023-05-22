@@ -39,6 +39,7 @@ type Importer struct {
 	ScmToken string
 
 	RepositoryList []string
+	OrgSecrets     []string
 	DockerConn     string
 	RepoConn       string
 
@@ -206,6 +207,7 @@ func (m *Importer) Import(ctx context.Context, data *types.Org) error {
 		converter := drone.New(
 			drone.WithDockerhub(dockerConn),
 			drone.WithKubernetes(m.KubeName, m.KubeConn),
+			drone.WithOrgSecrets(m.OrgSecrets...),
 		)
 
 		convertedYaml, err := converter.ConvertBytes(srcProject.Yaml)

@@ -1,6 +1,6 @@
 _notes*
 _testing
-**/testdata/*/output/*
+**/testdata/**/output/*
 harness-migrate
 .env
 /data.json

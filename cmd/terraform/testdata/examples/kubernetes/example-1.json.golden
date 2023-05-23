@@ -1,63 +1,80 @@
 // Locals
 locals {
   projects = {
-{{- range .Org.Projects }}
-{{- $yaml := fromYaml .Yaml }}
-    {{ .Name }} = {
+    test-repo1 = {
       yaml_properties = <<-EOT
         properties:
-{{ indent (toYaml $yaml.pipeline.properties) 10 -}}
-      EOT
+          ci:
+            codebase:
+              build: <+input>
+              repoName: test-repo1
+          EOT
       yaml_stages = <<-EOT
         stages:
-{{ $pipelineStages := toYaml $yaml.pipeline.stages }}
-{{- /* Escape variable references which conflict with terraform */}}
-{{- $pipelineStages = replace $pipelineStages "${" "$${" }}
-{{- indent $pipelineStages 10 -}}
-      EOT
-      branch    = "{{ .Branch }}"
-      {{- $repo := split .Repo "/" }}
-      namespace = "{{ index $repo 3 }}"
-      repo      = "{{ trimSuffix (index $repo 4) ".git" }}"
-{{- if .Secrets }}
+          - stage:
+              identifier: default
+              name: default
+              spec:
+                cloneCodebase: true
+                execution:
+                  steps:
+                  - step:
+                      identifier: hello
+                      name: hello
+                      spec:
+                        command: echo hello world
+                        connectorRef: exampleDockerConn
+                        image: busybox
+                      timeout: ""
+                      type: Run
+                infrastructure:
+                  spec:
+                    connectorRef: exampleKubeConn
+                    namespace: exampleNamespace
+                  type: KubernetesDirect
+                platform:
+                  arch: Amd64
+                  os: Linux
+              type: CI
+              when:
+                condition: <+trigger.branch> == "main"
+                pipelineStatus: Success
+          EOT
+      branch    = "gh-pages"
+      namespace = "octocat"
+      repo      = "test-repo1"
       secrets   = {
-{{- range .Secrets }}
-        {{ .Name }} = {
-          value = "{{ base64Encode .Value }}"
+        PROJECT_SECRET_ONE = {
+          value = "dG9wc2VjcmV0"
         }
-{{- end }}
+        PROJECT_SECRET_TWO = {
+          value = "c3VwZXItc2VjcmV0"
+        }
       }
-{{- end }}
     }
-{{- end }}
   }
-{{- if .Selections.OrgSecrets }}
-{{- if .Org.Secrets }}
   secrets = {
-{{- range .Org.Secrets }}
-    {{ .Name }} = {
-      value = "{{ base64Encode .Value }}"
+    ORG_SECRET_ONE = {
+      value = "Y29uZmlkZW50aWFs"
     }
-{{- end }}
+    ORG_SECRET_TWO = {
+      value = "c2Vuc2l0aXZl"
+    }
   }
-{{- end }}
-{{- end }}
 }
 
 terraform {
   required_providers {
     harness = {
-      source  = "{{ .Provider.Source }}"
-      version = "= {{ .Provider.Version }}"
+      source  = "harness/harness"
+      version = "= 0.19.1"
     }
   }
 }
 
 provider "harness" {
-  endpoint = "{{ .Auth.Endpoint }}"
-{{- if .Account.ID }}
-  account_id = "{{ .Account.ID }}"
-{{- end }}
+  endpoint = "https://app.harness.io/gateway"
+  account_id = "DNVIhrzCr9SnPHMQUEvRspB"
 }
 
 // Organization
@@ -65,12 +82,9 @@ module "organization" {
   source  = "harness-community/structure/harness//modules/organizations"
   version = "~> 0.1"
 
-  name = "{{ .Account.Organization }}"
+  name = "exampleOrg"
 }
-
-{{- if .Selections.OrgSecrets }}
 // Organization secrets
-{{- if .Org.Secrets }}
 module "organization_secrets" {
   for_each = local.secrets
 
@@ -81,8 +95,6 @@ module "organization_secrets" {
   organization_id = module.organization.details.id
   value           = base64decode(each.value.value)
 }
-{{- end }}
-{{- end }}
 
 // Projects
 module "projects" {
@@ -112,22 +124,17 @@ EOT
 }
 
 // Project secrets
-{{ range .Org.Projects -}}
-{{ if .Secrets -}}
-module "project_{{ slugify .Name }}_secrets" {
-  for_each = local.projects["{{ .Name }}"].secrets
+module "project_testrepo1_secrets" {
+  for_each = local.projects["test-repo1"].secrets
 
   source  = "harness-community/structure/harness//modules/secrets/text"
   version = "~> 0.1"
 
   name            = each.key
   organization_id = module.organization.details.id
-  project_id      = module.projects["{{ .Name }}"].details.id
+  project_id      = module.projects["test-repo1"].details.id
   value           = base64decode(each.value.value)
 }
-{{ end -}}
-{{ end -}}
-
 // Pull request trigger
 module "trigger_pr" {
   for_each = local.projects
@@ -148,7 +155,7 @@ source:
     spec:
       type: PullRequest
       spec:
-        connectorRef: {{ .Connectors.Repo }}
+        connectorRef: 
         autoAbortPreviousExecutions: false
         payloadConditions:
           - key: targetBranch
@@ -193,7 +200,7 @@ source:
     spec:
       type: Push
       spec:
-        connectorRef: {{ .Connectors.Repo }}
+        connectorRef: 
         autoAbortPreviousExecutions: false
         payloadConditions:
           - key: targetBranch
@@ -235,7 +242,7 @@ source:
     spec:
       type: Push
       spec:
-        connectorRef: {{ .Connectors.Repo }}
+        connectorRef: 
         autoAbortPreviousExecutions: false
         payloadConditions:
           - key: <+trigger.payload.ref>

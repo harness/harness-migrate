@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"strings"
 
 	"github.com/drone/go-convert/convert/drone"
 	"github.com/drone/go-convert/convert/harness/downgrader"
@@ -41,6 +42,8 @@ type convertCommand struct {
 	kubeConn   string
 	dockerConn string
 
+	orgSecrets string
+
 	downgrade   bool
 	beforeAfter bool
 
@@ -61,6 +64,9 @@ func (c *convertCommand) run(ctx *kingpin.ParseContext) error {
 	converter := drone.New(
 		drone.WithDockerhub(c.dockerConn),
 		drone.WithKubernetes(c.kubeName, c.kubeConn),
+		drone.WithOrgSecrets(
+			strings.Split(c.orgSecrets, ",")...,
+		),
 	)
 	after, err := converter.ConvertBytes(before)
 	if err != nil {
@@ -191,4 +197,8 @@ func registerConvert(app *kingpin.CmdClause) {
 	cmd.Flag("docker-connector", "dockerhub connector").
 		Default("").
 		StringVar(&c.kubeName)
+
+	cmd.Flag("org-secrets", "optional list of secrets for pipelines with organization secrets").
+		Envar("ORG_SECRETS").
+		StringVar(&c.orgSecrets)
 }

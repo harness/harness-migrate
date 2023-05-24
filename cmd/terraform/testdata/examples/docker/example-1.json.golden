@@ -77,15 +77,15 @@ module "organization" {
   name = "exampleOrg"
 }
 // Organization secrets
-module "organization_secrets" {
+resource "harness_platform_secret_text" "organization" {
   for_each = local.secrets
 
-  source  = "harness-community/structure/harness//modules/secrets/text"
-  version = "~> 0.1"
-
-  name            = each.key
-  organization_id = module.organization.details.id
-  value           = base64decode(each.value.value)
+  identifier                = each.key
+  name                      = each.key
+  org_id                    = module.organization.details.id
+  secret_manager_identifier = "harnessSecretManager"
+  value                     = base64decode(each.value.value)
+  value_type                = "Inline"
 }
 
 // Projects
@@ -116,16 +116,29 @@ EOT
 }
 
 // Project secrets
-module "project_helloworld_secrets" {
+resource "harness_platform_secret_text" "helloworld" {
   for_each = local.projects["hello-world"].secrets
 
-  source  = "harness-community/structure/harness//modules/secrets/text"
-  version = "~> 0.1"
+  identifier                = each.key
+  name                      = each.key
+  org_id                    = module.organization.details.id
+  project_id                = module.projects["hello-world"].details.id
+  secret_manager_identifier = "harnessSecretManager"
+  value                     = base64decode(each.value.value)
+  value_type                = "Inline"
+}
 
-  name            = each.key
-  organization_id = module.organization.details.id
-  project_id      = module.projects["hello-world"].details.id
-  value           = base64decode(each.value.value)
+// When creating a new Project, there is a potential race-condition
+// as the project comes up.  This resource will introduce
+// a slight delay in further execution to wait for the resources to
+// complete.
+resource "time_sleep" "helloworld_secret_setup" {
+  depends_on = [
+    harness_platform_secret_text.helloworld
+  ]
+
+  create_duration  = "15s"
+  destroy_duration = "15s"
 }
 // Pull request trigger
 module "trigger_pr" {

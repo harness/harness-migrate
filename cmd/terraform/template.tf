@@ -69,17 +69,17 @@ module "organization" {
 }
 
 {{- if .Selections.OrgSecrets }}
-// Organization secrets
 {{- if .Org.Secrets }}
-module "organization_secrets" {
+// Organization secrets
+resource "harness_platform_secret_text" "organization" {
   for_each = local.secrets
 
-  source  = "harness-community/structure/harness//modules/secrets/text"
-  version = "~> 0.1"
-
-  name            = each.key
-  organization_id = module.organization.details.id
-  value           = base64decode(each.value.value)
+  identifier                = each.key
+  name                      = each.key
+  org_id                    = module.organization.details.id
+  secret_manager_identifier = "harnessSecretManager"
+  value                     = base64decode(each.value.value)
+  value_type                = "Inline"
 }
 {{- end }}
 {{- end }}
@@ -114,16 +114,29 @@ EOT
 // Project secrets
 {{ range .Org.Projects -}}
 {{ if .Secrets -}}
-module "project_{{ slugify .Name }}_secrets" {
+resource "harness_platform_secret_text" "{{ slugify .Name }}" {
   for_each = local.projects["{{ .Name }}"].secrets
 
-  source  = "harness-community/structure/harness//modules/secrets/text"
-  version = "~> 0.1"
+  identifier                = each.key
+  name                      = each.key
+  org_id                    = module.organization.details.id
+  project_id                = module.projects["{{ .Name }}"].details.id
+  secret_manager_identifier = "harnessSecretManager"
+  value                     = base64decode(each.value.value)
+  value_type                = "Inline"
+}
 
-  name            = each.key
-  organization_id = module.organization.details.id
-  project_id      = module.projects["{{ .Name }}"].details.id
-  value           = base64decode(each.value.value)
+// When creating a new Project, there is a potential race-condition
+// as the project comes up.  This resource will introduce
+// a slight delay in further execution to wait for the resources to
+// complete.
+resource "time_sleep" "{{ slugify .Name }}_secret_setup" {
+  depends_on = [
+    harness_platform_secret_text.{{ slugify .Name }}
+  ]
+
+  create_duration  = "15s"
+  destroy_duration = "15s"
 }
 {{ end -}}
 {{ end -}}

@@ -135,7 +135,7 @@ func registerConvert(app *kingpin.CmdClause) {
 		StringVar(&c.output)
 
 	cmd.Flag("downgrade", "downgrade to the legacy yaml format").
-		Default("false").
+		Default("true").
 		BoolVar(&c.downgrade)
 
 	cmd.Flag("before-after", "print the before and after").

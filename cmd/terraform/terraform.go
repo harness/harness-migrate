@@ -36,7 +36,7 @@ import (
 	_ "embed"
 )
 
-//go:embed template.tf
+//go:embed default.tmpl
 var defaultTmpl string
 
 type terraformCommand struct {

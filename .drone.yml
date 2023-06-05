@@ -29,39 +29,39 @@ steps:
       - tar -cvzf release/harness-migrate-windows-arm64.tar.gz -C release/windows/arm64 harness-migrate.exe
 
       - sha256sum release/*.tar.gz > release/harness-migrate-checksums.txt
-  - name: publish docker-amd64
-    image: plugins/docker
-    pull: if-not-exists
-    settings:
-      repo: harness/harness-migrate
-      auto_tag: true
-      auto_tag_suffix: linux-amd64
-      dockerfile: docker/Dockerfile.linux.amd64
-      username:
-        from_secret: harness-docker-username
-      password:
-        from_secret: harness-docker-password
-    when:
-      ref:
-        - refs/heads/master
-        - refs/tags/v*
+#  - name: publish docker-amd64
+#    image: plugins/docker
+#    pull: if-not-exists
+#    settings:
+#      repo: harness/harness-migrate
+#      auto_tag: true
+#      auto_tag_suffix: linux-amd64
+#      dockerfile: docker/Dockerfile.linux.amd64
+#      username:
+#        from_secret: harness-docker-username
+#      password:
+#        from_secret: harness-docker-password
+#    when:
+#      ref:
+#        - refs/heads/master
+#        - refs/tags/v*
 
-  - name: publish docker-arm64
-    image: plugins/docker
-    pull: if-not-exists
-    settings:
-      repo: harness/harness-migrate
-      auto_tag: true
-      auto_tag_suffix: linux-arm64
-      dockerfile: docker/Dockerfile.linux.arm64
-      username:
-        from_secret: harness-docker-username
-      password:
-        from_secret: harness-docker-password
-    when:
-      ref:
-        - refs/heads/master
-        - refs/tags/v*
+#  - name: publish docker-arm64
+#    image: plugins/docker
+#    pull: if-not-exists
+#    settings:
+#      repo: harness/harness-migrate
+#      auto_tag: true
+#      auto_tag_suffix: linux-arm64
+#      dockerfile: docker/Dockerfile.linux.arm64
+#      username:
+#        from_secret: harness-docker-username
+#      password:
+#        from_secret: harness-docker-password
+#    when:
+#      ref:
+#        - refs/heads/master
+#        - refs/tags/v*
 
   - name: release
     image: plugins/github-release
@@ -80,26 +80,26 @@ trigger:
     - master
     - refs/tags/v*
 
----
-kind: pipeline
-type: docker
-name: docker manifest
-
-steps:
-  - name: manifest
-    image: plugins/manifest
-    settings:
-      spec: docker/manifest.tmpl
-      auto_tag: true
-      ignore_missing: true
-      password:
-        from_secret: harness-docker-password
-      username:
-        from_secret: harness-docker-username
-
-depends_on:
-  - default
-trigger:
-  ref:
-    - refs/heads/master
-    - refs/tags/v*
+#---
+#kind: pipeline
+#type: docker
+#name: docker manifest
+#
+#steps:
+#  - name: manifest
+#    image: plugins/manifest
+#    settings:
+#      spec: docker/manifest.tmpl
+#      auto_tag: true
+#      ignore_missing: true
+#      password:
+#        from_secret: harness-docker-password
+#      username:
+#        from_secret: harness-docker-username
+#
+#depends_on:
+#  - default
+#trigger:
+#  ref:
+#    - refs/heads/master
+#    - refs/tags/v*

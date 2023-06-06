@@ -43,22 +43,16 @@ func CreateLogger(debug bool) slog.Logger {
 }
 
 // CreateImporter helper function creates an importer
-func CreateImporter(harnessAccount, harnessOrg, harnessToken, githubToken, gitlabToken, bitbucketToken, harnessAddress string) *migrate.Importer {
+func CreateImporter(harnessAccount, harnessOrg, harnessToken, harnessAddress, scmOrg, scmToken, scmType, scmURL string) *migrate.Importer {
 	importer := &migrate.Importer{
 		Harness:    harness.New(harnessAccount, harnessToken, harness.WithAddress(harnessAddress)),
 		HarnessOrg: harnessOrg,
+		ScmOrg:     scmOrg,
+		ScmToken:   scmToken,
+		ScmType:    scmType,
+		ScmURL:     scmURL,
 	}
-	switch {
-	case githubToken != "":
-		importer.ScmType = "github"
-		importer.ScmToken = githubToken
-	case gitlabToken != "":
-		importer.ScmType = "gitlab"
-		importer.ScmToken = gitlabToken
-	case bitbucketToken != "":
-		importer.ScmType = "bitbucket"
-		importer.ScmToken = bitbucketToken
-	}
+
 	return importer
 }
 

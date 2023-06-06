@@ -78,16 +78,49 @@ func (c *migrateCommand) run(*kingpin.ParseContext) error {
 		return err
 	}
 
+	scmToken := ""
+	scmType := ""
+	scmURL := ""
+
+	switch {
+	case c.githubToken != "":
+		scmToken = c.githubToken
+		scmType = "github"
+		if c.githubURL == "" {
+			scmURL = "https://github.com"
+		} else {
+			scmURL = c.githubURL
+		}
+	case c.gitlabToken != "":
+		scmToken = c.gitlabToken
+		scmType = "gitlab"
+		if c.gitlabURL == "" {
+			scmURL = "https://gitlab.com"
+		} else {
+			scmURL = c.gitlabURL
+		}
+	case c.bitbucketToken != "":
+		scmToken = c.bitbucketToken
+		scmType = "bitbucket"
+		if c.bitbucketURL != "" {
+			scmURL = c.bitbucketURL
+		} else {
+			scmURL = "https://bitbucket.org"
+		}
+	}
+
 	// create the importer
 	importer := util.CreateImporter(
 		c.harnessAccount,
 		c.harnessOrg,
 		c.harnessToken,
-		c.githubToken,
-		c.gitlabToken,
-		c.bitbucketToken,
 		c.harnessAddress,
+		org.Name,
+		scmToken,
+		scmType,
+		scmURL,
 	)
+
 	importer.Tracer = tracer_
 
 	// create an scm cient to verify the token

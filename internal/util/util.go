@@ -49,7 +49,7 @@ func CreateSecretOrg(org, identifier, data string) *harness.Secret {
 }
 
 // CreateGithubConnector helper function to create a github connector
-func CreateGithubConnector(org, id, username, token string) *harness.Connector {
+func CreateGithubConnector(org, id, username, url, token string) *harness.Connector {
 	return &harness.Connector{
 		Name:          id,
 		Identifier:    id,
@@ -57,7 +57,7 @@ func CreateGithubConnector(org, id, username, token string) *harness.Connector {
 		Type:          "Github",
 		Spec: &harness.ConnectorGithub{
 			Type: "Account",
-			URL:  "https://github.com",
+			URL:  url,
 			Authentication: &harness.Resource{
 				Type: "Http",
 				Spec: &harness.Resource{

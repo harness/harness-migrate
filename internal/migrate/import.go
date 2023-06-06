@@ -37,6 +37,8 @@ type Importer struct {
 	ScmType  string // github, gitlab, bitbucket
 	ScmLogin string
 	ScmToken string
+	ScmOrg   string
+	ScmURL   string
 
 	RepositoryList []string
 
@@ -120,7 +122,7 @@ func (m *Importer) Import(ctx context.Context, data *types.Org) error {
 			case "gitlab":
 				conn = util.CreateGitlabConnector(org.ID, m.ScmType, m.ScmLogin, "org."+m.ScmType)
 			default:
-				conn = util.CreateGithubConnector(org.ID, m.ScmType, m.ScmLogin, "org."+m.ScmType)
+				conn = util.CreateGithubConnector(org.ID, m.ScmType, m.ScmLogin, m.ScmURL+"/"+m.ScmOrg, "org."+m.ScmType)
 			}
 			if err := m.Harness.CreateConnectorOrg(conn); err != nil {
 				return err

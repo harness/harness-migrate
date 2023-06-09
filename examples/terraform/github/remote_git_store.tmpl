@@ -1,0 +1,388 @@
+{{- /* Example Terraform template for use with GitHub and Harness Git Experience */}}
+
+// Locals
+locals {
+  projects = {
+{{- range .Org.Projects }}
+{{- $yaml := fromYaml .Yaml }}
+    {{ .Name }} = {
+      yaml_properties = <<-EOT
+        properties:
+{{ indent (toYaml $yaml.pipeline.properties) 10 -}}
+      EOT
+      yaml_stages = <<-EOT
+        stages:
+{{ $pipelineStages := toYaml $yaml.pipeline.stages }}
+{{- /* Escape variable references which conflict with terraform */}}
+{{- $pipelineStages = replace $pipelineStages "${" "$${" }}
+{{- indent $pipelineStages 10 -}}
+      EOT
+      branch    = "{{ .Branch }}"
+      {{- $repo := split .Repo "/" }}
+      namespace = "{{ index $repo 3 }}"
+      repo      = "{{ trimSuffix (index $repo 4) ".git" }}"
+{{- if .Secrets }}
+      secrets   = {
+{{- range .Secrets }}
+        {{ .Name }} = {
+          value = "{{ base64Encode .Value }}"
+        }
+{{- end }}
+      }
+{{- end }}
+    }
+{{- end }}
+  }
+{{- if .Selections.OrgSecrets }}
+{{- if .Org.Secrets }}
+  secrets = {
+{{- range .Org.Secrets }}
+    {{ .Name }} = {
+      value = "{{ base64Encode .Value }}"
+    }
+{{- end }}
+  }
+{{- end }}
+{{- end }}
+}
+
+terraform {
+  required_providers {
+    harness = {
+      source  = "{{ .Provider.Source }}"
+      version = "= {{ .Provider.Version }}"
+    }
+  }
+}
+
+provider "harness" {
+  endpoint = "{{ .Auth.Endpoint }}"
+{{- if .Account.ID }}
+  account_id = "{{ .Account.ID }}"
+{{- end }}
+}
+
+// Organization
+module "organization" {
+  source  = "harness-community/structure/harness//modules/organizations"
+  version = "~> 0.1"
+
+  name = "{{ .Account.Organization }}"
+}
+
+{{- if .Selections.OrgSecrets }}
+{{- if .Org.Secrets }}
+// Organization secrets
+resource "harness_platform_secret_text" "organization" {
+  for_each = local.secrets
+
+  identifier                = each.key
+  name                      = each.key
+  org_id                    = module.organization.details.id
+  secret_manager_identifier = "harnessSecretManager"
+  value                     = base64decode(each.value.value)
+  value_type                = "Inline"
+}
+{{- end }}
+{{- end }}
+
+// Projects
+module "projects" {
+  for_each = local.projects
+
+  source  = "harness-community/structure/harness//modules/projects"
+  version = "~> 0.1"
+
+  name            = each.key
+  organization_id = module.organization.details.id
+}
+
+// Pipelines
+resource "harness_platform_pipeline" "projects" {
+  for_each = local.projects
+
+  identifier = lower(replace(replace(each.key, " ", "_"), "-", "_"))
+  name       = each.key
+  org_id     = module.organization.details.id
+  project_id = module.projects[each.key].details.id
+
+  git_details {
+    branch_name    = each.value.branch
+    commit_message = "Commit .harness/ci.yaml"
+    file_path      = ".harness/ci.yaml"
+    connector_ref  = "{{ .Connectors.Repo }}"
+    store_type     = "REMOTE"
+    repo_name      = "${each.value.namespace}/${each.value.repo}"
+  }
+
+  yaml = <<EOT
+pipeline:
+   name: ${each.key}
+   identifier: ${lower(replace(replace(each.key, " ", "_"), "-", "_"))}
+   projectIdentifier: ${module.projects[each.key].details.id}
+   orgIdentifier: ${module.organization.details.id}
+   ${indent(4, each.value.yaml_properties)}
+   ${indent(4, each.value.yaml_stages)}
+EOT
+}
+
+// Project secrets
+{{ range .Org.Projects -}}
+{{ if .Secrets -}}
+resource "harness_platform_secret_text" "{{ slugify .Name }}" {
+  for_each = local.projects["{{ .Name }}"].secrets
+
+  identifier                = each.key
+  name                      = each.key
+  org_id                    = module.organization.details.id
+  project_id                = module.projects["{{ .Name }}"].details.id
+  secret_manager_identifier = "harnessSecretManager"
+  value                     = base64decode(each.value.value)
+  value_type                = "Inline"
+}
+
+// When creating a new Project, there is a potential race-condition
+// as the project comes up.  This resource will introduce
+// a slight delay in further execution to wait for the resources to
+// complete.
+resource "time_sleep" "{{ slugify .Name }}_secret_setup" {
+  depends_on = [
+    harness_platform_secret_text.{{ slugify .Name }}
+  ]
+
+  create_duration  = "15s"
+  destroy_duration = "15s"
+}
+{{ end -}}
+{{ end -}}
+
+// Pull request input set
+resource "harness_platform_input_set" "pr" {
+  for_each = local.projects
+
+  identifier = "pull_request"
+  name       = "Pull Request"
+
+  org_id      = module.organization.details.id
+  project_id  = module.projects[each.key].details.id
+  pipeline_id = harness_platform_pipeline.projects[each.key].id
+
+  git_details {
+    branch_name    = each.value.branch
+    commit_message = "Commit .harness/inputset_pr.yaml"
+    file_path      = ".harness/inputset_pr.yaml"
+    connector_ref  = "{{ .Connectors.Repo }}"
+    store_type     = "REMOTE"
+    repo_name      = "${each.value.namespace}/${each.value.repo}"
+  }
+
+  yaml = <<-EOT
+    inputSet:
+      identifier: pull_request
+      name: Pull Request
+      orgIdentifier: ${module.organization.details.id}
+      projectIdentifier: ${module.projects[each.key].details.id}
+      pipeline:
+        identifier: ${harness_platform_pipeline.projects[each.key].id}
+        properties:
+          ci:
+            codebase:
+              build:
+                type: PR
+                spec:
+                  number: <+trigger.prNumber>
+      object Object: pipeline.properties.ci.codebase
+EOT
+}
+
+// Pull request trigger
+module "trigger_pr" {
+  for_each = local.projects
+  
+  source  = "harness-community/content/harness//modules/triggers"
+  version = "~> 0.1"
+
+  name            = "Pull Request"
+  organization_id = module.organization.details.id
+  project_id      = module.projects[each.key].details.id
+  pipeline_id     = harness_platform_pipeline.projects[each.key].id
+  yaml_data       = <<-EOT
+    source:
+      type: Webhook
+      spec:
+        type: Github
+        spec:
+          type: PullRequest
+          spec:
+            connectorRef: {{ .Connectors.Repo }}
+            autoAbortPreviousExecutions: false
+            payloadConditions:
+              - key: targetBranch
+                operator: Equals
+                value: ${each.value.branch}
+            headerConditions: []
+            repoName: ${each.value.namespace}/${each.value.repo}
+            actions:
+              - Open
+              - Reopen
+              - Synchronize
+    pipelineBranchName: <+trigger.branch>
+    inputSetRefs:
+      - ${harness_platform_input_set.pr[each.key].id}
+EOT
+}
+
+// Tag input set
+resource "harness_platform_input_set" "tag" {
+  for_each = local.projects
+
+  identifier = "tag"
+  name       = "Tag"
+
+  org_id      = module.organization.details.id
+  project_id  = module.projects[each.key].details.id
+  pipeline_id = harness_platform_pipeline.projects[each.key].id
+
+  git_details {
+    branch_name    = each.value.branch
+    commit_message = "Commit .harness/inputset_tag.yaml"
+    file_path      = ".harness/inputset_tag.yaml"
+    connector_ref  = "{{ .Connectors.Repo }}"
+    store_type     = "REMOTE"
+    repo_name      = "${each.value.namespace}/${each.value.repo}"
+  }
+
+  yaml = <<-EOT
+    inputSet:
+      identifier: tag
+      name: Tag
+      orgIdentifier: ${module.organization.details.id}
+      projectIdentifier: ${module.projects[each.key].details.id}
+      pipeline:
+        identifier: ${harness_platform_pipeline.projects[each.key].id}
+        properties:
+          ci:
+            codebase:
+              build:
+                type: tag
+                spec:
+                  tag: <+trigger.tag>
+      object Object: pipeline.properties.ci.codebase
+EOT
+}
+
+// Tag trigger
+module "trigger_tag" {
+  for_each = local.projects
+  
+  source  = "harness-community/content/harness//modules/triggers"
+  version = "~> 0.1"
+
+  name            = "Tag"
+  organization_id = module.organization.details.id
+  project_id      = module.projects[each.key].details.id
+  pipeline_id     = harness_platform_pipeline.projects[each.key].id
+  yaml_data       = <<-EOT
+    source:
+      type: Webhook
+      spec:
+        type: Github
+        spec:
+          type: Push
+          spec:
+            connectorRef: {{ .Connectors.Repo }}
+            autoAbortPreviousExecutions: false
+            payloadConditions:
+              - key: <+trigger.payload.ref>
+                operator: StartsWith
+                value: refs/tags/
+            headerConditions: []
+            repoName: ${each.value.namespace}/${each.value.repo}
+            actions: []
+    pipelineBranchName: <+trigger.branch>
+    inputSetRefs:
+      - ${harness_platform_input_set.tag[each.key].id}
+EOT
+}
+
+// Push input set
+resource "harness_platform_input_set" "push" {
+  for_each = local.projects
+
+  identifier = "push"
+  name       = "Push"
+
+  org_id      = module.organization.details.id
+  project_id  = module.projects[each.key].details.id
+  pipeline_id = harness_platform_pipeline.projects[each.key].id
+
+  git_details {
+    branch_name    = each.value.branch
+    commit_message = "Commit .harness/inputset_push.yaml"
+    file_path      = ".harness/inputset_push.yaml"
+    connector_ref  = "{{ .Connectors.Repo }}"
+    store_type     = "REMOTE"
+    repo_name      = "${each.value.namespace}/${each.value.repo}"
+  }
+
+  yaml = <<-EOT
+    inputSet:
+      identifier: push
+      name: Push
+      orgIdentifier: ${module.organization.details.id}
+      projectIdentifier: ${module.projects[each.key].details.id}
+      pipeline:
+        identifier: ${harness_platform_pipeline.projects[each.key].id}
+        properties:
+          ci:
+            codebase:
+              build:
+                type: branch
+                spec:
+                  branch: <+trigger.branch>
+      object Object: pipeline.properties.ci.codebase
+EOT
+}
+
+// Push trigger
+module "trigger_push" {
+  for_each = local.projects
+  
+  source  = "harness-community/content/harness//modules/triggers"
+  version = "~> 0.1"
+
+  name            = "Push"
+  organization_id = module.organization.details.id
+  project_id      = module.projects[each.key].details.id
+  pipeline_id     = harness_platform_pipeline.projects[each.key].id
+  yaml_data       = <<-EOT
+    source:
+      type: Webhook
+      spec:
+        type: Github
+        spec:
+          type: Push
+          spec:
+            connectorRef: {{ .Connectors.Repo }}
+            autoAbortPreviousExecutions: false
+            payloadConditions:
+              - key: targetBranch
+                operator: Equals
+                value: ${each.value.branch}
+            headerConditions: []
+            repoName: ${each.value.namespace}/${each.value.repo}
+            actions: []
+    pipelineBranchName: <+trigger.branch>
+    inputSetRefs:
+      - ${harness_platform_input_set.push[each.key].id}
+EOT
+
+  // Create the push triggers after all yaml files have been committed,
+  // this prevents commits from triggering pipelines
+  depends_on = [
+    harness_platform_pipeline.projects,
+    harness_platform_input_set.pr,
+    harness_platform_input_set.push,
+    harness_platform_input_set.tag
+  ]
+}

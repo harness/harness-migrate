@@ -59,6 +59,19 @@ harness-migrate drone export \
   export.json
 ```
 
+❗ To avoid triggering pipelines in your Drone instance and in Harness CI, you must disable the migrated pipelines in your Drone instance.
+
+This script uses [jq](https://jqlang.github.io/jq/) and the [Drone CLI](https://docs.drone.io/cli/install/) to disable all pipelines defined in your `export.json`:
+
+```bash
+#!/bin/bash
+
+DRONE_NAMESPACE=$(jq -r .name export.json)
+for REPO_NAME in $(jq -r .project[].name export.json); do
+  drone repo disable $DRONE_NAMESPACE/$REPO_NAME
+done
+```
+
 Import a drone namespace:
 
 ```term

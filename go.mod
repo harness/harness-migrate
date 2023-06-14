@@ -7,7 +7,7 @@ require (
 	github.com/alecthomas/chroma v0.10.0
 	github.com/alecthomas/kingpin/v2 v2.3.1
 	github.com/drone/funcmap v0.0.0-20220929084810-72602997d16f
-	github.com/drone/go-convert v0.0.0-20230601202046-2c0fe88d600b
+	github.com/drone/go-convert v0.0.0-20230613140227-56c1bf7f2c8d
 	github.com/drone/go-scm v1.28.1
 	github.com/go-git/go-git/v5 v5.5.2
 	github.com/google/go-cmp v0.5.9
@@ -20,7 +20,7 @@ require (
 	github.com/mattn/go-sqlite3 v1.14.16
 	github.com/schollz/progressbar/v3 v3.13.0
 	golang.org/x/exp v0.0.0-20221019170559-20944726eadf
-	golang.org/x/text v0.9.0
+	golang.org/x/text v0.10.0
 	gopkg.in/yaml.v2 v2.4.0
 )
 

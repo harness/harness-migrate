@@ -1,5 +1,12 @@
 {{- /* Example Terraform template for use with GitHub and Harness Git Experience */}}
 
+// Variables
+variable "enable_triggers" {
+  type        = bool
+  description = "[Optional] (Boolean) Determines if the triggers should be enabled or disabled"
+  default     = true
+}
+
 // Locals
 locals {
   projects = {
@@ -76,7 +83,7 @@ module "organization" {
 resource "harness_platform_secret_text" "organization" {
   for_each = local.secrets
 
-  identifier                = each.key
+  identifier                = replace(each.key, "-", "_")
   name                      = each.key
   org_id                    = module.organization.details.id
   secret_manager_identifier = "harnessSecretManager"
@@ -132,7 +139,7 @@ EOT
 resource "harness_platform_secret_text" "{{ slugify .Name }}" {
   for_each = local.projects["{{ .Name }}"].secrets
 
-  identifier                = each.key
+  identifier                = replace(each.key, "-", "_")
   name                      = each.key
   org_id                    = module.organization.details.id
   project_id                = module.projects["{{ .Name }}"].details.id
@@ -206,6 +213,7 @@ module "trigger_pr" {
   organization_id = module.organization.details.id
   project_id      = module.projects[each.key].details.id
   pipeline_id     = harness_platform_pipeline.projects[each.key].id
+  trigger_enabled = var.enable_triggers
   yaml_data       = <<-EOT
     source:
       type: Webhook
@@ -282,6 +290,7 @@ module "trigger_tag" {
   organization_id = module.organization.details.id
   project_id      = module.projects[each.key].details.id
   pipeline_id     = harness_platform_pipeline.projects[each.key].id
+  trigger_enabled = var.enable_triggers
   yaml_data       = <<-EOT
     source:
       type: Webhook
@@ -355,6 +364,7 @@ module "trigger_push" {
   organization_id = module.organization.details.id
   project_id      = module.projects[each.key].details.id
   pipeline_id     = harness_platform_pipeline.projects[each.key].id
+  trigger_enabled = var.enable_triggers
   yaml_data       = <<-EOT
     source:
       type: Webhook

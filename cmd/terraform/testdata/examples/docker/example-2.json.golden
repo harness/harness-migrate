@@ -52,12 +52,18 @@ locals {
         PROJECT_SECRET = {
           value = "dG9wc2VjcmV0"
         }
+        BAD-SECRET = {
+          value = "cHJpdmF0ZQ=="
+        }
       }
     }
   }
   secrets = {
     ORG_SECRET = {
       value = "Y29uZmlkZW50aWFs"
+    }
+    BAD-SECRET = {
+      value = "Y2xhc3NpZmllZA=="
     }
   }
 }

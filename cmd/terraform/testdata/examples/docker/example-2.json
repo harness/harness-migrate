@@ -1,0 +1,35 @@
+{
+ "name": "octocat",
+ "project": [
+  {
+   "name": "hello-world",
+   "repo": "https://github.com/octocat/hello-world.git",
+   "branch": "main",
+   "type": "drone",
+   "yaml": "a2luZDogcGlwZWxpbmUKdHlwZTogZG9ja2VyCm5hbWU6IGRlZmF1bHQKCnN0ZXBzOgotIG5hbWU6IGhlbGxvCiAgaW1hZ2U6IGJ1c3lib3gKICBjb21tYW5kczoKICAtIGVjaG8gaGVsbG8gd29ybGQKICAKdHJpZ2dlcjoKICBicmFuY2g6CiAgLSBtYWluCg==",
+   "secrets": [
+    {
+     "name": "PROJECT_SECRET",
+     "desc": "PROJECT_SECRET",
+     "value": "topsecret"
+    },
+    {
+        "name": "BAD-SECRET",
+        "desc": "Project secret with invalid character",
+        "value": "private"
+       }
+   ]
+  }
+ ],
+ "secrets": [
+  {
+   "name": "ORG_SECRET",
+   "value": "confidential"
+  },
+  {
+    "name": "BAD-SECRET",
+    "description": "Organization secret with invalid character",
+    "value": "classified"
+   }
+ ]
+}

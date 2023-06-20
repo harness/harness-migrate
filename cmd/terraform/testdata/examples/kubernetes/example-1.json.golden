@@ -1,3 +1,10 @@
+// Variables
+variable "enable_triggers" {
+  type        = bool
+  description = "[Optional] (Boolean) Determines if the triggers should be enabled or disabled"
+  default     = true
+}
+
 // Locals
 locals {
   projects = {
@@ -88,7 +95,7 @@ module "organization" {
 resource "harness_platform_secret_text" "organization" {
   for_each = local.secrets
 
-  identifier                = each.key
+  identifier                = replace(each.key, "-", "_")
   name                      = each.key
   org_id                    = module.organization.details.id
   secret_manager_identifier = "harnessSecretManager"
@@ -127,7 +134,7 @@ EOT
 resource "harness_platform_secret_text" "testrepo1" {
   for_each = local.projects["test-repo1"].secrets
 
-  identifier                = each.key
+  identifier                = replace(each.key, "-", "_")
   name                      = each.key
   org_id                    = module.organization.details.id
   project_id                = module.projects["test-repo1"].details.id
@@ -159,6 +166,7 @@ module "trigger_pr" {
   organization_id = module.organization.details.id
   project_id      = module.projects[each.key].details.id
   pipeline_id     = module.pipelines[each.key].details.id
+  trigger_enabled = var.enable_triggers
   yaml_data       = <<-EOT
 source:
   type: Webhook
@@ -204,6 +212,7 @@ module "trigger_push" {
   organization_id = module.organization.details.id
   project_id      = module.projects[each.key].details.id
   pipeline_id     = module.pipelines[each.key].details.id
+  trigger_enabled = var.enable_triggers
   yaml_data       = <<-EOT
 source:
   type: Webhook
@@ -246,6 +255,7 @@ module "trigger_tag" {
   organization_id = module.organization.details.id
   project_id      = module.projects[each.key].details.id
   pipeline_id     = module.pipelines[each.key].details.id
+  trigger_enabled = var.enable_triggers
   yaml_data       = <<-EOT
 source:
   type: Webhook

@@ -22,7 +22,7 @@ Issues that are not specific to a provider.
 
 ### Resource limits
 
-Container-based Harness CI pipeline steps run with default resource limits.
+Kubernetes-based Harness CI pipeline steps run with default resource limits.
 
 **Problem**
 
@@ -31,7 +31,7 @@ Container-based Harness CI pipeline steps run with default resource limits.
 **Solution**
 
 Manually set the proper [resource limits](https://developer.harness.io/docs/continuous-integration/use-ci/run-ci-scripts/run-step-settings/#set-container-resources
-) for your container-based step(s).
+) for your step(s) that run on Kubernetes infrastructure.
 
 ### JEXL syntax
 

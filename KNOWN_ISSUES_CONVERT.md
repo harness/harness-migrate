@@ -18,13 +18,26 @@ harness-migrate github convert --help
 
 ## All
 
-Issues that are not specific to any provider.
+Issues that are not specific to a provider.
+
+### Resource limits
+
+Container-based Harness CI pipeline steps run with default resource limits.
+
+**Problem**
+
+`harness-migrate` does not set resource limits during pipeline conversion.
+
+**Solution**
+
+Manually set the proper [resource limits](https://developer.harness.io/docs/continuous-integration/use-ci/run-ci-scripts/run-step-settings/#set-container-resources
+) for your container-based step(s).
 
 ### JEXL syntax
 
-Conversion will not always choose the correct JEXL syntax.
+Conversion will not always choose the correct [JEXL condition syntax](https://developer.harness.io/docs/platform/pipelines/w_pipeline-steps-reference/triggers-reference/#conditions-settings).
 
-Drone example
+Example Drone pipeline
 
 ```yaml
 kind: pipeline                                                                  
@@ -127,6 +140,40 @@ availableSecrets:
 Create a GCP Secrets Manager connector to read the secrets into environment variables.
 
 ## Drone
+
+### 
+
+### [Variable Substitution](https://docs.drone.io/pipeline/environment/substitution/#string-operations)
+
+Drone variables must be converted to the equivalent [Harness variable expression](https://developer.harness.io/docs/platform/variables-and-expressions/extracting-characters-from-harness-variable-expressions/).
+
+**Problem**
+
+The [go-convert](https://github.com/drone/go-convert/) library handles this conversion where possible, but not every Drone variable is supported. See https://github.com/drone/go-convert/issues/117 for what variables are currently supported.
+
+**Solution**
+
+Examine your converted pipeline yaml for any `DRONE_` variables that were not converted. Replace these variables with the equivalent Harness JEXL expression.
+
+**Problem**
+
+In Drone, substituted variables with no value will be empty. In Harness CI expressions, unset values will return a `null` string. **This may break logic that relies on an empty string for unset values**.
+
+**Solution**
+
+Determine if your pipelines rely on unset `DRONE_` variables that return an empty string, modify these references to allow for a string of `null` to be returned.
+
+### [Variable String Operations](https://docs.drone.io/pipeline/environment/substitution/#string-operations)
+
+Drone provides partial emulation for bash string operations, these must convert to an equivalent [Harness variable expression](https://developer.harness.io/docs/platform/variables-and-expressions/extracting-characters-from-harness-variable-expressions/).
+
+**Problem**
+
+The [go-convert](https://github.com/drone/go-convert/) library currently has limited support for these conversions. See https://github.com/drone/go-convert/issues/117 for what operations are currently supported.
+
+**Solution**
+
+Examine your converted pipeline yaml for any `DRONE_` variables with string operations that were not converted. Replace these with the equivalent Harness JEXL expression.
 
 ### [depends_on](https://docs.drone.io/pipeline/docker/syntax/parallelism/)
 

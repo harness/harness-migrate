@@ -167,7 +167,13 @@ Determine if your pipelines rely on unset `DRONE_` variables that return an empt
 
 Drone provides partial emulation for bash string operations, these must convert to an equivalent [Harness variable expression](https://developer.harness.io/docs/platform/variables-and-expressions/extracting-characters-from-harness-variable-expressions/).
 
+**Problem**
+
 The [go-convert](https://github.com/drone/go-convert/) library currently has limited support for these conversions. See https://github.com/drone/go-convert/issues/117 for what operations are currently supported.
+
+**Solution**
+
+Examine your converted pipeline yaml for any `DRONE_` variables with string operations that were not converted. Replace these with the equivalent Harness JEXL expression.
 
 ### [depends_on](https://docs.drone.io/pipeline/docker/syntax/parallelism/)
 

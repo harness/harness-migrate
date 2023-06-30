@@ -196,7 +196,7 @@ func registerConvert(app *kingpin.CmdClause) {
 
 	cmd.Flag("docker-connector", "dockerhub connector").
 		Default("").
-		StringVar(&c.kubeName)
+		StringVar(&c.dockerConn)
 
 	cmd.Flag("org-secrets", "optional list of secrets for pipelines with organization secrets").
 		Envar("ORG_SECRETS").

@@ -34,8 +34,8 @@ github.com/docker/go-units v0.5.0 h1:69rxXcBk27SvSaaxTtLh/8llcHD8vYHT7WSdRZ/jvr4
 github.com/docker/go-units v0.5.0/go.mod h1:fgPhTUdO+D/Jk86RDLlptpiXQzgHJF7gydDDbaIK4Dk=
 github.com/drone/funcmap v0.0.0-20220929084810-72602997d16f h1:/jEs7lulqVO2u1+XI5rW4oFwIIusxuDOVKD9PAzlW2E=
 github.com/drone/funcmap v0.0.0-20220929084810-72602997d16f/go.mod h1:nDRkX7PHq+p39AD5/usv3KZMerxZTYU/9rfLS5IDspU=
-github.com/drone/go-convert v0.0.0-20230630133051-c0fcc8c9bf29 h1:VQQfsLQmAK2InukpVBe2BFACIq82cMZt2V4kTWLCfCs=
-github.com/drone/go-convert v0.0.0-20230630133051-c0fcc8c9bf29/go.mod h1:aGyq3jDZrHPuHY26DDXNgIMtY70N4XVSBig7wwQE9ZE=
+github.com/drone/go-convert v0.0.0-20230703132037-e6446ca2bae0 h1:5T0dVF2fUnWdTP6vESHWKWHvrBx2Gv+1mkDo6YP30bg=
+github.com/drone/go-convert v0.0.0-20230703132037-e6446ca2bae0/go.mod h1:aGyq3jDZrHPuHY26DDXNgIMtY70N4XVSBig7wwQE9ZE=
 github.com/drone/go-scm v1.28.1 h1:3WukxtsFFU5omHfp8dU3EXjEQCmtqAZkCj9pHHs+Xus=
 github.com/drone/go-scm v1.28.1/go.mod h1:DFIJJjhMj0TSXPz+0ni4nyZ9gtTtC40Vh/TGRugtyWw=
 github.com/drone/spec v0.0.0-20230502132237-74a82693b5d7 h1:DxYvZru67kAmJWYnwYMcL2ixEEMRlf4K/mQ0OatCrd4=

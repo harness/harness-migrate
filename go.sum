@@ -1,3 +1,5 @@
+dario.cat/mergo v1.0.0 h1:AGCNq9Evsj31mOgNPcLyXc+4PNABt905YmuqPYYpBWk=
+dario.cat/mergo v1.0.0/go.mod h1:uNxQE+84aUszobStD9th8a29P2fMDhsBdgRYvZOxGmk=
 github.com/Masterminds/squirrel v1.5.3 h1:YPpoceAcxuzIljlr5iWpNKaql7hLeG1KLSrhvdHpkZc=
 github.com/Masterminds/squirrel v1.5.3/go.mod h1:NNaOrjSoIDfDA40n7sr2tPNZRfjzjA400rg+riTZj10=
 github.com/Microsoft/go-winio v0.5.2 h1:a9IhgEQBCUEk6QCdml9CiJGhAws+YwffDHEMp1VMrpA=
@@ -34,8 +36,8 @@ github.com/docker/go-units v0.5.0 h1:69rxXcBk27SvSaaxTtLh/8llcHD8vYHT7WSdRZ/jvr4
 github.com/docker/go-units v0.5.0/go.mod h1:fgPhTUdO+D/Jk86RDLlptpiXQzgHJF7gydDDbaIK4Dk=
 github.com/drone/funcmap v0.0.0-20220929084810-72602997d16f h1:/jEs7lulqVO2u1+XI5rW4oFwIIusxuDOVKD9PAzlW2E=
 github.com/drone/funcmap v0.0.0-20220929084810-72602997d16f/go.mod h1:nDRkX7PHq+p39AD5/usv3KZMerxZTYU/9rfLS5IDspU=
-github.com/drone/go-convert v0.0.0-20230703132037-e6446ca2bae0 h1:5T0dVF2fUnWdTP6vESHWKWHvrBx2Gv+1mkDo6YP30bg=
-github.com/drone/go-convert v0.0.0-20230703132037-e6446ca2bae0/go.mod h1:aGyq3jDZrHPuHY26DDXNgIMtY70N4XVSBig7wwQE9ZE=
+github.com/drone/go-convert v0.0.0-20230727143006-b770c34277fd h1:kJZm0DJGiJXj/3IEYIOeDp/KpPR3oyqu1ur1JCyTWug=
+github.com/drone/go-convert v0.0.0-20230727143006-b770c34277fd/go.mod h1:PuLKTy2ZqOcvryhMZe3o3ae9oDfsYC0yQQAEa9dJ5cw=
 github.com/drone/go-scm v1.28.1 h1:3WukxtsFFU5omHfp8dU3EXjEQCmtqAZkCj9pHHs+Xus=
 github.com/drone/go-scm v1.28.1/go.mod h1:DFIJJjhMj0TSXPz+0ni4nyZ9gtTtC40Vh/TGRugtyWw=
 github.com/drone/spec v0.0.0-20230502132237-74a82693b5d7 h1:DxYvZru67kAmJWYnwYMcL2ixEEMRlf4K/mQ0OatCrd4=
@@ -190,8 +192,8 @@ golang.org/x/text v0.3.3/go.mod h1:5Zoc/QRtKVWzQhOtBMvqHzDpF6irO9z98xDceosuGiQ=
 golang.org/x/text v0.3.6/go.mod h1:5Zoc/QRtKVWzQhOtBMvqHzDpF6irO9z98xDceosuGiQ=
 golang.org/x/text v0.3.7/go.mod h1:u+2+/6zg+i71rQMx5EYifcz6MCKuco9NR6JIITiCfzQ=
 golang.org/x/text v0.4.0/go.mod h1:mrYo+phRRbMaCq/xk9113O4dZlRixOauAjOtrjsXDZ8=
-golang.org/x/text v0.10.0 h1:UpjohKhiEgNc0CSauXmwYftY1+LlaC75SJwh0SgCX58=
-golang.org/x/text v0.10.0/go.mod h1:TvPlkZtksWOMsz7fbANvkp4WM8x/WCo/om8BMLbz+aE=
+golang.org/x/text v0.11.0 h1:LAntKIrcmeSKERyiOh0XMV39LXS8IE9UL2yP7+f5ij4=
+golang.org/x/text v0.11.0/go.mod h1:TvPlkZtksWOMsz7fbANvkp4WM8x/WCo/om8BMLbz+aE=
 golang.org/x/tools v0.0.0-20180917221912-90fa682c2a6e/go.mod h1:n7NCudcB/nEzxVGmLbDWY5pfWTLqBcC2KZ6jyYvM4mQ=
 golang.org/x/tools v0.0.0-20191119224855-298f0cb1881e/go.mod h1:b+2E5dAYhXwXZwtnZ6UAqBI28+e2cm9otk0dWdXHAEo=
 golang.org/x/tools v0.1.12/go.mod h1:hNGJHUnrk76NpqgfD5Aqm5Crs+Hm0VOH/i9J2+nxYbc=

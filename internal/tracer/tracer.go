@@ -22,6 +22,9 @@ type Tracer interface {
 	// Stop the named tracer.
 	Stop(format string, args ...interface{})
 
+	// Log a message.
+	Log(format string, args ...interface{})
+
 	// Close the tracer.
 	Close()
 }
@@ -36,4 +39,5 @@ type none struct{}
 
 func (*none) Start(format string, args ...interface{}) {}
 func (*none) Stop(format string, args ...interface{})  {}
+func (*none) Log(format string, args ...interface{})   {}
 func (*none) Close()                                   {}

@@ -64,9 +64,11 @@ func (c *exportCommand) run(*kingpin.ParseContext) error {
 		return err
 	}
 	// create the tracer
+	log.Info("Creating new tracer...")
 	tracer_ := tracer.New()
 	defer tracer_.Close()
 
+	log.Info("Creating new client...")
 	client := util.CreateClient(
 		c.githubToken,
 		c.gitlabToken,
@@ -81,9 +83,10 @@ func (c *exportCommand) run(*kingpin.ParseContext) error {
 		return errors.New("no scm token provided")
 	}
 
+	log.Info("Finding user...")
 	user, _, err := client.Users.Find(ctx)
 	if err != nil {
-		log.Error("cannot retrieve git user", nil)
+		log.Error("Cannot retrieve git user: ", err)
 		return err
 	}
 
@@ -91,6 +94,8 @@ func (c *exportCommand) run(*kingpin.ParseContext) error {
 	if c.repositoryList != "" {
 		repository = strings.Split(c.repositoryList, ",")
 	}
+
+	log.Info("Extracting data...")
 
 	// extract the data
 	exporter := &drone.Exporter{
@@ -103,23 +108,29 @@ func (c *exportCommand) run(*kingpin.ParseContext) error {
 	}
 	data, err := exporter.Export(ctx)
 	if err != nil {
+		log.Error("Failed to extract data: ", err)
 		return err
 	}
 
 	//if no file path is provided, write the data export
 	//to stdout.
 	if c.file == "" {
+		log.Info("Writing data to stdout...")
 		enc := json.NewEncoder(os.Stdout)
 		enc.SetIndent("", "  ")
 		return enc.Encode(data)
 	}
 
+	log.Info("Writing data to file...")
+
 	// else write the data export to the file.
 	file, err := json.MarshalIndent(data, "", " ")
 	if err != nil {
+		log.Error("Failed to write data to file: ", err)
 		return err
 	}
 
+	log.Info("Data exported successfully.")
 	return os.WriteFile(c.file, file, 0644)
 }
 

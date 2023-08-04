@@ -30,7 +30,13 @@ type console struct {
 	once sync.Once
 }
 
-// New returns a tracer that outputs the outputs the
+// Log logs a message to the console.
+func (c *console) Log(format string, args ...interface{}) {
+	fmt.Printf(format, args...)
+	fmt.Println("")
+}
+
+// New returns a tracer that outputs
 // progress to the terminal.
 func New() *console {
 	return &console{

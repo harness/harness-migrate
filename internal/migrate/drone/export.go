@@ -16,7 +16,6 @@ package drone
 
 import (
 	"context"
-	"fmt"
 	"strings"
 
 	"github.com/drone/go-scm/scm"
@@ -47,15 +46,17 @@ type Exporter struct {
 
 func (m *Exporter) Export(ctx context.Context) (*types.Org, error) {
 
-	m.Tracer.Start("export organization")
+	m.Tracer.Start("starting export organization")
 
 	//retrieve the list of repositories and checking it exists
 	repos, err := m.Repository.GetRepos(ctx, m.Namespace)
 	if err != nil {
+		m.Tracer.Stop("Failed to retrieve repositories: %s", err.Error())
 		return nil, err
 	}
 	if len(repos) == 0 {
-		return nil, fmt.Errorf("no repositories found for %s", m.Namespace)
+		m.Tracer.Stop("No repositories found for namespace: %s", m.Namespace)
+		return nil, err
 	}
 
 	dstOrg := &types.Org{
@@ -65,6 +66,7 @@ func (m *Exporter) Export(ctx context.Context) (*types.Org, error) {
 	m.Tracer.Start("export organization secrets")
 	orgSecrets, err := m.Repository.GetOrgSecrets(ctx, m.Namespace)
 	if err != nil {
+		m.Tracer.Stop("Failed to export organization secrets: %s", err.Error())
 		return nil, err
 	}
 	// map org secrets to common format
@@ -76,11 +78,13 @@ func (m *Exporter) Export(ctx context.Context) (*types.Org, error) {
 	for _, repo := range repos {
 		// Skip repositories that are not in the specified namespace
 		if !strings.HasPrefix(repo.Namespace, m.Namespace) {
+			m.Tracer.Log("Skipping repository %s: not in specified namespace %s.", repo.Name, m.Namespace)
 			continue
 		}
 
 		// Skip repositories that are not in the m.RepositoryList
 		if len(m.RepositoryList) > 0 && !m.repositoryInList(repo.Name) {
+			m.Tracer.Log("Skipping repository %s: not in the provided repository list.", repo.Name)
 			continue
 		}
 
@@ -89,6 +93,7 @@ func (m *Exporter) Export(ctx context.Context) (*types.Org, error) {
 		//get the latest build for the default branch
 		build, _ := m.Repository.LatestBuild(ctx, repo.ID)
 		if build == nil {
+			m.Tracer.Log("Skipping repository %s: no builds in pipeline.", repo.Name)
 			continue
 		}
 		// convert the Drone repository to a common format
@@ -101,7 +106,8 @@ func (m *Exporter) Export(ctx context.Context) (*types.Org, error) {
 
 		yamlFile, _, err := m.ScmClient.Contents.Find(ctx, repo.Slug, repo.Config, repo.Branch)
 		if err != nil {
-			return nil, err
+			m.Tracer.Log("Skipping repository %s: no .drone.yml file found.", repo.Name)
+			continue
 		}
 
 		dstProject.Yaml = yamlFile.Data
@@ -109,7 +115,8 @@ func (m *Exporter) Export(ctx context.Context) (*types.Org, error) {
 		// find Drone secrets
 		secrets, secretErr := m.Repository.GetSecrets(ctx, repo.ID)
 		if secretErr != nil {
-			return nil, secretErr
+			m.Tracer.Log("Skipping repository %s: failed to retrieve secrets.", repo.Name)
+			continue
 		}
 
 		// for each secret

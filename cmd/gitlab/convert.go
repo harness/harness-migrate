@@ -126,7 +126,7 @@ func registerConvert(app *kingpin.CmdClause) {
 		Action(c.run)
 
 	cmd.Arg("input", "path to the gitlab yaml").
-		Default(".gitlab.yml").
+		Default(".gitlab-ci.yml").
 		StringVar(&c.input)
 
 	cmd.Arg("output", "path to save the converted yaml").

@@ -127,7 +127,7 @@ func registerConvert(app *kingpin.CmdClause) {
 		Action(c.run)
 
 	cmd.Arg("input", "input path to circle yaml").
-		Default(".circle/config.yml").
+		Default(".circleci/config.yml").
 		StringVar(&c.input)
 
 	cmd.Arg("output", "path to save the converted yaml").

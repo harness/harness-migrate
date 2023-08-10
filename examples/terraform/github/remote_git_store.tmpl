@@ -115,7 +115,7 @@ resource "harness_platform_pipeline" "projects" {
 
   git_details {
     branch_name    = each.value.branch
-    commit_message = "Commit .harness/ci.yaml"
+    commit_message = "[SKIP CI] Commit .harness/ci.yaml"
     file_path      = ".harness/ci.yaml"
     connector_ref  = "{{ .Connectors.Repo }}"
     store_type     = "REMOTE"
@@ -176,7 +176,7 @@ resource "harness_platform_input_set" "pr" {
 
   git_details {
     branch_name    = each.value.branch
-    commit_message = "Commit .harness/inputset_pr.yaml"
+    commit_message = "[SKIP CI] Commit .harness/inputset_pr.yaml"
     file_path      = ".harness/inputset_pr.yaml"
     connector_ref  = "{{ .Connectors.Repo }}"
     store_type     = "REMOTE"
@@ -253,7 +253,7 @@ resource "harness_platform_input_set" "tag" {
 
   git_details {
     branch_name    = each.value.branch
-    commit_message = "Commit .harness/inputset_tag.yaml"
+    commit_message = "[SKIP CI] Commit .harness/inputset_tag.yaml"
     file_path      = ".harness/inputset_tag.yaml"
     connector_ref  = "{{ .Connectors.Repo }}"
     store_type     = "REMOTE"
@@ -327,7 +327,7 @@ resource "harness_platform_input_set" "push" {
 
   git_details {
     branch_name    = each.value.branch
-    commit_message = "Commit .harness/inputset_push.yaml"
+    commit_message = "[SKIP CI] Commit .harness/inputset_push.yaml"
     file_path      = ".harness/inputset_push.yaml"
     connector_ref  = "{{ .Connectors.Repo }}"
     store_type     = "REMOTE"

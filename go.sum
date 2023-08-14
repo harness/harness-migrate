@@ -36,12 +36,12 @@ github.com/docker/go-units v0.5.0 h1:69rxXcBk27SvSaaxTtLh/8llcHD8vYHT7WSdRZ/jvr4
 github.com/docker/go-units v0.5.0/go.mod h1:fgPhTUdO+D/Jk86RDLlptpiXQzgHJF7gydDDbaIK4Dk=
 github.com/drone/funcmap v0.0.0-20220929084810-72602997d16f h1:/jEs7lulqVO2u1+XI5rW4oFwIIusxuDOVKD9PAzlW2E=
 github.com/drone/funcmap v0.0.0-20220929084810-72602997d16f/go.mod h1:nDRkX7PHq+p39AD5/usv3KZMerxZTYU/9rfLS5IDspU=
-github.com/drone/go-convert v0.0.0-20230807145406-626b2a1e0fe3 h1:67E6z2tK4vf96UsJkxZlrDRs4rwslxDek8jwh/qcxsQ=
-github.com/drone/go-convert v0.0.0-20230807145406-626b2a1e0fe3/go.mod h1:PuLKTy2ZqOcvryhMZe3o3ae9oDfsYC0yQQAEa9dJ5cw=
+github.com/drone/go-convert v0.0.0-20230814175100-875b7aa0f60c h1:fKNUPMpVFuYE/a33U24T3tTl21yTIARzRbGtDTq2MV0=
+github.com/drone/go-convert v0.0.0-20230814175100-875b7aa0f60c/go.mod h1:PuLKTy2ZqOcvryhMZe3o3ae9oDfsYC0yQQAEa9dJ5cw=
 github.com/drone/go-scm v1.28.1 h1:3WukxtsFFU5omHfp8dU3EXjEQCmtqAZkCj9pHHs+Xus=
 github.com/drone/go-scm v1.28.1/go.mod h1:DFIJJjhMj0TSXPz+0ni4nyZ9gtTtC40Vh/TGRugtyWw=
-github.com/drone/spec v0.0.0-20230502132237-74a82693b5d7 h1:DxYvZru67kAmJWYnwYMcL2ixEEMRlf4K/mQ0OatCrd4=
-github.com/drone/spec v0.0.0-20230502132237-74a82693b5d7/go.mod h1:pdaL6nOipGF/5L6jAu1DwAeLzmZdaU3+UIvQ1MUIZ9Y=
+github.com/drone/spec v0.0.0-20230814135001-3ad892acc3dd h1:aiQzm9bSHR1cxrakEEgorpEFnFXK6r4uGS15P83CcGU=
+github.com/drone/spec v0.0.0-20230814135001-3ad892acc3dd/go.mod h1:pdaL6nOipGF/5L6jAu1DwAeLzmZdaU3+UIvQ1MUIZ9Y=
 github.com/emirpasic/gods v1.18.1 h1:FXtiHYKDGKCW2KzwZKx0iC0PQmdlorYgdFG9jPXJ1Bc=
 github.com/emirpasic/gods v1.18.1/go.mod h1:8tpGGwCnJ5H4r6BWwaV6OrWmMoPhUl5jm/FMNAnJvWQ=
 github.com/ghodss/yaml v1.0.0 h1:wQHKEahhL6wmXdzwWG11gIVCkOv05bNOh+Rxn0yngAk=

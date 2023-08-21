@@ -1,14 +1,137 @@
 Level of conversion support for GitLab [job keywords](https://docs.gitlab.com/ee/ci/yaml/#job-keywords) to Harness CI YAML.
 
-| | Support level |
-|-|-----------|
-| 🟢 | Full |
-| 🟡 | Partial |
-| 🔴 | Unsupported |
+| | Support level  | Description |
+|-|----------------|-------------|
+| 🟢 | Full        | Converts without modification |
+| 🟡 | Partial     | Converts with some manual modification required, or some features not supported |
+| 🟠 | Manual      | Conversion not yet supported, but can be converted manually |
+| 🔴 | Unsupported | Conversion either requires investigation, or the feature is not yet supported by Harness CI |
 
-## 🔴 [`after_script`](https://docs.gitlab.com/ee/ci/yaml/#after_script)
+## 🟠 [`after_script`](https://docs.gitlab.com/ee/ci/yaml/#after_script)
 
-## 🔴 [`allow_failure`](https://docs.gitlab.com/ee/ci/yaml/#allow_failure)
+<details>
+  <summary>Example</summary>
+
+Source
+```yaml
+job:
+  script:
+    - echo "An example script section."
+  after_script:
+    - echo "Execute this command after the `script` section completes."
+```
+
+Manually converted
+```yaml
+pipeline:
+  identifier: default
+  name: default
+  orgIdentifier: default
+  projectIdentifier: default
+  properties:
+    ci:
+      codebase:
+        build: <+input>
+  stages:
+  - stage:
+      identifier: test
+      name: test
+      spec:
+        cloneCodebase: true
+        execution:
+          steps:
+          - step:
+              identifier: job
+              name: job
+              spec:
+                command: echo "An example script section."
+              timeout: ""
+              type: Run
+          - step:
+              identifier: after_script
+              name: after_script
+              spec:
+                command: echo "Execute this command after the `script` section completes."
+              timeout: ""
+              type: Run
+              when:
+                stageStatus: All
+        platform:
+          arch: Amd64
+          os: Linux
+        runtime:
+          spec: {}
+          type: Cloud
+      type: CI
+```
+
+
+</details>
+
+## 🟠 [`allow_failure`](https://docs.gitlab.com/ee/ci/yaml/#allow_failure)
+
+Example
+```yaml
+job1:
+  stage: test
+  script:
+    - execute_script_1
+
+job2:
+  stage: test
+  script:
+    - execute_script_2
+  allow_failure: true
+```
+
+Manually converted
+```yaml
+pipeline:
+  identifier: default
+  name: default
+  orgIdentifier: default
+  projectIdentifier: default
+  properties:
+    ci:
+      codebase:
+        build: <+input>
+  stages:
+  - stage:
+      identifier: test
+      name: test
+      spec:
+        cloneCodebase: true
+        execution:
+          steps:
+          - parallel:
+            - step:
+                identifier: job1
+                name: job1
+                spec:
+                  command: execute_script_1
+                timeout: ""
+                type: Run
+            - step:
+                identifier: job2
+                failureStrategies:
+                  - onFailure:
+                      errors:
+                        - AllErrors
+                      action:
+                        type: Ignore
+                name: job2
+                spec:
+                  command: execute_script_2
+                timeout: ""
+                type: Run
+        platform:
+          arch: Amd64
+          os: Linux
+        runtime:
+          spec: {}
+          type: Cloud
+      type: CI
+```
 
 ### 🔴 [`allow_failure:exit_codes`](https://docs.gitlab.com/ee/ci/yaml/#allow_failureexit_codes)
 
@@ -496,13 +619,166 @@ pipeline:
 
 </details>
 
-## 🔴 [`inherit`](https://docs.gitlab.com/ee/ci/yaml/#inherit)
+## 🟡 [`inherit`](https://docs.gitlab.com/ee/ci/yaml/#inherit)
 
-### 🔴 [`inherit:default`](https://docs.gitlab.com/ee/ci/yaml/#inheritdefault)
+### 🟡 [`inherit:default`](https://docs.gitlab.com/ee/ci/yaml/#inheritdefault)
 
-### 🔴 [`inherit:variables`](https://docs.gitlab.com/ee/ci/yaml/#inheritvariables)
+Notes:
+- Only `false` is currently supported
 
-## 🔴 [`interruptible`](https://docs.gitlab.com/ee/ci/yaml/#interruptible)
+<details>
+  <summary>Example</summary>
+
+Source
+```yaml
+default:
+  image: ruby:3.0
+  before_script:
+  - echo always do this before
+
+job1:
+  script: echo "This job does not inherit any default keywords."
+  inherit:
+    default: false
+
+job2:
+  script: echo "This job inherits the 'before_script' keyword."
+  inherit:
+    default:
+      - before_script
+```
+
+Converted
+```yaml
+pipeline:
+  identifier: default
+  name: default
+  orgIdentifier: default
+  projectIdentifier: default
+  properties:
+    ci:
+      codebase:
+        build: <+input>
+  stages:
+  - stage:
+      identifier: test
+      name: test
+      spec:
+        cloneCodebase: true
+        execution:
+          steps:
+          - parallel:
+            - step:
+                identifier: job1
+                name: job1
+                spec:
+                  command: echo "This job does not inherit any default keywords."
+                timeout: ""
+                type: Run
+            - step:
+                identifier: job2
+                name: job2
+                spec:
+                  command: echo "This job inherits the 'before_script' keyword."
+                  image: ruby:3.0
+                timeout: ""
+                type: Run
+        platform:
+          arch: Amd64
+          os: Linux
+        runtime:
+          spec: {}
+          type: Cloud
+      type: CI
+```
+
+</details>
+
+### 🟡 [`inherit:variables`](https://docs.gitlab.com/ee/ci/yaml/#inheritvariables)
+
+Notes:
+- Variables are added at the stage level, not the step level where they are needed
+
+<details>
+  <summary>Example</summary>
+
+Source
+```yaml
+variables:
+  VARIABLE1: "This is variable 1"
+  VARIABLE2: "This is variable 2"
+  VARIABLE3: "This is variable 3"
+
+job1:
+  script: echo "This job does not inherit any global variables."
+  inherit:
+    variables: false
+
+job2:
+  script: echo "This job inherits only the two listed global variables. It does not inherit 'VARIABLE3'."
+  inherit:
+    variables:
+      - VARIABLE1
+      - VARIABLE2
+```
+
+Converted
+```yaml
+pipeline:
+  identifier: default
+  name: default
+  orgIdentifier: default
+  projectIdentifier: default
+  properties:
+    ci:
+      codebase:
+        build: <+input>
+  stages:
+  - stage:
+      identifier: test
+      name: test
+      spec:
+        cloneCodebase: true
+        execution:
+          steps:
+          - parallel:
+            - step:
+                identifier: job1
+                name: job1
+                spec:
+                  command: echo "This job does not inherit any global variables."
+                timeout: ""
+                type: Run
+            - step:
+                identifier: job2
+                name: job2
+                spec:
+                  command: echo "This job inherits only the two listed global variables.
+                    It does not inherit 'VARIABLE3'."
+                timeout: ""
+                type: Run
+        platform:
+          arch: Amd64
+          os: Linux
+        runtime:
+          spec: {}
+          type: Cloud
+      type: CI
+      variables:
+      - name: VARIABLE1
+        type: String
+        value: This is variable 1
+      - name: VARIABLE2
+        type: String
+        value: This is variable 2
+```
+
+</details>
+
+## 🟠 [`interruptible`](https://docs.gitlab.com/ee/ci/yaml/#interruptible)
+
+Notes:
+- This is supported at the trigger level with the **Auto-abort Previous Execution** setting, see [Trigger pipelines using Git events](https://developer.harness.io/docs/platform/triggers/triggering-pipelines/)
 
 ## 🔴 [`needs`](https://docs.gitlab.com/ee/ci/yaml/#needs)
 
@@ -518,13 +794,22 @@ pipeline:
 
 #### 🔴 [`needs:parallel:matrix`](https://docs.gitlab.com/ee/ci/yaml/#needsparallelmatrix)
 
-## 🔴 [`only / except`](https://docs.gitlab.com/ee/ci/yaml/#only--except)
+## 🟠 [`only / except`](https://docs.gitlab.com/ee/ci/yaml/#only--except)
 
-### 🔴 [`only:refs / except:refs`](https://docs.gitlab.com/ee/ci/yaml/#onlyrefs--exceptrefs)
+Notes:
+- There is likely an equivalent JEXL expression, see [Webhook triggers reference](https://developer.harness.io/docs/platform/pipelines/w_pipeline-steps-reference/triggers-reference/)
+
+### 🟠 [`only:refs / except:refs`](https://docs.gitlab.com/ee/ci/yaml/#onlyrefs--exceptrefs)
+
+Notes:
+- There is likely an equivalent JEXL expression, see [Webhook triggers reference](https://developer.harness.io/docs/platform/pipelines/w_pipeline-steps-reference/triggers-reference/)
 
 ### 🔴 [`only:variables / except:variables`](https://docs.gitlab.com/ee/ci/yaml/#onlyvariables--exceptvariables)
 
-### 🔴 [`only:changes / except:changes`](https://docs.gitlab.com/ee/ci/yaml/#onlychanges--exceptchanges)
+### 🟠 [`only:changes / except:changes`](https://docs.gitlab.com/ee/ci/yaml/#onlychanges--exceptchanges)
+
+Notes:
+- There is likely an equivalent JEXL expression, see [Webhook triggers reference](https://developer.harness.io/docs/platform/pipelines/w_pipeline-steps-reference/triggers-reference/)
 
 ### 🔴 [`only:kubernetes / except:kubernetes`](https://docs.gitlab.com/ee/ci/yaml/#onlykubernetes--exceptkubernetes)
 
@@ -532,7 +817,62 @@ pipeline:
 
 ### 🔴 [`pages:publish`](https://docs.gitlab.com/ee/ci/yaml/#pagespublish)
 
-## 🔴 [`parallel`](https://docs.gitlab.com/ee/ci/yaml/#parallel)
+## 🟠 [`parallel`](https://docs.gitlab.com/ee/ci/yaml/#parallel)
+
+Notes:
+- GitLab sets `CI_NODE_INDEX` and `CI_NODE_TOTAL` variables, Harness CI sets `<+strategy.iteration>` and `<+strategy.iterations>`. See [Speed up CI test pipelines using parallelism](https://developer.harness.io/docs/platform/pipelines/speed-up-ci-test-pipelines-using-parallelism/).
+
+<details>
+  <summary>Example</summary>
+
+Source
+```yaml
+test:
+  script: rspec
+  parallel: 5
+```
+
+Converted
+```yaml
+pipeline:
+  identifier: default
+  name: default
+  orgIdentifier: default
+  projectIdentifier: default
+  properties:
+    ci:
+      codebase:
+        build: <+input>
+  stages:
+  - stage:
+      identifier: test1
+      name: test
+      spec:
+        cloneCodebase: true
+        execution:
+          steps:
+          - step:
+              identifier: test
+              name: test
+              spec:
+                command: rspec
+                envVariables:
+                  CI_NODE_INDEX: <+strategy.iteration>
+                  CI_NODE_TOTAL: <+strategy.iterations>
+              strategy:
+                parallelism: 5
+              timeout: ""
+              type: Run
+        platform:
+          arch: Amd64
+          os: Linux
+        runtime:
+          spec: {}
+          type: Cloud
+      type: CI
+```
+
+</details>
 
 ### 🔴 [`parallel:matrix`](https://docs.gitlab.com/ee/ci/yaml/#parallelmatrix)
 

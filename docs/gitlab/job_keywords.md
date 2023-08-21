@@ -65,10 +65,12 @@ pipeline:
       type: CI
 ```
 
-
 </details>
 
 ## 🟠 [`allow_failure`](https://docs.gitlab.com/ee/ci/yaml/#allow_failure)
+
+<details>
+  <summary>Example</summary>
 
 Example
 ```yaml
@@ -132,6 +134,8 @@ pipeline:
           type: Cloud
       type: CI
 ```
+
+</details>
 
 ### 🔴 [`allow_failure:exit_codes`](https://docs.gitlab.com/ee/ci/yaml/#allow_failureexit_codes)
 
@@ -822,7 +826,7 @@ Notes:
 Notes:
 - GitLab sets `CI_NODE_INDEX` and `CI_NODE_TOTAL` variables, Harness CI sets `<+strategy.iteration>` and `<+strategy.iterations>`
 - `CI_NODE_INDEX` starts at `1` in GitLab, `<+strategy.iteration>` starts at `0` in Harness CI
-- See [Speed up CI test pipelines using parallelism](https://developer.harness.io/docs/platform/pipelines/speed-up-ci-test-pipelines-using-parallelism/).
+- See [Speed up CI test pipelines using parallelism](https://developer.harness.io/docs/platform/pipelines/speed-up-ci-test-pipelines-using-parallelism/)
 
 <details>
   <summary>Example</summary>
@@ -834,7 +838,7 @@ test:
   parallel: 5
 ```
 
-Converted
+Manually converted
 ```yaml
 pipeline:
   identifier: default
@@ -847,7 +851,7 @@ pipeline:
         build: <+input>
   stages:
   - stage:
-      identifier: test1
+      identifier: test
       name: test
       spec:
         cloneCodebase: true
@@ -876,7 +880,114 @@ pipeline:
 
 </details>
 
-### 🔴 [`parallel:matrix`](https://docs.gitlab.com/ee/ci/yaml/#parallelmatrix)
+### 🟠 [`parallel:matrix`](https://docs.gitlab.com/ee/ci/yaml/#parallelmatrix)
+
+Notes:
+- Matrix values in Harness CI do not become environment variables by default, they must be added to `envVariables`
+- See [Looping strategies overview](https://developer.harness.io/docs/platform/pipelines/looping-strategies-matrix-repeat-and-parallelism/#matrix)
+
+<details>
+  <summary>Example</summary>
+
+Source
+```yaml
+deploystacks:
+  stage: deploy
+  script:
+    - bin/deploy $PROVIDER/$STACK
+  parallel:
+    matrix:
+      - PROVIDER: aws
+        STACK:
+          - monitoring
+          - app1
+          - app2
+      - PROVIDER: ovh
+        STACK: [monitoring, backup, app]
+      - PROVIDER: [gcp, vultr]
+        STACK: [data, processing]
+```
+
+Manually converted
+```yaml
+pipeline:
+  identifier: default
+  name: default
+  orgIdentifier: default
+  projectIdentifier: default
+  properties:
+    ci:
+      codebase:
+        build: <+input>
+  stages:
+  - stage:
+      identifier: deploy
+      name: deploy
+      spec:
+        cloneCodebase: true
+        execution:
+          steps:
+              - parallel:
+                  - step:
+                      identifier: deploystacks0
+                      name: deploystacks-0
+                      spec:
+                        envVariables:
+                          PROVIDER: <+matrix.PROVIDER>
+                          STACK: <+matrix.STACK>
+                        shell: Sh
+                        command: bin/deploy $PROVIDER/$STACK
+                      timeout: ""
+                      type: Run
+                      strategy:
+                        matrix:
+                          PROVIDER:
+                            - aws
+                          STACK:
+                            - monitoring
+                            - app1
+                            - app2
+                  - step:
+                      identifier: deploystacks1
+                      name: deploystacks-1
+                      spec:
+                        envVariables:
+                          PROVIDER: <+matrix.PROVIDER>
+                          STACK: <+matrix.STACK>
+                        shell: Sh
+                        command: bin/deploy $PROVIDER/$STACK
+                      timeout: ""
+                      type: Run
+                      strategy:
+                        matrix:
+                          PROVIDER:
+                            - ovh
+                          STACK:
+                            - monitoring
+                            - backup
+                            - app
+                  - step:
+                      identifier: deploystacks2
+                      name: deploystacks-2
+                      spec:
+                        envVariables:
+                          PROVIDER: <+matrix.PROVIDER>
+                          STACK: <+matrix.STACK>
+                        shell: Sh
+                        command: bin/deploy $PROVIDER/$STACK
+                      timeout: ""
+                      type: Run
+                      strategy:
+                        matrix:
+                          PROVIDER:
+                            - gcp
+                            - vultr
+                          STACK:
+                            - data
+                            - processing
+```
+
+</details>
 
 ## 🔴 [`release`](https://docs.gitlab.com/ee/ci/yaml/#release)
 
@@ -898,17 +1009,92 @@ pipeline:
 
 ## 🔴 [`resource_group`](https://docs.gitlab.com/ee/ci/yaml/#resource_group)
 
-## 🔴 [`retry`](https://docs.gitlab.com/ee/ci/yaml/#retry)
+## 🟠 [`retry`](https://docs.gitlab.com/ee/ci/yaml/#retry)
+
+Notes:
+- See [Define a failure strategy on stages and steps](https://developer.harness.io/docs/platform/pipelines/define-a-failure-strategy-on-stages-and-steps/#add-a-step-failure-strategy)
+
+<details>
+  <summary>Example</summary>
+
+Source
+```yaml
+test:
+  script: rspec
+  retry: 2
+```
+
+Manually converted
+```yaml
+pipeline:
+  identifier: default
+  name: default
+  orgIdentifier: default
+  projectIdentifier: default
+  properties:
+    ci:
+      codebase:
+        build: <+input>
+  stages:
+  - stage:
+      identifier: test1
+      name: test
+      spec:
+        cloneCodebase: true
+        execution:
+          steps:
+          - step:
+              identifier: test
+              name: test
+              spec:
+                command: rspec
+              failureStrategies:
+                - onFailure:
+                    errors:
+                      - AllErrors
+                    action:
+                      type: Retry
+                      spec:
+                        retryCount: 2
+                        onRetryFailure:
+                          action:
+                            type: MarkAsFailure
+                        retryIntervals:
+                          - 10s
+              timeout: ""
+              type: Run
+        platform:
+          arch: Amd64
+          os: Linux
+        runtime:
+          spec: {}
+          type: Cloud
+      type: CI
+```
+
+</details>
 
 ### 🔴 [`retry:when`](https://docs.gitlab.com/ee/ci/yaml/#retrywhen)
 
 ## 🔴 [`rules`](https://docs.gitlab.com/ee/ci/yaml/#rules)
 
+Notes:
+- There is likely an equivalent JEXL expression, see [Webhook triggers reference](https://developer.harness.io/docs/platform/pipelines/w_pipeline-steps-reference/triggers-reference/)
+
 ### 🔴 [`rules:if`](https://docs.gitlab.com/ee/ci/yaml/#rulesif)
+
+Notes:
+- There is likely an equivalent JEXL expression, see [Webhook triggers reference](https://developer.harness.io/docs/platform/pipelines/w_pipeline-steps-reference/triggers-reference/)
 
 ### 🔴 [`rules:changes`](https://docs.gitlab.com/ee/ci/yaml/#ruleschanges)
 
+Notes:
+- There is likely an equivalent JEXL expression, see [Webhook triggers reference](https://developer.harness.io/docs/platform/pipelines/w_pipeline-steps-reference/triggers-reference/)
+
 #### 🔴 [`rules:changes:paths`](https://docs.gitlab.com/ee/ci/yaml/#ruleschangespaths)
+
+Notes:
+- There is likely an equivalent JEXL expression, see [Webhook triggers reference](https://developer.harness.io/docs/platform/pipelines/w_pipeline-steps-reference/triggers-reference/)
 
 #### 🔴 [`rules:changes:compare_to`](https://docs.gitlab.com/ee/ci/yaml/#ruleschangescompare_to)
 
@@ -1051,9 +1237,17 @@ pipeline:
 
 </details>
 
-### 🔴 [`secrets:vault`](https://docs.gitlab.com/ee/ci/yaml/#secretsvault)
+### 🟠 [`secrets:vault`](https://docs.gitlab.com/ee/ci/yaml/#secretsvault)
 
-### 🔴 [`secrets:azure_key_vault`](https://docs.gitlab.com/ee/ci/yaml/#secretsazure_key_vault)
+Notes:
+- Vault is supported by Harness CI, secrets must be added manually
+- See [Add a HashiCorp Vault secret manager](https://developer.harness.io/docs/platform/secrets/secrets-management/add-hashicorp-vault/)
+
+### 🟠 [`secrets:azure_key_vault`](https://docs.gitlab.com/ee/ci/yaml/#secretsazure_key_vault)
+
+Notes:
+- Azure Key Vault is supported by Harness CI, secrets must be added manually
+- See [Add an Azure Key Vault secret manager](https://developer.harness.io/docs/platform/secrets/secrets-management/azure-key-vault/)
 
 ### 🔴 [`secrets:file`](https://docs.gitlab.com/ee/ci/yaml/#secretsfile)
 
@@ -1142,9 +1336,167 @@ pipeline:
 
 </details>
 
-### 🔴 [`stage: .pre`](https://docs.gitlab.com/ee/ci/yaml/#stage-pre)
+### 🟠 [`stage: .pre`](https://docs.gitlab.com/ee/ci/yaml/#stage-pre)
 
-### 🔴 [`stage: .post`](https://docs.gitlab.com/ee/ci/yaml/#stage-post)
+Notes:
+- Jobs in `.pre` must be added as the first steps manually
+
+<details>
+  <summary>Example</summary>
+
+Source
+```yaml
+stages:
+  - build
+  - test
+
+job1:
+  stage: build
+  script:
+    - echo "This job runs in the build stage."
+
+first-job:
+  stage: .pre
+  script:
+    - echo "This job runs in the .pre stage, before all other stages."
+
+job2:
+  stage: test
+  script:
+    - echo "This job runs in the test stage."
+```
+
+Manually converted
+```yaml
+pipeline:
+  identifier: default
+  name: default
+  orgIdentifier: default
+  projectIdentifier: default
+  properties:
+    ci:
+      codebase:
+        build: <+input>
+  stages:
+  - stage:
+      identifier: test
+      name: test
+      spec:
+        cloneCodebase: true
+        execution:
+          steps:
+          - step:
+              identifier: firstjob
+              name: first-job
+              spec:
+                command: echo "This job runs in the .pre stage, before all other stages."
+              timeout: ""
+              type: Run
+          - step:
+              identifier: job1
+              name: job1
+              spec:
+                command: echo "This job runs in the build stage."
+              timeout: ""
+              type: Run
+          - step:
+              identifier: job2
+              name: job2
+              spec:
+                command: echo "This job runs in the test stage."
+              timeout: ""
+              type: Run
+        platform:
+          arch: Amd64
+          os: Linux
+        runtime:
+          spec: {}
+          type: Cloud
+      type: CI
+```
+
+</details>
+
+### 🟠 [`stage: .post`](https://docs.gitlab.com/ee/ci/yaml/#stage-post)
+
+Notes:
+- Jobs in `.post` must be added as the last steps manually
+
+<details>
+  <summary>Example</summary>
+
+Source
+```yaml
+stages:
+  - build
+  - test
+
+job1:
+  stage: build
+  script:
+    - echo "This job runs in the build stage."
+
+last-job:
+  stage: .post
+  script:
+    - echo "This job runs in the .post stage, after all other stages."
+
+job2:
+  stage: test
+  script:
+    - echo "This job runs in the test stage."
+```
+
+Manually converted
+```yaml
+pipeline:
+  identifier: default
+  name: default
+  orgIdentifier: default
+  projectIdentifier: default
+  properties:
+    ci:
+      codebase:
+        build: <+input>
+  stages:
+  - stage:
+      identifier: test
+      name: test
+      spec:
+        cloneCodebase: true
+        execution:
+          steps:
+          - step:
+              identifier: job1
+              name: job1
+              spec:
+                command: echo "This job runs in the build stage."
+              timeout: ""
+              type: Run
+          - step:
+              identifier: job2
+              name: job2
+              spec:
+                command: echo "This job runs in the test stage."
+              timeout: ""
+              type: Run
+          - step:
+              identifier: lastjob
+              name: last-job
+              spec:
+                command: echo "This job runs in the .post stage, after all other stages."
+              timeout: ""
+              type: Run
+        platform:
+          arch: Amd64
+          os: Linux
+        runtime:
+          spec: {}
+          type: Cloud
+      type: CI
+```
+
+</details>
 
 ## 🔴 [`tags`](https://docs.gitlab.com/ee/ci/yaml/#tags)
 
@@ -1317,4 +1669,7 @@ pipeline:
 
 ### 🔴 [`variables:expand`](https://docs.gitlab.com/ee/ci/yaml/#variablesexpand)
 
-## 🔴 [`when`](https://docs.gitlab.com/ee/ci/yaml/#when)
+## 🟠 [`when`](https://docs.gitlab.com/ee/ci/yaml/#when)
+
+Notes:
+- See [Stage and step conditional execution settings](https://developer.harness.io/docs/platform/pipelines/w_pipeline-steps-reference/step-skip-condition-settings/)

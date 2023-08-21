@@ -820,7 +820,9 @@ Notes:
 ## 🟠 [`parallel`](https://docs.gitlab.com/ee/ci/yaml/#parallel)
 
 Notes:
-- GitLab sets `CI_NODE_INDEX` and `CI_NODE_TOTAL` variables, Harness CI sets `<+strategy.iteration>` and `<+strategy.iterations>`. See [Speed up CI test pipelines using parallelism](https://developer.harness.io/docs/platform/pipelines/speed-up-ci-test-pipelines-using-parallelism/).
+- GitLab sets `CI_NODE_INDEX` and `CI_NODE_TOTAL` variables, Harness CI sets `<+strategy.iteration>` and `<+strategy.iterations>`
+- `CI_NODE_INDEX` starts at `1` in GitLab, `<+strategy.iteration>` starts at `0` in Harness CI
+- See [Speed up CI test pipelines using parallelism](https://developer.harness.io/docs/platform/pipelines/speed-up-ci-test-pipelines-using-parallelism/).
 
 <details>
   <summary>Example</summary>
@@ -857,7 +859,7 @@ pipeline:
               spec:
                 command: rspec
                 envVariables:
-                  CI_NODE_INDEX: <+strategy.iteration>
+                  CI_NODE_INDEX: <+strategy.iteration + 1>
                   CI_NODE_TOTAL: <+strategy.iterations>
               strategy:
                 parallelism: 5

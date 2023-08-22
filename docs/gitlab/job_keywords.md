@@ -1813,7 +1813,7 @@ pipeline:
 Notes:
 
 - `description` must be added manually to the converted variable
-- Must always be used with [`variables:value`](#variablesvalue)
+- Must always be used with [`variables:value`](#-variablesvalue)
 - This behavior is not supported:
   > When used without `value`, the variable exists in pipelines that were not triggered manually, and the default value is an empty string (`''`).
 
@@ -1976,6 +1976,9 @@ pipeline:
 Notes:
 - Can be manually converted to [runtime inputs](https://developer.harness.io/docs/platform/references/runtime-inputs/#using-allowed-values-default-values-and-multiple-selection-in-runtime-inputs)
 
+<details>
+  <summary>Example</summary>
+
 Source
 ```yaml
 variables:
@@ -2019,6 +2022,8 @@ pipeline:
           required: true
           value: <+input>.default(staging).allowedValues(production,canary,staging)
 ```
+
+</details>
 
 ### 🔴 [`variables:expand`](https://docs.gitlab.com/ee/ci/yaml/#variablesexpand)
 

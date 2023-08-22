@@ -1253,9 +1253,164 @@ Notes:
 
 ### 🔴 [`secrets:token`](https://docs.gitlab.com/ee/ci/yaml/#secretstoken)
 
-## 🔴 [`services`](https://docs.gitlab.com/ee/ci/yaml/#services)
+## 🟠 [`services`](https://docs.gitlab.com/ee/ci/yaml/#services)
 
-### 🔴 [`service:pull_policy`](https://docs.gitlab.com/ee/ci/yaml/#servicepull_policy)
+Notes:
+- Services can be converted to a [background step](https://developer.harness.io/docs/continuous-integration/use-ci/manage-dependencies/background-step-settings/)
+- `alias` is not supported
+- See [Background step settings](https://developer.harness.io/docs/continuous-integration/use-ci/manage-dependencies/background-step-settings/#port-bindings) for communicating with background steps by Id
+
+<details>
+  <summary>Example</summary>
+
+Source
+```yaml
+default:
+  image:
+    name: ruby:2.6
+    entrypoint: ["/bin/bash"]
+
+  services:
+    - name: my-postgres:11.7
+      alias: db-postgres
+      entrypoint: ["/usr/local/bin/db-postgres"]
+      command: ["start"]
+
+  before_script:
+    - bundle install
+
+test:
+  script:
+    - bundle exec rake spec
+```
+
+Manually converted
+```yaml
+pipeline:
+  identifier: default
+  name: default
+  orgIdentifier: default
+  projectIdentifier: default
+  properties:
+    ci:
+      codebase:
+        build: <+input>
+  stages:
+    - stage:
+        identifier: test1
+        name: test
+        spec:
+          cloneCodebase: false
+          execution:
+            steps:
+              - step:
+                  type: Background
+                  name: my-postgres
+                  identifier: mypostgres
+                  spec:
+                    image: my-postgres:11.7
+                    shell: Sh
+                    command: start
+                    entrypoint:
+                      - /usr/local/bin/db-postgres
+              - step:
+                  identifier: test
+                  name: test
+                  spec:
+                    image: ruby:2.6
+                    shell: Bash
+                    command: |
+                      curl mypostgres
+                      echo bundle install
+                      echo bundle exec rake spec
+                  timeout: ""
+                  type: Run
+          platform:
+            arch: Amd64
+            os: Linux
+          runtime:
+            spec: {}
+            type: Cloud
+        type: CI
+```
+
+</details>
+
+### 🟠 [`service:pull_policy`](https://docs.gitlab.com/ee/ci/yaml/#servicepull_policy)
+
+Notes:
+- Multiple pull policies are not supported
+
+<details>
+  <summary>Example</summary>
+
+Source
+```yaml
+job1:
+  script: echo "A single pull policy."
+  services:
+    - name: postgres:11.6
+      pull_policy: if-not-present
+
+job2:
+  script: echo "Multiple pull policies."
+  services:
+    - name: postgres:11.6
+      pull_policy: [always, if-not-present]
+```
+
+Manually converted
+```yaml
+  stages:
+    - stage:
+        identifier: test
+        name: test
+        spec:
+          cloneCodebase: true
+          execution:
+            steps:
+              - parallel:
+                  - step:
+                      type: Background
+                      name: postgres1
+                      identifier: postgres1
+                      spec:
+                        connectorRef: account.harnessImage
+                        image: postgres:11.6
+                        shell: Sh
+                        imagePullPolicy: IfNotPresent
+                  - step:
+                      identifier: job1
+                      name: job1
+                      spec:
+                        command: echo "A single pull policy."
+                      timeout: ""
+                      type: Run
+              - parallel:
+                  - step:
+                      type: Background
+                      name: postgres2
+                      identifier: postgres2
+                      spec:
+                        connectorRef: account.harnessImage
+                        image: postgres:11.6
+                        shell: Sh
+                  - step:
+                      identifier: job2
+                      name: job2
+                      spec:
+                        command: echo "Multiple pull policies."
+                      timeout: ""
+                      type: Run
+          platform:
+            arch: Amd64
+            os: Linux
+          runtime:
+            spec: {}
+            type: Cloud
+        type: CI
+```
+</details>
 
 ## 🟢 [`stage`](https://docs.gitlab.com/ee/ci/yaml/#stage)
 
@@ -1339,7 +1494,7 @@ pipeline:
 ### 🟠 [`stage: .pre`](https://docs.gitlab.com/ee/ci/yaml/#stage-pre)
 
 Notes:
-- Jobs in `.pre` must be added as the first steps manually
+- Jobs in `.pre` must be manually added as the first steps
 
 <details>
   <summary>Example</summary>
@@ -1420,7 +1575,7 @@ pipeline:
 ### 🟠 [`stage: .post`](https://docs.gitlab.com/ee/ci/yaml/#stage-post)
 
 Notes:
-- Jobs in `.post` must be added as the last steps manually
+- Jobs in `.post` must be manually added as the last steps
 
 <details>
   <summary>Example</summary>
@@ -1500,7 +1655,69 @@ pipeline:
 
 ## 🔴 [`tags`](https://docs.gitlab.com/ee/ci/yaml/#tags)
 
-## 🔴 [`timeout`](https://docs.gitlab.com/ee/ci/yaml/#timeout)
+## 🟠 [`timeout`](https://docs.gitlab.com/ee/ci/yaml/#timeout)
+
+Notes:
+- Timeouts can be manually converted to the required syntax
+
+<details>
+  <summary>Example</summary>
+
+Source
+```yaml
+build:
+  script: build.sh
+  timeout: 3 hours 30 minutes
+
+test:
+  script: rspec
+  timeout: 3h 30m
+```
+
+Manually converted
+```yaml
+pipeline:
+  identifier: default
+  name: default
+  orgIdentifier: default
+  projectIdentifier: default
+  properties:
+    ci:
+      codebase:
+        build: <+input>
+  stages:
+  - stage:
+      identifier: test1
+      name: test
+      spec:
+        cloneCodebase: true
+        execution:
+          steps:
+          - parallel:
+            - step:
+                identifier: build
+                name: build
+                spec:
+                  command: build.sh
+                timeout: 3h 30m
+                type: Run
+            - step:
+                identifier: test
+                name: test
+                spec:
+                  command: rspec
+                timeout: 3h 30m
+                type: Run
+        platform:
+          arch: Amd64
+          os: Linux
+        runtime:
+          spec: {}
+          type: Cloud
+      type: CI
+```
+
+</details>
 
 ## 🔴 [`trigger`](https://docs.gitlab.com/ee/ci/yaml/#trigger)
 
@@ -1512,7 +1729,10 @@ pipeline:
 
 ### 🔴 [`trigger:forward`](https://docs.gitlab.com/ee/ci/yaml/#triggerforward)
 
-## 🟢 [`variables`](https://docs.gitlab.com/ee/ci/yaml/#variables)
+## 🟠 [`variables`](https://docs.gitlab.com/ee/ci/yaml/#variables)
+
+Notes:
+- Variables at the job level must be manually added to the converted stages, such as `REVIEW_PATH` in the below example
 
 <details>
   <summary>Example</summary>
@@ -1537,7 +1757,7 @@ deploy_review_job:
   environment: production
 ```
 
-Converted
+Manually converted
 ```yaml
 pipeline:
   identifier: default
@@ -1568,6 +1788,8 @@ pipeline:
                 identifier: deployreviewjob
                 name: deploy_review_job
                 spec:
+                  envVariables:
+                    REVIEW_PATH: "/review"
                   command: deploy-review-script --url $DEPLOY_SITE --path $REVIEW_PATH
                 timeout: ""
                 type: Run
@@ -1586,7 +1808,91 @@ pipeline:
 
 </details>
 
-### 🔴 [`variables:description`](https://docs.gitlab.com/ee/ci/yaml/#variablesdescription)
+### 🟠 [`variables:description`](https://docs.gitlab.com/ee/ci/yaml/#variablesdescription)
+
+Notes:
+
+- `description` must be added manually to the converted variable
+- Must always be used with [`variables:value`](#variablesvalue)
+- This behavior is not supported:
+  > When used without `value`, the variable exists in pipelines that were not triggered manually, and the default value is an empty string (`''`).
+
+<details>
+  <summary>Example</summary>
+
+Source
+```yaml
+variables:
+  DEPLOY_SITE: "https://example.com"
+  DEPLOY_ENVIRONMENT:
+    description: Deployment environment
+    value: "staging"
+
+deploy_job:
+  script:
+    - deploy-script --url $DEPLOY_SITE/$DEPLOY_ENVIRONMENT --path "/"
+
+deploy_review_job:
+  variables:
+    REVIEW_PATH: "/review"
+  script:
+    - deploy-review-script --url $DEPLOY_SITE/$DEPLOY_ENVIRONMENT --path $REVIEW_PATH
+```
+
+Manually converted
+```yaml
+pipeline:
+  identifier: default
+  name: default
+  orgIdentifier: default
+  projectIdentifier: default
+  properties:
+    ci:
+      codebase:
+        build: <+input>
+  stages:
+  - stage:
+      identifier: test
+      name: test
+      spec:
+        cloneCodebase: true
+        execution:
+          steps:
+          - parallel:
+            - step:
+                identifier: deployjob
+                name: deploy_job
+                spec:
+                  command: deploy-script --url $DEPLOY_SITE/$DEPLOY_ENVIRONMENT --path
+                    "/"
+                timeout: ""
+                type: Run
+            - step:
+                identifier: deployreviewjob
+                name: deploy_review_job
+                spec:
+                  command: deploy-review-script --url $DEPLOY_SITE/$DEPLOY_ENVIRONMENT
+                    --path $REVIEW_PATH
+                timeout: ""
+                type: Run
+        platform:
+          arch: Amd64
+          os: Linux
+        runtime:
+          spec: {}
+          type: Cloud
+      type: CI
+      variables:
+      - name: DEPLOY_ENVIRONMENT
+        description: Deployment environment
+        type: String
+        value: staging
+      - name: DEPLOY_SITE
+        type: String
+        value: https://example.com
+```
+
+</details>
 
 ### 🟢 [`variables:value`](https://docs.gitlab.com/ee/ci/yaml/#variablesvalue)
 
@@ -1665,7 +1971,54 @@ pipeline:
 
 </details>
 
-### 🔴 [`variables:options`](https://docs.gitlab.com/ee/ci/yaml/#variablesoptions)
+### 🟠 [`variables:options`](https://docs.gitlab.com/ee/ci/yaml/#variablesoptions)
+
+Notes:
+- Can be manually converted to [runtime inputs](https://developer.harness.io/docs/platform/references/runtime-inputs/#using-allowed-values-default-values-and-multiple-selection-in-runtime-inputs)
+
+Source
+```yaml
+variables:
+  DEPLOY_ENVIRONMENT:
+    value: "staging"
+    options:
+      - "production"
+      - "staging"
+      - "canary"
+    description: "The deployment target. Set to 'staging' by default."
+```
+
+Manually converted
+```yaml
+pipeline:
+  identifier: default
+  name: default
+  orgIdentifier: default
+  projectIdentifier: default
+  properties:
+    ci:
+      codebase:
+        build: <+input>
+  stages:
+  - stage:
+      identifier: test
+      name: test
+      spec:
+        cloneCodebase: true
+        execution: {}
+        platform:
+          arch: Amd64
+          os: Linux
+        runtime:
+          spec: {}
+          type: Cloud
+      type: CI
+      variables:
+        - name: DEPLOY_ENV
+          type: String
+          required: true
+          value: <+input>.default(staging).allowedValues(production,canary,staging)
+```
 
 ### 🔴 [`variables:expand`](https://docs.gitlab.com/ee/ci/yaml/#variablesexpand)
 

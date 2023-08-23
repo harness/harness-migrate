@@ -280,3 +280,7 @@ Add a timeout for the overall pipeline, for example:
 pipeline:
   timeout: 10m # this is the best alternative
 ```
+
+## GitLab
+
+See [job keywords](docs/gitlab/job_keywords.md) docs

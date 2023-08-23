@@ -1320,7 +1320,6 @@ pipeline:
                     image: ruby:2.6
                     shell: Bash
                     command: |
-                      curl mypostgres
                       echo bundle install
                       echo bundle exec rake spec
                   timeout: ""

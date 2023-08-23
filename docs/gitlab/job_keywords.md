@@ -18,7 +18,7 @@ job:
   script:
     - echo "An example script section."
   after_script:
-    - echo "Execute this command after the `script` section completes."
+    - echo "Execute this command after the script section completes."
 ```
 
 Manually converted
@@ -49,10 +49,16 @@ pipeline:
               type: Run
           - step:
               identifier: after_script
+              failureStrategies:
+              - onFailure:
+                  errors:
+                  - AllErrors
+                  action:
+                    type: Ignore
               name: after_script
               spec:
-                command: echo "Execute this command after the `script` section completes."
-              timeout: ""
+                command: echo "Execute this command after the script section completes."
+              timeout: 5m
               type: Run
               when:
                 stageStatus: All

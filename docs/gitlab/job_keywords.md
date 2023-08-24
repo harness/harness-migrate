@@ -1095,12 +1095,12 @@ Notes:
 ### 🔴 [`rules:changes`](https://docs.gitlab.com/ee/ci/yaml/#ruleschanges)
 
 Notes:
-- There is likely an equivalent JEXL expression, see [Webhook triggers reference](https://developer.harness.io/docs/platform/pipelines/w_pipeline-steps-reference/triggers-reference/)
+- There is likely an equivalent JEXL expression, see [Webhook triggers reference](https://developer.harness.io/docs/platform/pipelines/w_pipeline-steps-reference/triggers-reference/#source-branch-target-branch-and-changed-files-conditions)
 
 #### 🔴 [`rules:changes:paths`](https://docs.gitlab.com/ee/ci/yaml/#ruleschangespaths)
 
 Notes:
-- There is likely an equivalent JEXL expression, see [Webhook triggers reference](https://developer.harness.io/docs/platform/pipelines/w_pipeline-steps-reference/triggers-reference/)
+- There is likely an equivalent JEXL expression, see [Webhook triggers reference](https://developer.harness.io/docs/platform/pipelines/w_pipeline-steps-reference/triggers-reference/#source-branch-target-branch-and-changed-files-conditions)
 
 #### 🔴 [`rules:changes:compare_to`](https://docs.gitlab.com/ee/ci/yaml/#ruleschangescompare_to)
 

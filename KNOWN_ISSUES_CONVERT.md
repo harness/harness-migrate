@@ -91,6 +91,48 @@ There might not be an expression for your use case. For example, the git [commit
 Retrieve the desired value from the webhook payload, which is available via `<+trigger.payload.*>`.
 For example, for a GitHub repository, the git commit ref is available at `<+trigger.payload.ref>`.
 
+### Triggers
+
+All CI solutions have a way to control what events should trigger a pipeline execution.
+
+**Problem**
+
+Harness CI [webhook triggers](https://developer.harness.io/docs/platform/pipelines/w_pipeline-steps-reference/triggers-reference/) are managed separately from the pipeline yaml.
+
+Harness CI also supports conditions at the [stage and step level](https://developer.harness.io/docs/platform/pipelines/w_pipeline-steps-reference/step-skip-condition-settings/) which are managed in the yaml.
+
+Where supported, this tool converts stage and step-level conditions, but it does not convert webhook trigger conditions.
+
+**Solution**
+
+Webhook triggers can be modified to have logic that matches the stage-level conditions.
+
+For example, here are [triggers](https://docs.drone.io/pipeline/triggers/) from a a Drone pipeline:
+
+```yaml
+trigger:
+  branch:
+    include:
+      - develop
+      - master
+```
+
+The above will convert to this stage-level condition:
+
+```yaml
+      when:
+        condition: <+trigger.targetBranch> == "develop" || <+trigger.targetBranch> == "master"
+```
+
+Push and pull request webhook triggers in Harness CI can be updated to use this payload condition to maintain the same behavior:
+
+```yaml
+          payloadConditions:
+            - key: targetBranch
+              operator: In
+              value: develop, main
+```
+
 ## Cloud Build
 
 ### [artifacts](https://cloud.google.com/build/docs/build-config-file-schema#artifacts)

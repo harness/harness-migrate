@@ -2036,3 +2036,219 @@ pipeline:
 
 Notes:
 - See [Stage and step conditional execution settings](https://developer.harness.io/docs/platform/pipelines/w_pipeline-steps-reference/step-skip-condition-settings/)
+
+### 🟠 `when:on_failure`
+
+Notes:
+- Add a [step condition](https://developer.harness.io/docs/platform/pipelines/w_pipeline-steps-reference/step-skip-condition-settings/#step-conditions) to the converted step
+
+<details>
+  <summary>Example</summary>
+
+Source
+```yaml
+stages:
+  - build
+  - cleanup_build
+
+build_job:
+  stage: build
+  script:
+    - make build
+
+cleanup_build_job:
+  stage: cleanup_build
+  script:
+    - cleanup build when failed
+  when: on_failure
+```
+
+Manually converted
+```yaml
+pipeline:
+  identifier: default
+  name: default
+  orgIdentifier: default
+  projectIdentifier: default
+  properties:
+    ci:
+      codebase:
+        build: <+input>
+  stages:
+  - stage:
+      identifier: cleanupbuild
+      name: cleanup_build
+      spec:
+        cloneCodebase: true
+        execution:
+          steps:
+          - step:
+              identifier: buildjob
+              name: build_job
+              spec:
+                command: make build
+              timeout: ""
+              type: Run
+          - step:
+              identifier: cleanupbuildjob
+              name: cleanup_build_job
+              spec:
+                command: cleanup build when failed
+              timeout: ""
+              type: Run
+              when:
+                stageStatus: Failure
+        platform:
+          arch: Amd64
+          os: Linux
+        runtime:
+          spec: {}
+          type: Cloud
+      type: CI
+```
+
+</details>
+
+### 🟠 `when:always`
+
+Notes:
+- Add a [step condition](https://developer.harness.io/docs/platform/pipelines/w_pipeline-steps-reference/step-skip-condition-settings/#step-conditions) to the converted step
+
+<details>
+  <summary>Example</summary>
+
+Source
+```yaml
+stages:
+  - test
+  - cleanup
+
+test_job:
+  stage: test
+  script:
+    - make test
+
+cleanup_job:
+  stage: cleanup
+  script:
+    - cleanup after jobs
+  when: always
+```
+
+Manually converted
+```yaml
+pipeline:
+  identifier: default
+  name: default
+  orgIdentifier: default
+  projectIdentifier: default
+  properties:
+    ci:
+      codebase:
+        build: <+input>
+  stages:
+  - stage:
+      identifier: cleanup
+      name: cleanup
+      spec:
+        cloneCodebase: true
+        execution:
+          steps:
+          - step:
+              identifier: testjob
+              name: test_job
+              spec:
+                command: make test
+              timeout: ""
+              type: Run
+          - step:
+              identifier: cleanupjob
+              name: cleanup_job
+              spec:
+                command: cleanup after jobs
+              timeout: ""
+              type: Run
+              when:
+                stageStatus: All
+        platform:
+          arch: Amd64
+          os: Linux
+        runtime:
+          spec: {}
+          type: Cloud
+      type: CI
+```
+
+</details>
+
+### 🟠 `when:manual`
+
+Notes:
+- Add a [step condition](https://developer.harness.io/docs/platform/pipelines/w_pipeline-steps-reference/step-skip-condition-settings/#step-conditions) to the converted step that references [`pipeline.triggerType`](https://developer.harness.io/docs/platform/variables-and-expressions/harness-variables/#pipelinetriggertype)
+
+<details>
+  <summary>Example</summary>
+
+```yaml
+stages:
+  - manual
+  - test
+
+manual_job:
+  stage: manual
+  script:
+    - echo this job was run manually
+  when: manual
+
+test_job:
+  stage: test
+  script:
+    - make test
+```
+
+Manually converted
+```yaml
+pipeline:
+  identifier: default
+  name: default
+  orgIdentifier: default
+  projectIdentifier: default
+  properties:
+    ci:
+      codebase:
+        build: <+input>
+  stages:
+  - stage:
+      identifier: test
+      name: test
+      spec:
+        cloneCodebase: true
+        execution:
+          steps:
+          - step:
+              identifier: manualjob
+              name: manual_job
+              spec:
+                command: echo this job was run manually
+              timeout: ""
+              type: Run
+              when:
+                stageStatus: Success
+                condition: <+pipeline.triggerType> == "MANUAL"
+          - step:
+              identifier: testjob
+              name: test_job
+              spec:
+                command: make test
+              timeout: ""
+              type: Run
+        platform:
+          arch: Amd64
+          os: Linux
+        runtime:
+          spec: {}
+          type: Cloud
+      type: CI
+```
+
+</details>

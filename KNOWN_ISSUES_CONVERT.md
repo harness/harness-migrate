@@ -114,14 +114,14 @@ trigger:
   branch:
     include:
       - develop
-      - master
+      - main
 ```
 
 The above will convert to this stage-level condition:
 
 ```yaml
       when:
-        condition: <+trigger.targetBranch> == "develop" || <+trigger.targetBranch> == "master"
+        condition: <+trigger.targetBranch> == "develop" || <+trigger.targetBranch> == "main"
 ```
 
 Push and pull request webhook triggers in Harness CI can be updated to use this payload condition to maintain the same behavior:

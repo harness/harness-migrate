@@ -1,8 +1,6 @@
 **harness-migrate** is a command line utility to help convert and migrate
 continuous integration pipelines from other providers to Harness CI.
 
-**This tool is under development and is considered experimental.**
-
 **Please review [known conversion and migration issues](KNOWN_ISSUES_CONVERT.md
 ) before using this tool.**
 

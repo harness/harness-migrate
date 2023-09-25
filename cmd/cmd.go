@@ -16,6 +16,7 @@ package cmd
 
 import (
 	"context"
+	"github.com/harness/harness-migrate/cmd/rio"
 	"os"
 
 	"github.com/harness/harness-migrate/cmd/bitbucket"
@@ -55,6 +56,7 @@ func Command() {
 	github.Register(app)
 	travis.Register(app)
 	terraform.Register(app)
+	rio.Register(app)
 
 	app.Version(version)
 	kingpin.MustParse(app.Parse(os.Args[1:]))

@@ -39,6 +39,8 @@ type convertCommand struct {
 	kubeName   string
 	kubeConn   string
 	dockerConn string
+	userGroup  string
+	githubConn string
 
 	downgrade   bool
 	beforeAfter bool
@@ -63,6 +65,8 @@ func (c *convertCommand) run(ctx *kingpin.ParseContext) error {
 		rio.WithIdentifier(c.name),
 		rio.WithOrganization(c.org),
 		rio.WithProject(c.proj),
+		rio.WithNotifyUserGroup(c.userGroup),
+		rio.WithGithubConnector(c.githubConn),
 	)
 	after, err := converter.ConvertBytes(before)
 	if err != nil {
@@ -184,4 +188,10 @@ func registerConvert(app *kingpin.CmdClause) {
 
 	cmd.Flag("docker-connector", "dockerhub connector").
 		StringVar(&c.dockerConn)
+
+	cmd.Flag("github-connector", "github connector").
+		StringVar(&c.githubConn)
+
+	cmd.Flag("notification-user-group", "notification user group").
+		StringVar(&c.userGroup)
 }

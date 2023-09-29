@@ -42,6 +42,10 @@ github.com/drone/go-convert v0.0.0-20230925052950-96e0636fc16d h1:9ECJStEg/6w65I
 github.com/drone/go-convert v0.0.0-20230925052950-96e0636fc16d/go.mod h1:PyCDcuAhGF6W0VJ6qMmlM47dsSyGv/zDiMqeJxMFuGM=
 github.com/drone/go-convert v0.0.0-20230925190427-224eaa800269 h1:DxwPZrXlTiE7PoFOzcTaxpyHTltLOiVKub1VVm8Ey2Q=
 github.com/drone/go-convert v0.0.0-20230925190427-224eaa800269/go.mod h1:PyCDcuAhGF6W0VJ6qMmlM47dsSyGv/zDiMqeJxMFuGM=
+github.com/drone/go-convert v0.0.0-20230926023531-365c5493dc4e h1:6Rhm4RjeaSPzGWxMMFUUGZwiwcGbI1U4MuUzGnk5iSY=
+github.com/drone/go-convert v0.0.0-20230926023531-365c5493dc4e/go.mod h1:PyCDcuAhGF6W0VJ6qMmlM47dsSyGv/zDiMqeJxMFuGM=
+github.com/drone/go-convert v0.0.0-20230929102346-390fcf77ed85 h1:6QopyQ69UM6AN3tJjcEp2dg9VZ17VRNWGeSVLMtEOg8=
+github.com/drone/go-convert v0.0.0-20230929102346-390fcf77ed85/go.mod h1:PyCDcuAhGF6W0VJ6qMmlM47dsSyGv/zDiMqeJxMFuGM=
 github.com/drone/go-scm v1.28.1 h1:3WukxtsFFU5omHfp8dU3EXjEQCmtqAZkCj9pHHs+Xus=
 github.com/drone/go-scm v1.28.1/go.mod h1:DFIJJjhMj0TSXPz+0ni4nyZ9gtTtC40Vh/TGRugtyWw=
 github.com/drone/spec v0.0.0-20230814135001-3ad892acc3dd h1:aiQzm9bSHR1cxrakEEgorpEFnFXK6r4uGS15P83CcGU=

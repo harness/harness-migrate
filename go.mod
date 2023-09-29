@@ -7,7 +7,7 @@ require (
 	github.com/alecthomas/chroma v0.10.0
 	github.com/alecthomas/kingpin/v2 v2.3.1
 	github.com/drone/funcmap v0.0.0-20220929084810-72602997d16f
-	github.com/drone/go-convert v0.0.0-20230925190427-224eaa800269
+	github.com/drone/go-convert v0.0.0-20230929102346-390fcf77ed85
 	github.com/drone/go-scm v1.28.1
 	github.com/go-git/go-git/v5 v5.5.2
 	github.com/google/go-cmp v0.5.9

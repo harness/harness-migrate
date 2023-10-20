@@ -42,7 +42,7 @@ locals {
                   type: Cloud
               type: CI
               when:
-                condition: <+trigger.branch> == "main"
+                condition: <+trigger.targetBranch> == "main"
                 pipelineStatus: Success
           EOT
       branch    = "main"

@@ -81,6 +81,14 @@ harness-migrate drone import \
   export.json
 ```
 
+### BitBucket
+
+Convert a bitbucket pipeline:
+
+```term
+harness-migrate bitbucket convert /path/to/bitbucket-pipelines.yml
+```
+
 ### CircleCI
 
 Convert a circle pipeline:

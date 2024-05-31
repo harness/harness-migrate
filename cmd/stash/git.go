@@ -6,6 +6,7 @@ import (
 	scmstash "github.com/drone/go-scm/scm/driver/stash"
 	"github.com/drone/go-scm/scm/transport"
 	"github.com/harness/harness-migrate/cmd/util"
+	"github.com/harness/harness-migrate/internal/checkpoint"
 	"github.com/harness/harness-migrate/internal/common"
 	"github.com/harness/harness-migrate/internal/migrate/stash"
 	"github.com/harness/harness-migrate/internal/tracer"
@@ -23,6 +24,8 @@ type exportCommand struct {
 	stashUser  string
 	stashToken string
 	stashUrl   string
+
+	checkpoint bool
 }
 
 func (c *exportCommand) run(*kingpin.ParseContext) error {
@@ -56,14 +59,20 @@ func (c *exportCommand) run(*kingpin.ParseContext) error {
 	tracer_ := tracer.New()
 	defer tracer_.Close()
 
-	// extract the data
-	e := stash.Export{
-		Stash:    client,
-		Tracer:   tracer_,
-		StashOrg: c.stashOrg,
+	checkpointManager := checkpoint.NewCheckpointManager(c.file)
+
+	if c.checkpoint {
+		err := checkpointManager.LoadCheckpoint()
+		if err != nil {
+			tracer_.LogError("unable to load checkpoint %v", err)
+			panic("unable to load checkpoint")
+		}
 	}
 
-	exporter := common.Exporter{Exporter: e, ZipLocation: c.file}
+	// extract the data
+	e := stash.New(client, c.stashOrg, checkpointManager, tracer_)
+
+	exporter := common.NewExporter(e, c.file)
 	exporter.Export(ctx)
 	return nil
 }
@@ -98,7 +107,11 @@ func registerGit(app *kingpin.CmdClause) {
 	cmd.Flag("username", "stash username").
 		Required().
 		Envar("stash_USERNAME").
-		StringVar(&c.stashToken)
+		StringVar(&c.stashUser)
+
+	cmd.Flag("resume", "resume from last checkpoint").
+		Default("false").
+		BoolVar(&c.checkpoint)
 
 	cmd.Flag("debug", "enable debug logging").
 		BoolVar(&c.debug)

@@ -1,16 +1,28 @@
+// Copyright 2023 Harness, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package common
 
 import (
-	"bytes"
 	"context"
-	"encoding/gob"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/harness/harness-migrate/internal/codeerror"
 	"github.com/harness/harness-migrate/internal/types"
+	"github.com/harness/harness-migrate/internal/util"
 	"log"
-	"os"
 	"path/filepath"
 )
 
@@ -20,15 +32,18 @@ const (
 )
 
 type Exporter struct {
-	Exporter    Interface
-	ZipLocation string
-	Checkpoint  map[string]interface{}
+	exporter    Interface
+	zipLocation string
+}
+
+func NewExporter(exporter Interface, location string) Exporter {
+	return Exporter{exporter: exporter, zipLocation: location}
 }
 
 // Export calls exporter methods in order and serialize an object for import.
 func (e *Exporter) Export(ctx context.Context) {
-	path := filepath.Join(".", e.ZipLocation)
-	err := createFolder(path)
+	path := filepath.Join(".", e.zipLocation)
+	err := util.CreateFolder(path)
 	if err != nil {
 		panic("cannot create folder")
 	}
@@ -43,14 +58,12 @@ func (e *Exporter) Export(ctx context.Context) {
 
 // Calculate the size of the struct in bytes
 func calculateSize(s *types.PullRequestData) int {
-	var buf bytes.Buffer
-	enc := gob.NewEncoder(&buf)
-	err := enc.Encode(s)
+	data, err := json.Marshal(s)
 	// will never happen
 	if err != nil {
 		panic(err)
 	}
-	return buf.Len()
+	return len(data)
 }
 
 // Split the array into smaller chunks if the size exceeds the maxChunkSize
@@ -76,14 +89,14 @@ func splitArray(arr []*types.PullRequestData) [][]*types.PullRequestData {
 }
 
 func (e *Exporter) writeJsonForRepo(repo *types.RepoData) error {
-	repoJson, _ := getJsonContent(repo.Repository)
-	pathRepo := filepath.Join(".", e.ZipLocation, repo.Repository.RepoSlug)
-	err := createFolder(pathRepo)
+	repoJson, _ := util.GetJson(repo.Repository)
+	pathRepo := filepath.Join(".", e.zipLocation, repo.Repository.RepoSlug)
+	err := util.CreateFolder(pathRepo)
 	if err != nil {
 		return fmt.Errorf("cannot create folder")
 	}
 
-	err = writeFile(filepath.Join(pathRepo, infoFileName), repoJson)
+	err = util.WriteFile(filepath.Join(pathRepo, infoFileName), repoJson)
 	if err != nil {
 		return err
 	}
@@ -94,20 +107,20 @@ func (e *Exporter) writeJsonForRepo(repo *types.RepoData) error {
 
 	prDataInSize := splitArray(repo.PullRequestData)
 	pathPR := filepath.Join(pathRepo, "pr")
-	err = createFolder(pathPR)
+	err = util.CreateFolder(pathPR)
 	if err != nil {
 		return err
 	}
 
 	for i, data := range prDataInSize {
-		prJson, err := getJsonContent(data)
+		prJson, err := util.GetJson(data)
 		if err != nil {
 			// todo: fix this
 			log.Printf("cannot serialize into json: %v", err)
 		}
 		prFilePath := fmt.Sprintf("pr%d.json", i)
 
-		err = writeFile(filepath.Join(pathPR, prFilePath), prJson)
+		err = util.WriteFile(filepath.Join(pathPR, prFilePath), prJson)
 		if err != nil {
 			return err
 		}
@@ -119,7 +132,7 @@ func (e *Exporter) writeJsonForRepo(repo *types.RepoData) error {
 func (e *Exporter) getData(ctx context.Context) ([]*types.RepoData, error) {
 	repoData := make([]*types.RepoData, 0)
 	// 1. list all the repos for the given org
-	repositories, err := e.Exporter.ListRepositories(ctx, types.ListRepoOptions{})
+	repositories, err := e.exporter.ListRepositories(ctx, types.ListRepoOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("cannot list repositories: %w", err)
 	}
@@ -131,7 +144,7 @@ func (e *Exporter) getData(ctx context.Context) ([]*types.RepoData, error) {
 
 	// 2. list pr per repo
 	for i, repo := range repositories {
-		prs, err := e.Exporter.ListPullRequest(ctx, repo.RepoSlug, types.PullRequestListOptions{})
+		prs, err := e.exporter.ListPullRequest(ctx, repo.RepoSlug, types.PullRequestListOptions{})
 		var notSupportedErr *codeerror.ErrorOpNotSupported
 		if errors.As(err, &notSupportedErr) {
 			return repoData, nil
@@ -159,24 +172,4 @@ func mapPrData(pr types.PRResponse, comments []types.PRComments) *types.PullRequ
 		PullRequest: pr,
 		Comments:    comments,
 	}
-}
-
-func createFolder(path string) error {
-	return os.MkdirAll(path, os.ModePerm)
-}
-
-func writeFile(path string, prJson []byte) error {
-	err := os.WriteFile(path, prJson, os.ModePerm)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func getJsonContent(data interface{}) ([]byte, error) {
-	jsonString, err := json.MarshalIndent(data, "", "    ")
-	if err != nil {
-		return nil, fmt.Errorf("cannot serialize json string for data: %w", err)
-	}
-	return jsonString, nil
 }

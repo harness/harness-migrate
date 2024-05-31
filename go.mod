@@ -1,6 +1,6 @@
 module github.com/harness/harness-migrate
 
-go 1.19
+go 1.21
 
 require (
 	github.com/Masterminds/squirrel v1.5.3

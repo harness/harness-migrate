@@ -28,7 +28,7 @@ type Exporter struct {
 // Export calls exporter methods in order and serialize an object for import.
 func (e *Exporter) Export(ctx context.Context) {
 	path := filepath.Join(".", e.ZipLocation)
-	err := os.MkdirAll(path, os.ModePerm)
+	err := createFolder(path)
 	if err != nil {
 		panic("cannot create folder")
 	}
@@ -46,6 +46,7 @@ func calculateSize(s *types.PullRequestData) int {
 	var buf bytes.Buffer
 	enc := gob.NewEncoder(&buf)
 	err := enc.Encode(s)
+	// will never happen
 	if err != nil {
 		panic(err)
 	}
@@ -75,18 +76,14 @@ func splitArray(arr []*types.PullRequestData) [][]*types.PullRequestData {
 }
 
 func (e *Exporter) writeJsonForRepo(repo *types.RepoData) error {
-	repoJson, err := getJsonContent(repo.Repository)
-	if err != nil {
-		// todo: fix this
-		log.Printf("cannot serialize into json: %v", err)
-	}
+	repoJson, _ := getJsonContent(repo.Repository)
 	pathRepo := filepath.Join(".", e.ZipLocation, repo.Repository.RepoSlug)
-	err = os.MkdirAll(pathRepo, os.ModePerm)
+	err := createFolder(pathRepo)
 	if err != nil {
 		return fmt.Errorf("cannot create folder")
 	}
 
-	err = os.WriteFile(filepath.Join(pathRepo, infoFileName), repoJson, os.ModePerm)
+	err = writeFile(filepath.Join(pathRepo, infoFileName), repoJson)
 	if err != nil {
 		return err
 	}
@@ -117,26 +114,6 @@ func (e *Exporter) writeJsonForRepo(repo *types.RepoData) error {
 	}
 
 	return nil
-}
-
-func createFolder(path string) error {
-	return os.MkdirAll(path, os.ModePerm)
-}
-
-func writeFile(path string, prJson []byte) error {
-	err := os.WriteFile(path, prJson, os.ModePerm)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func getJsonContent(data interface{}) ([]byte, error) {
-	jsonString, err := json.MarshalIndent(data, "", "    ")
-	if err != nil {
-		return nil, fmt.Errorf("cannot serialize json string for data: %w", err)
-	}
-	return jsonString, nil
 }
 
 func (e *Exporter) getData(ctx context.Context) ([]*types.RepoData, error) {
@@ -182,4 +159,24 @@ func mapPrData(pr types.PRResponse, comments []types.PRComments) *types.PullRequ
 		PullRequest: pr,
 		Comments:    comments,
 	}
+}
+
+func createFolder(path string) error {
+	return os.MkdirAll(path, os.ModePerm)
+}
+
+func writeFile(path string, prJson []byte) error {
+	err := os.WriteFile(path, prJson, os.ModePerm)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func getJsonContent(data interface{}) ([]byte, error) {
+	jsonString, err := json.MarshalIndent(data, "", "    ")
+	if err != nil {
+		return nil, fmt.Errorf("cannot serialize json string for data: %w", err)
+	}
+	return jsonString, nil
 }

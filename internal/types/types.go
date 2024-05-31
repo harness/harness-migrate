@@ -15,6 +15,8 @@
 // Package types provides common types for data export and import.
 package types
 
+import "github.com/drone/go-scm/scm"
+
 // Org defines an organization.
 type Org struct {
 	Name string `json:"name"`
@@ -50,4 +52,32 @@ type Secret struct {
 	Name  string `json:"name"`
 	Desc  string `json:"desc,omitempty"`
 	Value string `json:"value,omitempty"`
+}
+
+type ListRepoOptions struct {
+}
+
+type PullRequestListOptions struct {
+}
+
+type RepoResponse struct {
+	scm.Repository
+	RepoSlug string
+}
+
+type PRResponse struct {
+	scm.PullRequest
+}
+
+type PRComments struct {
+}
+
+type RepoData struct {
+	Repository      RepoResponse
+	PullRequestData []*PullRequestData
+}
+
+type PullRequestData struct {
+	PullRequest PRResponse
+	Comments    []PRComments
 }

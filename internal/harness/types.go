@@ -155,13 +155,13 @@ type (
 // Error Types
 //
 
-// Error represents an API error response.
+// Error represents an API codeerror response.
 type Error struct {
 	Code    string `json:"code"`
 	Message string `json:"message"`
 }
 
-// Error returns the error message.
+// Error returns the codeerror message.
 func (e *Error) Error() string {
 	return e.Message
 }

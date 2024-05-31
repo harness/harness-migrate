@@ -124,9 +124,9 @@ func (m *Importer) Import(ctx context.Context, data *types.Org) error {
 
 		// create the harness project.
 		if err := m.Harness.CreateProject(project); err != nil {
-			// if the error indicates the project already exists
+			// if the codeerror indicates the project already exists
 			// we can continue with the import, else we should return
-			// the error and exit the import.
+			// the codeerror and exit the import.
 			if isErrConflict(err) == false {
 				return err
 			}
@@ -153,7 +153,7 @@ func (m *Importer) Import(ctx context.Context, data *types.Org) error {
 		}
 		repo, err := m.Harness.CreateRepository(project.Orgidentifier, project.Identifier, repoCreate)
 		if err != nil {
-			// if the error indicates the project already exists, continue with next project.
+			// if the codeerror indicates the project already exists, continue with next project.
 			// This is a temporary workaround to avoid conflicts while pushing the git repo.
 			// TODO: Handle conflicts properly, this only works because repo migration is the last step of a project migration.
 			if isErrConflict(err) {
@@ -275,7 +275,7 @@ func createGitlabConnector(org, id, username, token string) *harness.Connector {
 	}
 }
 
-// helper function return true if the error message
+// helper function return true if the codeerror message
 // indicate the resource already exists.
 func isErrConflict(err error) bool {
 	return strings.Contains(err.Error(), "already present") ||

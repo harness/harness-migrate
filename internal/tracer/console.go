@@ -36,6 +36,18 @@ func (c *console) Log(format string, args ...interface{}) {
 	fmt.Println("")
 }
 
+// LogError logs an error message to the console.
+func (c *console) LogError(format string, args ...interface{}) {
+	// ANSI escape code for red text
+	red := "\033[31m"
+	reset := "\033[0m"
+
+	// Print red text
+	fmt.Println(red)
+	fmt.Printf(format, args...)
+	fmt.Println(reset)
+}
+
 // New returns a tracer that outputs
 // progress to the terminal.
 func New() *console {

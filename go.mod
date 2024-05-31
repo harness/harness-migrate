@@ -8,7 +8,7 @@ require (
 	github.com/alecthomas/kingpin/v2 v2.3.1
 	github.com/drone/funcmap v0.0.0-20220929084810-72602997d16f
 	github.com/drone/go-convert v0.0.0-20230919093251-7104c3bcc635
-	github.com/drone/go-scm v1.28.1
+	github.com/drone/go-scm v1.37.2-0.20240529063045-2635d6021591
 	github.com/go-git/go-git/v5 v5.5.2
 	github.com/google/go-cmp v0.5.9
 	github.com/gotidy/ptr v1.4.0

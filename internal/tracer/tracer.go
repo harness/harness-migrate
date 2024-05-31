@@ -25,6 +25,9 @@ type Tracer interface {
 	// Log a message.
 	Log(format string, args ...interface{})
 
+	// LogError logs an error message.
+	LogError(format string, args ...interface{})
+
 	// Close the tracer.
 	Close()
 }
@@ -37,7 +40,8 @@ func Default() Tracer {
 // none implements a noop tracer.
 type none struct{}
 
-func (*none) Start(format string, args ...interface{}) {}
-func (*none) Stop(format string, args ...interface{})  {}
-func (*none) Log(format string, args ...interface{})   {}
-func (*none) Close()                                   {}
+func (*none) Start(format string, args ...interface{})    {}
+func (*none) Stop(format string, args ...interface{})     {}
+func (*none) Log(format string, args ...interface{})      {}
+func (*none) LogError(format string, args ...interface{}) {}
+func (*none) Close()                                      {}

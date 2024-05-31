@@ -173,9 +173,9 @@ func (m *Importer) Import(ctx context.Context, data *types.Org) error {
 
 		// create the harness project.
 		if err := m.Harness.CreateProject(project); err != nil {
-			// if the error indicates the project already exists
+			// if the codeerror indicates the project already exists
 			// we can continue with the import, else we should return
-			// the error and exit the import.
+			// the codeerror and exit the import.
 			if !util.IsErrConflict(err) {
 				return err
 			}
@@ -196,9 +196,9 @@ func (m *Importer) Import(ctx context.Context, data *types.Org) error {
 			secret := util.CreateSecret(org.ID, projectSlug, slug.Create(srcEnv.Name), srcEnv.Desc, srcEnv.Value)
 			// save the secret to harness.
 			if err := m.Harness.CreateSecret(secret); err != nil {
-				// if the error indicates the secret already
+				// if the codeerror indicates the secret already
 				// exists we can continue with the import,
-				// else we should return the error and exit
+				// else we should return the codeerror and exit
 				// the import.
 				if !util.IsErrConflict(err) {
 					return err
@@ -236,9 +236,9 @@ func (m *Importer) Import(ctx context.Context, data *types.Org) error {
 		//create the harness pipeline with an inline yaml
 		err = m.Harness.CreatePipeline(org.ID, projectSlug, srcProject.Yaml)
 		if err != nil {
-			// if the error indicates the pipeline already
+			// if the codeerror indicates the pipeline already
 			// exists we can continue with the import, else
-			// we should return the error and exit the import.
+			// we should return the codeerror and exit the import.
 			if !util.IsErrConflict(err) {
 				return err
 			}

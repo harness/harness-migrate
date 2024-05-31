@@ -148,7 +148,7 @@ func CreateDockerConnector(org, id string, args ...interface{}) *harness.Connect
 	}
 }
 
-// IsErrConflict helper function return true if the error message
+// IsErrConflict helper function return true if the codeerror message
 // indicate the resource already exists.
 func IsErrConflict(err error) bool {
 	return strings.Contains(err.Error(), "already present") ||

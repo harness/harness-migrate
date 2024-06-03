@@ -15,15 +15,12 @@
 package cmd
 
 import (
-	"context"
-	"github.com/harness/harness-migrate/cmd/stash"
 	"os"
+
+	"github.com/harness/harness-migrate/cmd/stash"
 
 	"github.com/alecthomas/kingpin/v2"
 )
-
-// empty context
-var nocontext = context.Background()
 
 // application name
 const application = "harness-migrate"

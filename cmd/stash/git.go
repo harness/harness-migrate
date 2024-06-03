@@ -2,6 +2,9 @@ package stash
 
 import (
 	"context"
+	"net/http"
+	"net/url"
+
 	"github.com/alecthomas/kingpin/v2"
 	scmstash "github.com/drone/go-scm/scm/driver/stash"
 	"github.com/drone/go-scm/scm/transport"
@@ -11,8 +14,6 @@ import (
 	"github.com/harness/harness-migrate/internal/migrate/stash"
 	"github.com/harness/harness-migrate/internal/tracer"
 	"golang.org/x/exp/slog"
-	"net/http"
-	"net/url"
 )
 
 type exportCommand struct {

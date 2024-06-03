@@ -20,11 +20,13 @@ const (
 	MsgCheckpointLoadPr        = "Pull request import finished for repo %s with total %d PRs from checkpoint"
 	MsgStartRepoList           = "starting repositories listing for %s org %s"
 	MsgCompleteRepoList        = "repositories listing complete. Total repos: %d"
-	MsgRepoListErr             = "cannot fetch repositories due to error :%w"
+	MsgRepoListErr             = "cannot fetch repositories due to error :%v"
 	MsgCheckpointDataReadErr   = "cannot read checkpoint data: %s"
 	MsgCheckpointPrDataSaveErr = "cannot save checkpoint pr data"
 	MsgCheckpointPrPageSaveErr = "cannot save checkpoint pr page"
-	MsgPrListErr               = "cannot list pr due to error :%w"
+	MsgPrListErr               = "cannot list pr due to error :%v"
 
-	PanicCheckpointSaveErr = "error occured in reading checkpoint data"
+	PanicCheckpointSaveErr  = "error occured in reading checkpoint data"
+	PanicCannotCreateFolder = "cannot create folder: %v"
+	PanicWritingFileData    = "error writing data in file: %v"
 )

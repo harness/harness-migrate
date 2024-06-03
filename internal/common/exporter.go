@@ -46,13 +46,13 @@ func (e *Exporter) Export(ctx context.Context) {
 	path := filepath.Join(".", e.zipLocation)
 	err := util.CreateFolder(path)
 	if err != nil {
-		panic("cannot create folder")
+		panic(fmt.Sprintf(PanicCannotCreateFolder, err))
 	}
 	data, _ := e.getData(ctx)
 	for _, repo := range data {
 		err = e.writeJsonForRepo(repo)
 		if err != nil {
-			panic("error writing data")
+			panic(fmt.Sprintf(PanicWritingFileData, err))
 		}
 	}
 }
@@ -146,7 +146,7 @@ func (e *Exporter) getData(ctx context.Context) ([]*types.RepoData, error) {
 	// 2. list pr per repo
 	for i, repo := range repositories {
 		prs, err := e.exporter.ListPullRequest(ctx, repo.RepoSlug, types.PullRequestListOptions{})
-		var notSupportedErr *codeerror.ErrorOpNotSupported
+		var notSupportedErr *codeerror.OpNotSupported
 		if errors.As(err, &notSupportedErr) {
 			return repoData, nil
 		}

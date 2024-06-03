@@ -4,10 +4,10 @@ import (
 	"fmt"
 )
 
-type ErrorOpNotSupported struct {
+type OpNotSupported struct {
 	Name string
 }
 
-func (e *ErrorOpNotSupported) Error() string {
+func (e *OpNotSupported) Error() string {
 	return fmt.Sprintf("operation %s not supported", e.Name)
 }

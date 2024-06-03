@@ -5,12 +5,13 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/drone/go-scm/scm"
 	"github.com/harness/harness-migrate/internal/checkpoint"
 	"github.com/harness/harness-migrate/internal/codeerror"
 	"github.com/harness/harness-migrate/internal/common"
 	"github.com/harness/harness-migrate/internal/tracer"
 	"github.com/harness/harness-migrate/internal/types"
+
+	"github.com/drone/go-scm/scm"
 )
 
 const (
@@ -137,14 +138,14 @@ func (e *Export) ListPullRequest(
 func (e *Export) PullRequestReviewers(
 	context.Context,
 	int) error {
-	return &codeerror.ErrorOpNotSupported{Name: "pullreqreview"}
+	return &codeerror.OpNotSupported{Name: "pullreqreview"}
 }
 
 func (e *Export) PullRequestComments(
 	context.Context,
 	int,
 ) error {
-	return &codeerror.ErrorOpNotSupported{Name: "pullreqcomment"}
+	return &codeerror.OpNotSupported{Name: "pullreqcomment"}
 }
 
 func mapRepository(repos []*scm.Repository) []types.RepoResponse {

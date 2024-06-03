@@ -170,7 +170,7 @@ func WriteFile(path string, prJson []byte) error {
 	return nil
 }
 
-func GetJson(data interface{}) ([]byte, error) {
+func GetJson(data any) ([]byte, error) {
 	jsonString, err := json.MarshalIndent(data, "", "    ")
 	if err != nil {
 		return nil, fmt.Errorf("cannot serialize json string for data: %w", err)

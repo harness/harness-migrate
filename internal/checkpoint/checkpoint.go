@@ -17,10 +17,11 @@ package checkpoint
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/harness/harness-migrate/internal/util"
 	"os"
 	"path/filepath"
 	"sync"
+
+	"github.com/harness/harness-migrate/internal/util"
 )
 
 const checkpointFile = "checkpoint.ckpt"
@@ -28,7 +29,7 @@ const checkpointFile = "checkpoint.ckpt"
 // CheckpointManager manages the checkpoints for different types of data
 type CheckpointManager struct {
 	mu                 sync.Mutex
-	data               map[string]interface{}
+	data               map[string]any
 	checkpointLocation string
 }
 
@@ -36,12 +37,12 @@ type CheckpointManager struct {
 func NewCheckpointManager(checkpointLocation string) *CheckpointManager {
 	return &CheckpointManager{
 		checkpointLocation: checkpointLocation,
-		data:               make(map[string]interface{}),
+		data:               make(map[string]any),
 	}
 }
 
 // SaveCheckpoint saves a checkpoint for a given key
-func (cm *CheckpointManager) SaveCheckpoint(key string, value interface{}) error {
+func (cm *CheckpointManager) SaveCheckpoint(key string, value any) error {
 	cm.mu.Lock()
 	defer cm.mu.Unlock()
 
@@ -81,7 +82,7 @@ func (cm *CheckpointManager) LoadCheckpoint() error {
 }
 
 // GetCheckpoint gets the checkpoint for a given key
-func (cm *CheckpointManager) GetCheckpoint(key string) (interface{}, bool) {
+func (cm *CheckpointManager) GetCheckpoint(key string) (any, bool) {
 	cm.mu.Lock()
 	defer cm.mu.Unlock()
 

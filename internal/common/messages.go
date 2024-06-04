@@ -20,11 +20,16 @@ const (
 	MsgCheckpointLoadPr        = "Pull request import finished for repo %s with total %d PRs from checkpoint"
 	MsgStartRepoList           = "starting repositories listing for %s org %s"
 	MsgCompleteRepoList        = "repositories listing complete. Total repos: %d"
+	MsgStartGitClone           = "Starting clone git repo for %q from %s"
+	MsgCompleteGitClone        = "Git clone finished for repo %s"
 	MsgRepoListErr             = "cannot fetch repositories due to error :%w"
 	MsgCheckpointDataReadErr   = "cannot read checkpoint data: %s"
 	MsgCheckpointPrDataSaveErr = "cannot save checkpoint pr data"
 	MsgCheckpointPrPageSaveErr = "cannot save checkpoint pr page"
 	MsgPrListErr               = "cannot list pr due to error :%w"
+	MsgCloneEmptyRepo          = "cloned git repo %s is empty"
+	MsgRepoAlreadyExists       = "cloned git repo for %s already exists"
+	ErrGitCloneMsg             = "cannot clone the git repo %q due to error: %w"
 
 	PanicCheckpointSaveErr = "error occured in reading checkpoint data"
 )

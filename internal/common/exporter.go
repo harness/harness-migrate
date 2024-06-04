@@ -19,11 +19,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
+	"path/filepath"
+
 	"github.com/harness/harness-migrate/internal/codeerror"
 	"github.com/harness/harness-migrate/internal/types"
 	"github.com/harness/harness-migrate/internal/util"
-	"log"
-	"path/filepath"
 )
 
 const (
@@ -34,10 +35,12 @@ const (
 type Exporter struct {
 	exporter    Interface
 	zipLocation string
+	ScmLogin    string
+	ScmToken    string
 }
 
-func NewExporter(exporter Interface, location string) Exporter {
-	return Exporter{exporter: exporter, zipLocation: location}
+func NewExporter(exporter Interface, location string, scmLogin string, scmToken string) Exporter {
+	return Exporter{exporter: exporter, zipLocation: location, ScmLogin: scmLogin, ScmToken: scmToken}
 }
 
 // Export calls exporter methods in order and serialize an object for import.
@@ -47,9 +50,9 @@ func (e *Exporter) Export(ctx context.Context) {
 	if err != nil {
 		panic("cannot create folder")
 	}
-	data, _ := e.getData(ctx)
+	data, _ := e.getData(ctx, path)
 	for _, repo := range data {
-		err = e.writeJsonForRepo(repo)
+		err = e.writeJsonForRepo(repo, path)
 		if err != nil {
 			panic("error writing data")
 		}
@@ -88,15 +91,11 @@ func splitArray(arr []*types.PullRequestData) [][]*types.PullRequestData {
 	return chunks
 }
 
-func (e *Exporter) writeJsonForRepo(repo *types.RepoData) error {
+func (e *Exporter) writeJsonForRepo(repo *types.RepoData, path string) error {
 	repoJson, _ := util.GetJson(repo.Repository)
-	pathRepo := filepath.Join(".", e.zipLocation, repo.Repository.RepoSlug)
-	err := util.CreateFolder(pathRepo)
-	if err != nil {
-		return fmt.Errorf("cannot create folder")
-	}
 
-	err = util.WriteFile(filepath.Join(pathRepo, infoFileName), repoJson)
+	pathRepo := filepath.Join(path, repo.Repository.RepoSlug)
+	err := util.WriteFile(filepath.Join(pathRepo, infoFileName), repoJson)
 	if err != nil {
 		return err
 	}
@@ -129,7 +128,7 @@ func (e *Exporter) writeJsonForRepo(repo *types.RepoData) error {
 	return nil
 }
 
-func (e *Exporter) getData(ctx context.Context) ([]*types.RepoData, error) {
+func (e *Exporter) getData(ctx context.Context, path string) ([]*types.RepoData, error) {
 	repoData := make([]*types.RepoData, 0)
 	// 1. list all the repos for the given org
 	repositories, err := e.exporter.ListRepositories(ctx, types.ListRepoOptions{})
@@ -144,6 +143,17 @@ func (e *Exporter) getData(ctx context.Context) ([]*types.RepoData, error) {
 
 	// 2. list pr per repo
 	for i, repo := range repositories {
+		repoPath := filepath.Join(path, repo.RepoSlug)
+		err := util.CreateFolder(repoPath)
+		if err != nil {
+			return nil, fmt.Errorf("cannot create folder")
+		}
+
+		err = e.exporter.CloneRepository(ctx, repo.Repository, repoPath, repo.RepoSlug, e.ScmLogin, e.ScmToken)
+		if err != nil {
+			return nil, fmt.Errorf("cannot clone the git repo for %s: %w", repo.RepoSlug, err)
+		}
+
 		prs, err := e.exporter.ListPullRequest(ctx, repo.RepoSlug, types.PullRequestListOptions{})
 		var notSupportedErr *codeerror.ErrorOpNotSupported
 		if errors.As(err, &notSupportedErr) {

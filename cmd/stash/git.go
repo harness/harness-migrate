@@ -2,6 +2,9 @@ package stash
 
 import (
 	"context"
+	"net/http"
+	"net/url"
+
 	"github.com/alecthomas/kingpin/v2"
 	scmstash "github.com/drone/go-scm/scm/driver/stash"
 	"github.com/drone/go-scm/scm/transport"
@@ -11,8 +14,6 @@ import (
 	"github.com/harness/harness-migrate/internal/migrate/stash"
 	"github.com/harness/harness-migrate/internal/tracer"
 	"golang.org/x/exp/slog"
-	"net/http"
-	"net/url"
 )
 
 type exportCommand struct {
@@ -26,6 +27,8 @@ type exportCommand struct {
 	stashUrl   string
 
 	checkpoint bool
+
+	prOnly bool
 }
 
 func (c *exportCommand) run(*kingpin.ParseContext) error {
@@ -73,7 +76,7 @@ func (c *exportCommand) run(*kingpin.ParseContext) error {
 	e := stash.New(client, c.stashOrg, checkpointManager, tracer_)
 
 	exporter := common.NewExporter(e, c.file, c.stashUser, c.stashToken)
-	exporter.Export(ctx)
+	exporter.Export(ctx, c.prOnly)
 	return nil
 }
 
@@ -118,6 +121,9 @@ func registerGit(app *kingpin.CmdClause) {
 
 	cmd.Flag("trace", "enable trace logging").
 		BoolVar(&c.trace)
+
+	cmd.Flag("pr-only", "only export pull request data").
+		BoolVar(&c.prOnly)
 }
 
 // defaultTransport provides a default http.Transport.

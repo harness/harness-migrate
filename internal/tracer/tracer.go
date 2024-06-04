@@ -40,8 +40,8 @@ func Default() Tracer {
 // none implements a noop tracer.
 type none struct{}
 
-func (*none) Start(format string, args ...interface{})    {}
-func (*none) Stop(format string, args ...interface{})     {}
-func (*none) Log(format string, args ...interface{})      {}
-func (*none) LogError(format string, args ...interface{}) {}
-func (*none) Close()                                      {}
+func (none) Start(format string, args ...interface{})    {}
+func (none) Stop(format string, args ...interface{})     {}
+func (none) Log(format string, args ...interface{})      {}
+func (none) LogError(format string, args ...interface{}) {}
+func (none) Close()                                      {}

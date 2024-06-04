@@ -43,12 +43,14 @@ func NewCheckpointManager(checkpointLocation string) *CheckpointManager {
 
 // SaveCheckpoint saves a checkpoint for a given key
 func (cm *CheckpointManager) SaveCheckpoint(key string, value any) error {
-	cm.mu.Lock()
-	defer cm.mu.Unlock()
+	data, err := func() ([]byte, error) {
+		cm.mu.Lock()
+		defer cm.mu.Unlock()
 
-	cm.data[key] = value
+		cm.data[key] = value
+		return json.Marshal(cm.data)
+	}()
 
-	data, err := json.Marshal(cm.data)
 	if err != nil {
 		return fmt.Errorf("failed to marshal checkpoint: %v", err)
 	}
@@ -56,15 +58,11 @@ func (cm *CheckpointManager) SaveCheckpoint(key string, value any) error {
 	if err := util.WriteFile(filepath.Join(cm.checkpointLocation, checkpointFile), data); err != nil {
 		return fmt.Errorf("failed to write checkpoint file: %v", err)
 	}
-
 	return nil
 }
 
 // LoadCheckpoint loads the checkpoint data from a file
 func (cm *CheckpointManager) LoadCheckpoint() error {
-	cm.mu.Lock()
-	defer cm.mu.Unlock()
-
 	if _, err := os.Stat(filepath.Join(cm.checkpointLocation, checkpointFile)); os.IsNotExist(err) {
 		return nil // No checkpoint file exists
 	}
@@ -74,6 +72,8 @@ func (cm *CheckpointManager) LoadCheckpoint() error {
 		return fmt.Errorf("failed to read checkpoint file: %v", err)
 	}
 
+	cm.mu.Lock()
+	defer cm.mu.Unlock()
 	if err := json.Unmarshal(data, &cm.data); err != nil {
 		return fmt.Errorf("failed to unmarshal checkpoint: %v", err)
 	}

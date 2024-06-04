@@ -27,6 +27,8 @@ type exportCommand struct {
 	stashUrl   string
 
 	checkpoint bool
+
+	prOnly bool
 }
 
 func (c *exportCommand) run(*kingpin.ParseContext) error {
@@ -74,7 +76,7 @@ func (c *exportCommand) run(*kingpin.ParseContext) error {
 	e := stash.New(client, c.stashOrg, checkpointManager, tracer_)
 
 	exporter := common.NewExporter(e, c.file, c.stashUser, c.stashToken)
-	exporter.Export(ctx)
+	exporter.Export(ctx, c.prOnly)
 	return nil
 }
 
@@ -119,6 +121,9 @@ func registerGit(app *kingpin.CmdClause) {
 
 	cmd.Flag("trace", "enable trace logging").
 		BoolVar(&c.trace)
+
+	cmd.Flag("pr-only", "only export pull request data").
+		BoolVar(&c.prOnly)
 }
 
 // defaultTransport provides a default http.Transport.

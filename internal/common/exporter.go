@@ -44,13 +44,13 @@ func NewExporter(exporter Interface, location string, scmLogin string, scmToken 
 }
 
 // Export calls exporter methods in order and serialize an object for import.
-func (e *Exporter) Export(ctx context.Context) {
+func (e *Exporter) Export(ctx context.Context, prOnly bool) {
 	path := filepath.Join(".", e.zipLocation)
 	err := util.CreateFolder(path)
 	if err != nil {
 		panic(fmt.Sprintf(PanicCannotCreateFolder, err))
 	}
-	data, _ := e.getData(ctx, path)
+	data, _ := e.getData(ctx, path, prOnly)
 	for _, repo := range data {
 		err = e.writeJsonForRepo(repo, path)
 		if err != nil {
@@ -128,7 +128,7 @@ func (e *Exporter) writeJsonForRepo(repo *types.RepoData, path string) error {
 	return nil
 }
 
-func (e *Exporter) getData(ctx context.Context, path string) ([]*types.RepoData, error) {
+func (e *Exporter) getData(ctx context.Context, path string, prOnly bool) ([]*types.RepoData, error) {
 	repoData := make([]*types.RepoData, 0)
 	// 1. list all the repos for the given org
 	repositories, err := e.exporter.ListRepositories(ctx, types.ListRepoOptions{})
@@ -149,9 +149,11 @@ func (e *Exporter) getData(ctx context.Context, path string) ([]*types.RepoData,
 			return nil, fmt.Errorf("cannot create folder")
 		}
 
-		err = e.exporter.CloneRepository(ctx, repo.Repository, repoPath, repo.RepoSlug, e.ScmLogin, e.ScmToken)
-		if err != nil {
-			return nil, fmt.Errorf("cannot clone the git repo for %s: %w", repo.RepoSlug, err)
+		if !prOnly {
+			err = e.exporter.CloneRepository(ctx, repo.Repository, repoPath, repo.RepoSlug, e.ScmLogin, e.ScmToken)
+			if err != nil {
+				return nil, fmt.Errorf("cannot clone the git repo for %s: %w", repo.RepoSlug, err)
+			}
 		}
 
 		prs, err := e.exporter.ListPullRequest(ctx, repo.RepoSlug, types.PullRequestListOptions{})

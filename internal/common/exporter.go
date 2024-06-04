@@ -23,6 +23,7 @@ import (
 	"path/filepath"
 
 	"github.com/harness/harness-migrate/internal/codeerror"
+	"github.com/harness/harness-migrate/internal/tracer"
 	"github.com/harness/harness-migrate/internal/types"
 	"github.com/harness/harness-migrate/internal/util"
 )
@@ -37,10 +38,12 @@ type Exporter struct {
 	zipLocation string
 	ScmLogin    string
 	ScmToken    string
+
+	Tracer tracer.Tracer
 }
 
-func NewExporter(exporter Interface, location string, scmLogin string, scmToken string) Exporter {
-	return Exporter{exporter: exporter, zipLocation: location, ScmLogin: scmLogin, ScmToken: scmToken}
+func NewExporter(exporter Interface, location string, scmLogin string, scmToken string, tracer tracer.Tracer) Exporter {
+	return Exporter{exporter: exporter, zipLocation: location, ScmLogin: scmLogin, ScmToken: scmToken, Tracer: tracer}
 }
 
 // Export calls exporter methods in order and serialize an object for import.
@@ -150,7 +153,7 @@ func (e *Exporter) getData(ctx context.Context, path string, prOnly bool) ([]*ty
 		}
 
 		if !prOnly {
-			err = e.exporter.CloneRepository(ctx, repo.Repository, repoPath, repo.RepoSlug, e.ScmLogin, e.ScmToken)
+			err = e.CloneRepository(ctx, repo.Repository, repoPath, repo.RepoSlug, e.Tracer)
 			if err != nil {
 				return nil, fmt.Errorf("cannot clone the git repo for %s: %w", repo.RepoSlug, err)
 			}

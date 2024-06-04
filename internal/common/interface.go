@@ -3,7 +3,6 @@ package common
 import (
 	"context"
 
-	"github.com/drone/go-scm/scm"
 	"github.com/harness/harness-migrate/internal/types"
 )
 
@@ -13,5 +12,4 @@ type Interface interface {
 	ListPullRequest(ctx context.Context, repoSlug string, opts types.PullRequestListOptions) ([]types.PRResponse, error)
 	PullRequestReviewers(ctx context.Context, prNumber int) error
 	PullRequestComments(ctx context.Context, prNumber int) error
-	CloneRepository(ctx context.Context, repoData scm.Repository, path string, repoSlug string, scmLogin string, scmToken string) error
 }

@@ -25,6 +25,11 @@ const (
 	MsgCheckpointPrDataSaveErr = "cannot save checkpoint pr data"
 	MsgCheckpointPrPageSaveErr = "cannot save checkpoint pr page"
 	MsgPrListErr               = "cannot list pr due to error :%v"
+	MsgStartGitClone           = "Starting clone git repo for %q from %s"
+	MsgCompleteGitClone        = "Git clone finished for repo %s"
+	MsgCloneEmptyRepo          = "cloned git repo %s is empty"
+	MsgRepoAlreadyExists       = "cloned git repo for %s already exists"
+	ErrGitCloneMsg             = "cannot clone the git repo %q due to error: %w"
 
 	PanicCheckpointSaveErr  = "error occured in reading checkpoint data"
 	PanicCannotCreateFolder = "cannot create folder: %v"

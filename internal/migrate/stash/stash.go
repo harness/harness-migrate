@@ -2,16 +2,24 @@ package stash
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
+	"path/filepath"
+
+	"github.com/drone/go-scm/scm"
+	git "github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/transport"
+	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/harness/harness-migrate/internal/checkpoint"
 	"github.com/harness/harness-migrate/internal/codeerror"
 	"github.com/harness/harness-migrate/internal/common"
 	"github.com/harness/harness-migrate/internal/tracer"
 	"github.com/harness/harness-migrate/internal/types"
 
-	"github.com/drone/go-scm/scm"
+	"github.com/harness/harness-migrate/internal/util"
 )
 
 const (
@@ -65,6 +73,48 @@ func (e *Export) ListRepositories(
 	e.tracer.Stop(common.MsgCompleteRepoList, len(allRepos))
 
 	return mapRepository(allRepos), nil
+}
+
+func (e *Export) CloneRepository(
+	ctx context.Context,
+	repoData scm.Repository,
+	repoPath string,
+	repoSlug string,
+	stashLogin string,
+	stashToken string,
+) error {
+	e.tracer.Start(common.MsgStartGitClone, repoSlug, "bitbucket")
+	gitPath := filepath.Join(repoPath, "git")
+	if err := util.CreateFolder(gitPath); err != nil {
+		return err
+	}
+
+	_, err := git.PlainCloneContext(ctx, gitPath, true, &git.CloneOptions{
+		URL: repoData.Clone,
+		Auth: &http.BasicAuth{
+			Username: stashLogin,
+			Password: stashToken,
+		},
+		ReferenceName: plumbing.ReferenceName(fmt.Sprintf("refs/heads/%s", repoData.Branch)),
+		SingleBranch:  false,
+		Tags:          git.AllTags,
+		NoCheckout:    true,
+	})
+	if errors.Is(err, transport.ErrEmptyRemoteRepository) {
+		e.tracer.Log(common.MsgCloneEmptyRepo, repoSlug)
+		return nil
+	}
+	if errors.Is(err, git.ErrRepositoryAlreadyExists) {
+		e.tracer.Log(common.MsgRepoAlreadyExists, repoSlug)
+		return nil
+	}
+	if err != nil {
+		e.tracer.LogError(common.ErrGitCloneMsg, repoSlug, err)
+		return fmt.Errorf("failed to clone repo %q: %w", repoData.Clone, err)
+	}
+	e.tracer.Stop(common.MsgCompleteGitClone, repoSlug)
+
+	return nil
 }
 
 func (e *Export) ListPullRequest(

@@ -2,7 +2,7 @@
 continuous integration pipelines from other providers to Harness CI.
 
 **Please review [known conversion and migration issues](KNOWN_ISSUES_CONVERT.md
-) before using this tool.** 
+) before using this tool.**
 
 ## Install on Mac
 

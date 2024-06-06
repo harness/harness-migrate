@@ -12,32 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cmd
+package common
 
 import (
-	"os"
+	"github.com/harness/harness-migrate/internal/types"
 
-	"github.com/harness/harness-migrate/cmd/stash"
-
-	"github.com/alecthomas/kingpin/v2"
+	"github.com/drone/go-scm/scm"
 )
 
-// application name
-const application = "harness-migrate"
-
-// application description
-const description = "import repositories and pipelines into harness"
-
-// application version
-var version string
-
-// Command parses the command line arguments and then executes a
-// subcommand program.
-func Command() {
-	app := kingpin.New(application, description)
-
-	stash.Register(app)
-
-	app.Version(version)
-	kingpin.MustParse(app.Parse(os.Args[1:]))
+func MapPullRequest(prs []*scm.PullRequest) []types.PRResponse {
+	r := make([]types.PRResponse, len(prs))
+	for i, pr := range prs {
+		r[i] = types.PRResponse{PullRequest: *pr}
+	}
+	return r
 }

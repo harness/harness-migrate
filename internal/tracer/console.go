@@ -20,6 +20,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/mattn/go-colorable"
 	"github.com/schollz/progressbar/v3"
 )
 
@@ -34,6 +35,18 @@ type console struct {
 func (c *console) Log(format string, args ...interface{}) {
 	fmt.Printf(format, args...)
 	fmt.Println("")
+}
+
+// LogError logs an error message to the console.
+func (c *console) LogError(format string, args ...interface{}) {
+	// ANSI escape code for red text
+	red := "\033[31m"
+	reset := "\033[0m"
+	out := colorable.NewColorableStdout()
+	// Print red text
+	fmt.Println(out, red)
+	fmt.Printf(format, args...)
+	fmt.Println(out, reset)
 }
 
 // New returns a tracer that outputs

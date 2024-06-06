@@ -12,32 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cmd
+package common
 
 import (
-	"os"
+	"context"
 
-	"github.com/harness/harness-migrate/cmd/stash"
-
-	"github.com/alecthomas/kingpin/v2"
+	"github.com/harness/harness-migrate/internal/types"
 )
 
-// application name
-const application = "harness-migrate"
-
-// application description
-const description = "import repositories and pipelines into harness"
-
-// application version
-var version string
-
-// Command parses the command line arguments and then executes a
-// subcommand program.
-func Command() {
-	app := kingpin.New(application, description)
-
-	stash.Register(app)
-
-	app.Version(version)
-	kingpin.MustParse(app.Parse(os.Args[1:]))
+// Interface helps to support a generic way of doing export for all git providers
+type Interface interface {
+	ListRepositories(ctx context.Context, opts types.ListRepoOptions) ([]types.RepoResponse, error)
+	ListPullRequest(ctx context.Context, repoSlug string, opts types.PullRequestListOptions) ([]types.PRResponse, error)
+	PullRequestReviewers(ctx context.Context, prNumber int) error
+	PullRequestComments(ctx context.Context, prNumber int) error
 }

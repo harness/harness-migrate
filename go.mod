@@ -1,6 +1,6 @@
 module github.com/harness/harness-migrate
 
-go 1.19
+go 1.21
 
 require (
 	github.com/Masterminds/squirrel v1.5.3
@@ -8,7 +8,7 @@ require (
 	github.com/alecthomas/kingpin/v2 v2.3.1
 	github.com/drone/funcmap v0.0.0-20220929084810-72602997d16f
 	github.com/drone/go-convert v0.0.0-20230919093251-7104c3bcc635
-	github.com/drone/go-scm v1.28.1
+	github.com/drone/go-scm v1.37.2-0.20240529063045-2635d6021591
 	github.com/go-git/go-git/v5 v5.5.2
 	github.com/google/go-cmp v0.5.9
 	github.com/gotidy/ptr v1.4.0
@@ -47,6 +47,7 @@ require (
 	github.com/kevinburke/ssh_config v1.2.0 // indirect
 	github.com/lann/builder v0.0.0-20180802200727-47ae307949d0 // indirect
 	github.com/lann/ps v0.0.0-20150810152359-62de8c46ede0 // indirect
+	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-runewidth v0.0.14 // indirect
 	github.com/mitchellh/colorstring v0.0.0-20190213212951-d06e56a500db // indirect
 	github.com/pjbgf/sha1cd v0.2.3 // indirect

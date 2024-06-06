@@ -12,32 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cmd
+package codeerror
 
 import (
-	"os"
-
-	"github.com/harness/harness-migrate/cmd/stash"
-
-	"github.com/alecthomas/kingpin/v2"
+	"fmt"
 )
 
-// application name
-const application = "harness-migrate"
+type OpNotSupportedError struct {
+	Name string
+}
 
-// application description
-const description = "import repositories and pipelines into harness"
-
-// application version
-var version string
-
-// Command parses the command line arguments and then executes a
-// subcommand program.
-func Command() {
-	app := kingpin.New(application, description)
-
-	stash.Register(app)
-
-	app.Version(version)
-	kingpin.MustParse(app.Parse(os.Args[1:]))
+func (e *OpNotSupportedError) Error() string {
+	return fmt.Sprintf("operation %s not supported", e.Name)
 }

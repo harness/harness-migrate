@@ -5,3 +5,4 @@ harness-migrate
 .env
 /data.json
 /release
+.idea

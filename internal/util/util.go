@@ -15,6 +15,9 @@
 package util
 
 import (
+	"encoding/json"
+	"fmt"
+	"os"
 	"strings"
 
 	"github.com/gotidy/ptr"
@@ -148,9 +151,29 @@ func CreateDockerConnector(org, id string, args ...interface{}) *harness.Connect
 	}
 }
 
-// IsErrConflict helper function return true if the error message
+// IsErrConflict helper function return true if the codeerror message
 // indicate the resource already exists.
 func IsErrConflict(err error) bool {
 	return strings.Contains(err.Error(), "already present") ||
 		strings.Contains(err.Error(), "already exists")
+}
+
+func CreateFolder(path string) error {
+	return os.MkdirAll(path, os.ModePerm)
+}
+
+func WriteFile(path string, prJson []byte) error {
+	err := os.WriteFile(path, prJson, os.ModePerm)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func GetJson(data any) ([]byte, error) {
+	jsonString, err := json.MarshalIndent(data, "", "    ")
+	if err != nil {
+		return nil, fmt.Errorf("cannot serialize json string for data: %w", err)
+	}
+	return jsonString, nil
 }

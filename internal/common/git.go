@@ -58,7 +58,7 @@ func (e *Exporter) CloneRepository(
 	})
 	if err != nil && !errors.Is(err, git.NoErrAlreadyUpToDate) {
 		tracer.LogError(ErrGitCloneMsg, repoSlug, err)
-		return nil, fmt.Errorf("failed to sync repo %s from %q: %w", repoSlug, repoData.Clone, err)
+		return nil, fmt.Errorf("failed to sync repo %s: %w", repoSlug, err)
 	}
 
 	tracer.Stop(MsgCompleteGitClone, repoSlug)

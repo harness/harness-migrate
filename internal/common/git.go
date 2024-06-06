@@ -8,12 +8,11 @@ import (
 
 	"github.com/drone/go-scm/scm"
 	git "github.com/go-git/go-git/v5"
-	"github.com/harness/harness-migrate/internal/tracer"
-	"github.com/harness/harness-migrate/internal/util"
-
-	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing/transport"
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
+	"github.com/harness/harness-migrate/internal/tracer"
+	"github.com/harness/harness-migrate/internal/util"
 )
 
 func (e *Exporter) CloneRepository(
@@ -22,37 +21,49 @@ func (e *Exporter) CloneRepository(
 	repoPath string,
 	repoSlug string, //for logging
 	tracer tracer.Tracer,
-) error {
+) (*git.Repository, error) {
 	tracer.Start(MsgStartGitClone, repoSlug)
 	gitPath := filepath.Join(repoPath, "git")
 	if err := util.CreateFolder(gitPath); err != nil {
-		return err
+		return nil, err
 	}
 
-	_, err := git.PlainCloneContext(ctx, gitPath, true, &git.CloneOptions{
+	if err := util.RemoveFolder(gitPath); err != nil {
+		return nil, fmt.Errorf("failed to remove the repo dir for %s: %w", gitPath, err)
+	}
+
+	repo, err := git.PlainCloneContext(ctx, gitPath, true, &git.CloneOptions{
 		URL: repoData.Clone,
 		Auth: &http.BasicAuth{
 			Username: e.ScmLogin,
 			Password: e.ScmToken,
 		},
-		ReferenceName: plumbing.ReferenceName(fmt.Sprintf("refs/heads/%s", repoData.Branch)),
-		SingleBranch:  false,
-		Tags:          git.AllTags,
-		NoCheckout:    true,
+		SingleBranch: false,
+		Tags:         git.AllTags,
+		NoCheckout:   true,
 	})
-	if errors.Is(err, transport.ErrEmptyRemoteRepository) {
-		tracer.Log(MsgCloneEmptyRepo, repoData.Clone)
-		return nil
-	}
-	if errors.Is(err, git.ErrRepositoryAlreadyExists) {
-		tracer.Log(MsgRepoAlreadyExists, repoSlug)
-		return nil
-	}
-	if err != nil {
+
+	if err != nil && !errors.Is(err, transport.ErrEmptyRemoteRepository) {
 		tracer.LogError(ErrGitCloneMsg, repoSlug, err)
-		return fmt.Errorf("failed to clone repo %s from %q: %w", repoSlug, repoData.Clone, err)
+		return nil, fmt.Errorf("failed to clone repo %s from %q: %w", repoSlug, repoData.Clone, err)
 	}
+
+	refSpecs := []config.RefSpec{"refs/heads/*:refs/heads/*", "refs/tags/*:refs/tags/*"}
+
+	err = repo.Fetch(&git.FetchOptions{
+		RefSpecs: refSpecs,
+		Auth: &http.BasicAuth{
+			Username: e.ScmLogin,
+			Password: e.ScmToken,
+		},
+		Force: true,
+	})
+	if err != nil && !errors.Is(err, git.NoErrAlreadyUpToDate) {
+		tracer.LogError(ErrGitCloneMsg, repoSlug, err)
+		return nil, fmt.Errorf("failed to sync repo %s from %q: %w", repoSlug, repoData.Clone, err)
+	}
+
 	tracer.Stop(MsgCompleteGitClone, repoSlug)
 
-	return nil
+	return repo, nil
 }

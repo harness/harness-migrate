@@ -2,10 +2,16 @@ package stash
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
+	git "github.com/go-git/go-git/v5"
+
 	"github.com/drone/go-scm/scm"
+	"github.com/go-git/go-git/v5/config"
+	"github.com/go-git/go-git/v5/plumbing/transport/http"
+
 	"github.com/harness/harness-migrate/internal/checkpoint"
 	"github.com/harness/harness-migrate/internal/codeerror"
 	"github.com/harness/harness-migrate/internal/common"
@@ -132,6 +138,29 @@ func (e *Export) ListPullRequest(
 	}
 
 	return allPrs, nil
+}
+
+func (e *Export) FetchPullRequestRefs(ctx context.Context, repo *git.Repository, repoSlug string, stashLogin string, stashToken string) error {
+	e.tracer.Start(common.MsgGitFetchRef, repoSlug)
+	// skip fetching references for empty repos.
+	if repo == nil {
+		return nil
+	}
+	refSpecs := []config.RefSpec{"refs/pull/*/head:refs/pullreq/*/head", "refs/pull/*/merge:refs/pullreq/*/merge"}
+	err := repo.Fetch(&git.FetchOptions{
+		RefSpecs: refSpecs,
+		Auth: &http.BasicAuth{
+			Username: stashLogin,
+			Password: stashToken,
+		},
+		Force: true,
+	})
+	if err != nil && !errors.Is(err, git.NoErrAlreadyUpToDate) {
+		e.tracer.LogError(common.ErrGitFetch, repoSlug, err)
+		return fmt.Errorf("failed to fetch repo pull requests references %s: %w", repoSlug, err)
+	}
+	e.tracer.Stop(common.MsgCompleteGitFetchRef, repoSlug)
+	return nil
 }
 
 func (e *Export) PullRequestReviewers(

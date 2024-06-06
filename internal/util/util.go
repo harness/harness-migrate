@@ -177,7 +177,3 @@ func GetJson(data interface{}) ([]byte, error) {
 	}
 	return jsonString, nil
 }
-
-func RemoveFolder(path string) error {
-	return os.RemoveAll(path)
-}

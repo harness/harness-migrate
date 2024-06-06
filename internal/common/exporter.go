@@ -156,7 +156,8 @@ func (e *Exporter) getData(ctx context.Context, path string) ([]*types.RepoData,
 		repoData = append(repoData, data)
 	}
 
-	// 2. list pr per repo
+	// 2. clone the repo and its references
+	// 3. list pr per repo
 	for i, repo := range repositories {
 		repoPath := filepath.Join(path, repo.RepoSlug)
 		err := util.CreateFolder(repoPath)

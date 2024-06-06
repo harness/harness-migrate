@@ -157,7 +157,7 @@ func (e *Export) FetchPullRequestRefs(ctx context.Context, repo *git.Repository,
 	})
 	if err != nil && !errors.Is(err, git.NoErrAlreadyUpToDate) {
 		e.tracer.LogError(common.ErrGitFetch, repoSlug, err)
-		return fmt.Errorf("failed to fetch repo pull requests references %s: %w", repoSlug, err)
+		return fmt.Errorf("failed to fetch repo pull requests references for %s: %w", repoSlug, err)
 	}
 	e.tracer.Stop(common.MsgCompleteGitFetchRef, repoSlug)
 	return nil

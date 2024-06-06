@@ -28,10 +28,6 @@ func (e *Exporter) CloneRepository(
 		return nil, err
 	}
 
-	if err := util.RemoveFolder(gitPath); err != nil {
-		return nil, fmt.Errorf("failed to remove the repo dir for %s: %w", gitPath, err)
-	}
-
 	repo, err := git.PlainCloneContext(ctx, gitPath, true, &git.CloneOptions{
 		URL: repoData.Clone,
 		Auth: &http.BasicAuth{
@@ -42,14 +38,16 @@ func (e *Exporter) CloneRepository(
 		Tags:         git.AllTags,
 		NoCheckout:   true,
 	})
-
+	if errors.Is(err, git.ErrRepositoryAlreadyExists) {
+		tracer.Log(MsgRepoAlreadyExists, repoSlug)
+		return nil, nil
+	}
 	if err != nil && !errors.Is(err, transport.ErrEmptyRemoteRepository) {
 		tracer.LogError(ErrGitCloneMsg, repoSlug, err)
 		return nil, fmt.Errorf("failed to clone repo %s from %q: %w", repoSlug, repoData.Clone, err)
 	}
 
 	refSpecs := []config.RefSpec{"refs/heads/*:refs/heads/*", "refs/tags/*:refs/tags/*"}
-
 	err = repo.Fetch(&git.FetchOptions{
 		RefSpecs: refSpecs,
 		Auth: &http.BasicAuth{

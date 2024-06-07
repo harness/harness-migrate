@@ -24,6 +24,7 @@ const (
 type (
 	// RepositoriesImportInput is input object for importing repo(s).
 	RepositoriesImportInput struct {
+		RequestId string `json:"request_id"`
 	}
 
 	// RepositoriesImportOutput is output object for importing repo(s).

@@ -18,12 +18,14 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/harness/harness-migrate/internal/harness"
+	"github.com/harness/harness-migrate/types"
 )
 
-func (c *Importer) UploadZip() (*harness.RepositoriesImportOutput, error) {
+func (c *Importer) UploadZip() (*types.RepositoriesImportOutput, error) {
 	c.Tracer.Start("starting uploading zip file")
-	in := &harness.RepositoriesImportInput{}
+	in := &types.RepositoriesImportInput{
+		RequestId: c.RequestId,
+	}
 
 	start := time.Now()
 	repositoriesImportOutput, err := c.Harness.UploadHarnessCodeZip(c.HarnessSpace, c.ZipFileLocation, c.RequestId, in)

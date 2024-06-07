@@ -19,7 +19,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/harness/harness-migrate/internal/harness"
+	"github.com/harness/harness-migrate/types"
 )
 
 const (
@@ -69,5 +69,5 @@ func (c *Importer) checkOperationStatus() (bool, error) {
 	if err != nil {
 		return false, fmt.Errorf("error checking status: %w", err)
 	}
-	return checkImport.Status == harness.RepoImportStatusComplete, nil
+	return checkImport.Status == types.RepoImportStatusComplete, nil
 }

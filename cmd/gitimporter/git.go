@@ -25,8 +25,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/harness/harness-migrate/cmd/util"
 	"github.com/harness/harness-migrate/internal/gitimporter"
-	"github.com/harness/harness-migrate/internal/harness"
 	"github.com/harness/harness-migrate/internal/tracer"
+	"github.com/harness/harness-migrate/types"
 	"golang.org/x/exp/slog"
 )
 
@@ -77,7 +77,7 @@ func (c *gitImport) run(*kingpin.ParseContext) error {
 	return nil
 }
 
-func checkAndPerformUserInvite(repositoriesImportOutput *harness.RepositoriesImportOutput, tracer_ tracer.Tracer, importer *gitimporter.Importer) error {
+func checkAndPerformUserInvite(repositoriesImportOutput *types.RepositoriesImportOutput, tracer_ tracer.Tracer, importer *gitimporter.Importer) error {
 	if repositoriesImportOutput != nil && len(repositoriesImportOutput.Users.NotPresent) != 0 {
 		tracer_.Log("Found users which are not in harness and are present in import data: ")
 		tracer_.Log("%v", repositoriesImportOutput.Users.NotPresent)

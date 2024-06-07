@@ -26,11 +26,13 @@ import (
 	"github.com/harness/harness-migrate/internal/common"
 	"github.com/harness/harness-migrate/internal/types"
 	"github.com/harness/harness-migrate/internal/util"
+
+	externalTypes "github.com/harness/harness-migrate/types"
 )
 
 const (
 	maxChunkSize = 25 * 1024 * 1024 // 25 MB
-	infoFileName = "info.json"
+	prFileName   = "pr%d.json"
 )
 
 type Exporter struct {
@@ -51,7 +53,7 @@ func (e *Exporter) Export(ctx context.Context) {
 	}
 	data, _ := e.getData(ctx)
 	for _, repo := range data {
-		err = e.writeJsonForRepo(repo)
+		err = e.writeJsonForRepo(mapRepoData(repo))
 		if err != nil {
 			panic(fmt.Sprintf(common.PanicWritingFileData, err))
 		}
@@ -59,7 +61,7 @@ func (e *Exporter) Export(ctx context.Context) {
 }
 
 // Calculate the size of the struct in bytes
-func calculateSize(s *types.PullRequestData) int {
+func calculateSize(s *externalTypes.PullRequestData) int {
 	data, err := json.Marshal(s)
 	// will never happen
 	if err != nil {
@@ -69,16 +71,16 @@ func calculateSize(s *types.PullRequestData) int {
 }
 
 // Split the array into smaller chunks if the size exceeds the maxChunkSize
-func splitArray(arr []*types.PullRequestData) [][]*types.PullRequestData {
-	var chunks [][]*types.PullRequestData
-	var currentChunk []*types.PullRequestData
+func splitArray(arr []*externalTypes.PullRequestData) [][]*externalTypes.PullRequestData {
+	var chunks [][]*externalTypes.PullRequestData
+	var currentChunk []*externalTypes.PullRequestData
 	currentSize := 0
 
 	for _, item := range arr {
 		itemSize := calculateSize(item)
 		if currentSize+itemSize > maxChunkSize {
 			chunks = append(chunks, currentChunk)
-			currentChunk = []*types.PullRequestData{}
+			currentChunk = []*externalTypes.PullRequestData{}
 			currentSize = 0
 		}
 		currentChunk = append(currentChunk, item)
@@ -90,7 +92,7 @@ func splitArray(arr []*types.PullRequestData) [][]*types.PullRequestData {
 	return chunks
 }
 
-func (e *Exporter) writeJsonForRepo(repo *types.RepoData) error {
+func (e *Exporter) writeJsonForRepo(repo *externalTypes.RepositoryData) error {
 	repoJson, _ := util.GetJson(repo.Repository)
 	pathRepo := filepath.Join(".", e.zipLocation, repo.Repository.RepoSlug)
 	err := util.CreateFolder(pathRepo)
@@ -98,7 +100,7 @@ func (e *Exporter) writeJsonForRepo(repo *types.RepoData) error {
 		return fmt.Errorf("cannot create folder")
 	}
 
-	err = util.WriteFile(filepath.Join(pathRepo, infoFileName), repoJson)
+	err = util.WriteFile(filepath.Join(pathRepo, externalTypes.InfoFileName), repoJson)
 	if err != nil {
 		return err
 	}
@@ -108,7 +110,7 @@ func (e *Exporter) writeJsonForRepo(repo *types.RepoData) error {
 	}
 
 	prDataInSize := splitArray(repo.PullRequestData)
-	pathPR := filepath.Join(pathRepo, "pr")
+	pathPR := filepath.Join(pathRepo, externalTypes.PRFolderName)
 	err = util.CreateFolder(pathPR)
 	if err != nil {
 		return err
@@ -120,7 +122,7 @@ func (e *Exporter) writeJsonForRepo(repo *types.RepoData) error {
 			// todo: fix this
 			log.Printf("cannot serialize into json: %v", err)
 		}
-		prFilePath := fmt.Sprintf("pr%d.json", i)
+		prFilePath := fmt.Sprintf(prFileName, i)
 
 		err = util.WriteFile(filepath.Join(pathPR, prFilePath), prJson)
 		if err != nil {
@@ -174,4 +176,17 @@ func mapPrData(pr types.PRResponse, comments []types.PRComments) *types.PullRequ
 		PullRequest: pr,
 		Comments:    comments,
 	}
+}
+
+func mapRepoData(repoData *types.RepoData) *externalTypes.RepositoryData {
+	d := new(externalTypes.RepositoryData)
+	d.Repository.RepoSlug = repoData.Repository.RepoSlug
+	d.Repository.Repository = repoData.Repository.Repository
+
+	d.PullRequestData = make([]*externalTypes.PullRequestData, len(repoData.PullRequestData))
+	for i, prData := range repoData.PullRequestData {
+		d.PullRequestData[i].PullRequest.PullRequest = prData.PullRequest.PullRequest
+		// todo: map comment data
+	}
+	return d
 }

@@ -270,6 +270,34 @@ func (c *client) UploadHarnessCodeZip(space, zipFileLocation, requestId string, 
 	return out, nil
 }
 
+func (c *client) HarnessCodeInviteUser(space, requestId string, in *RepositoryUsersImportInput) (*RepositoryUsersImportOutput, error) {
+	out := new(RepositoryUsersImportOutput)
+	uri := fmt.Sprintf("%s/gateway/code/api/v1/spaces/%s/import/%s/users",
+		c.address,
+		space,
+		requestId,
+	)
+
+	if err := c.post(uri, in, out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *client) HarnessCodeCheckImport(space, requestId string) (*RepositoryImportStatus, error) {
+	out := new(RepositoryImportStatus)
+	uri := fmt.Sprintf("%s/gateway/code/api/v1/spaces/%s/import/%s",
+		c.address,
+		space,
+		requestId,
+	)
+
+	if err := c.get(uri, out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 //
 // http request helper functions
 //

@@ -268,10 +268,8 @@ type (
 
 	// RepositoryUsersImportInput is object for creating/rejecting user invite during repo(s) import.
 	RepositoryUsersImportInput struct {
-		Invite struct {
-			All bool `json:"all"`
-		} `json:"invite"`
-		MapToImporter bool `json:"map_to_importer"`
+		Emails        []string `json:"emails"`
+		MapToImporter bool     `json:"map_to_importer"`
 	}
 
 	// RepositoryUsersImportOutput is object for reporting back user import.
@@ -279,4 +277,16 @@ type (
 		Success      bool   `json:"success"`
 		ErrorMessage string `json:"error_message"`
 	}
+
+	// RepositoryImportStatus is object for reporting back status of import.
+	RepositoryImportStatus struct {
+		Status RepoImportStatus `json:"status"`
+	}
+)
+
+type RepoImportStatus string
+
+const (
+	RepoImportStatusComplete   RepoImportStatus = "complete"
+	RepoImportStatusInProgress RepoImportStatus = "in_progress"
 )

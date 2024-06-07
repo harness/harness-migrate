@@ -23,7 +23,7 @@ import (
 
 // Importer imports data from gitlab to Harness.
 type Importer struct {
-	Harness *harness.Client
+	Harness harness.Client
 
 	HarnessSpace string
 	HarnessToken string
@@ -40,7 +40,7 @@ func NewImporter(space, token, location, requestId string, tracer tracer.Tracer)
 	client := harness.New(spaceSplit[0], token)
 
 	return &Importer{
-		Harness:         &client,
+		Harness:         client,
 		HarnessSpace:    space,
 		HarnessToken:    token,
 		ZipFileLocation: location,

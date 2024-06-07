@@ -18,6 +18,8 @@ import (
 	"context"
 	"fmt"
 	"time"
+
+	"github.com/harness/harness-migrate/internal/harness"
 )
 
 const (
@@ -31,7 +33,8 @@ func (c *Importer) CheckImportComplete() error {
 	ctx, cancel := context.WithTimeout(context.Background(), pollTimeout)
 	defer cancel()
 
-	err := pollOperationStatus(ctx)
+	// todo: handle context cancelled due to timeout.
+	err := c.pollOperationStatus(ctx)
 	if err != nil {
 		c.Tracer.Stop("Import error: %s", err)
 		return err
@@ -41,12 +44,12 @@ func (c *Importer) CheckImportComplete() error {
 	return nil
 }
 
-func pollOperationStatus(ctx context.Context) error {
+func (c *Importer) pollOperationStatus(ctx context.Context) error {
 	select {
 	case <-ctx.Done():
 		return ctx.Err()
 	default:
-		complete, err := checkOperationStatus(ctx)
+		complete, err := c.checkOperationStatus()
 		if err != nil {
 			return err
 		}
@@ -61,7 +64,10 @@ func pollOperationStatus(ctx context.Context) error {
 	return fmt.Errorf("operation did not complete within the expected time")
 }
 
-func checkOperationStatus(ctx context.Context) (bool, error) {
-	// perform http call
-	return false, nil
+func (c *Importer) checkOperationStatus() (bool, error) {
+	checkImport, err := c.Harness.HarnessCodeCheckImport(c.HarnessSpace, c.RequestId)
+	if err != nil {
+		return false, fmt.Errorf("error checking status: %w", err)
+	}
+	return checkImport.Status == harness.RepoImportStatusComplete, nil
 }

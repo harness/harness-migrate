@@ -55,13 +55,13 @@ type Client interface {
 	// CreateSecret creates a secret.
 	CreateSecret(secret *Secret) error
 
-	// CreateSecret creates an organization secret.
+	// CreateSecretOrg creates an organization secret.
 	CreateSecretOrg(secret *Secret) error
 
 	// CreateConnector creates a connector.
 	CreateConnector(connector *Connector) error
 
-	// CreateConnector creates an organization connector.
+	// CreateConnectorOrg creates an organization connector.
 	CreateConnectorOrg(connector *Connector) error
 
 	// CreatePipeline creates a pipeline for the
@@ -74,6 +74,12 @@ type Client interface {
 
 	// UploadHarnessCodeZip upload zip to harness code for creating repo and other metadata.
 	UploadHarnessCodeZip(space, zipFileLocation, requestId string, request *RepositoriesImportInput) (*RepositoriesImportOutput, error)
+
+	// HarnessCodeInviteUser provides all email id to harness code of users which needs to invited.
+	HarnessCodeInviteUser(space, requestId string, in *RepositoryUsersImportInput) (*RepositoryUsersImportOutput, error)
+
+	// HarnessCodeCheckImport checks status of import.
+	HarnessCodeCheckImport(space, requestId string) (*RepositoryImportStatus, error)
 }
 
 // WaitHarnessSecretManager blocks until the harness

@@ -176,7 +176,7 @@ func (e *Exporter) getData(ctx context.Context, path string) ([]*types.RepoData,
 		}
 
 		prs, err := e.exporter.ListPullRequest(ctx, repo.RepoSlug, types.PullRequestListOptions{})
-		var notSupportedErr *codeerror.OpNotSupported
+		var notSupportedErr *codeerror.OpNotSupportedError
 		if errors.As(err, &notSupportedErr) {
 			return repoData, nil
 		}

@@ -17,7 +17,15 @@ package cmd
 import (
 	"os"
 
+	"github.com/harness/harness-migrate/cmd/bitbucket"
+	"github.com/harness/harness-migrate/cmd/circle"
+	"github.com/harness/harness-migrate/cmd/cloudbuild"
+	"github.com/harness/harness-migrate/cmd/drone"
+	"github.com/harness/harness-migrate/cmd/github"
+	"github.com/harness/harness-migrate/cmd/gitlab"
 	"github.com/harness/harness-migrate/cmd/stash"
+	"github.com/harness/harness-migrate/cmd/terraform"
+	"github.com/harness/harness-migrate/cmd/travis"
 
 	"github.com/alecthomas/kingpin/v2"
 )
@@ -36,6 +44,14 @@ var version string
 func Command() {
 	app := kingpin.New(application, description)
 
+	bitbucket.Register(app)
+	cloudbuild.Register(app)
+	circle.Register(app)
+	drone.Register(app)
+	gitlab.Register(app)
+	github.Register(app)
+	travis.Register(app)
+	terraform.Register(app)
 	stash.Register(app)
 
 	app.Version(version)

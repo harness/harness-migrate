@@ -1,3 +1,17 @@
+// Copyright 2023 Harness, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package stash
 
 import (
@@ -58,7 +72,7 @@ func (e *Export) ListRepositories(
 	for {
 		repos, resp, err := e.stash.Repositories.ListNamespace(ctx, e.stashOrg, opts)
 		if err != nil {
-			e.tracer.LogError(common.MsgRepoListErr, err)
+			e.tracer.LogError(common.ErrRepoList, err)
 		}
 		allRepos = append(allRepos, repos...)
 
@@ -84,7 +98,7 @@ func (e *Export) ListPullRequest(
 	checkpointDataKey := fmt.Sprintf(pullRequestCheckpointData, repoSlug)
 	val, ok, err := checkpoint.GetCheckpointData[[]types.PRResponse](e.checkpointManager, checkpointDataKey)
 	if err != nil {
-		e.tracer.LogError(common.MsgCheckpointDataReadErr, err)
+		e.tracer.LogError(common.ErrCheckpointDataRead, err)
 		panic(common.PanicCheckpointSaveErr)
 	}
 	if ok && val != nil {
@@ -108,7 +122,7 @@ func (e *Export) ListPullRequest(
 	for {
 		prs, resp, err := e.stash.PullRequests.List(ctx, repoSlug, opts)
 		if err != nil {
-			e.tracer.LogError(common.MsgPrListErr, err)
+			e.tracer.LogError(common.ErrPrList, err)
 			return nil, fmt.Errorf("cannot list pr: %w", err)
 		}
 		mappedPrs := common.MapPullRequest(prs)
@@ -116,12 +130,12 @@ func (e *Export) ListPullRequest(
 
 		err = e.checkpointManager.SaveCheckpoint(checkpointDataKey, allPrs)
 		if err != nil {
-			e.tracer.LogError(common.MsgCheckpointPrDataSaveErr)
+			e.tracer.LogError(common.ErrCheckpointPrDataSave)
 		}
 
 		err = e.checkpointManager.SaveCheckpoint(checkpointPageKey, resp.Page.Next)
 		if err != nil {
-			e.tracer.LogError(common.MsgCheckpointPrPageSaveErr)
+			e.tracer.LogError(common.ErrCheckpointPrPageSave)
 		}
 
 		if resp.Page.Next == 0 {
@@ -134,7 +148,7 @@ func (e *Export) ListPullRequest(
 
 	err = e.checkpointManager.SaveCheckpoint(checkpointPageKey, -1)
 	if err != nil {
-		e.tracer.LogError(common.MsgCheckpointPrPageSaveErr)
+		e.tracer.LogError(common.ErrCheckpointPrPageSave)
 	}
 
 	return allPrs, nil
@@ -156,7 +170,7 @@ func (e *Export) FetchPullRequestRefs(ctx context.Context, repo *git.Repository,
 		Force: true,
 	})
 	if err != nil && !errors.Is(err, git.NoErrAlreadyUpToDate) {
-		e.tracer.LogError(common.MsgGitFetchErr, repoSlug, err)
+		e.tracer.LogError(common.ErrGitFetch, repoSlug, err)
 		return fmt.Errorf("failed to fetch repo pull requests references for %s: %w", repoSlug, err)
 	}
 	e.tracer.Stop(common.MsgCompleteGitFetchRef, repoSlug)
@@ -166,14 +180,14 @@ func (e *Export) FetchPullRequestRefs(ctx context.Context, repo *git.Repository,
 func (e *Export) PullRequestReviewers(
 	context.Context,
 	int) error {
-	return &codeerror.OpNotSupported{Name: "pullreqreview"}
+	return &codeerror.OpNotSupportedError{Name: "pullreqreview"}
 }
 
 func (e *Export) PullRequestComments(
 	context.Context,
 	int,
 ) error {
-	return &codeerror.OpNotSupported{Name: "pullreqcomment"}
+	return &codeerror.OpNotSupportedError{Name: "pullreqcomment"}
 }
 
 func mapRepository(repos []*scm.Repository) []types.RepoResponse {

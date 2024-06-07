@@ -43,7 +43,7 @@ func (e *Exporter) CloneRepository(
 		return nil, nil
 	}
 	if err != nil && !errors.Is(err, transport.ErrEmptyRemoteRepository) {
-		tracer.LogError(MsgGitCloneErr, repoSlug, err)
+		tracer.LogError(ErrGitClone, repoSlug, err)
 		return nil, fmt.Errorf("failed to clone repo %s from %q: %w", repoSlug, repoData.Clone, err)
 	}
 
@@ -57,7 +57,7 @@ func (e *Exporter) CloneRepository(
 		Force: true,
 	})
 	if err != nil && !errors.Is(err, git.NoErrAlreadyUpToDate) {
-		tracer.LogError(MsgGitFetchErr, repoSlug, err)
+		tracer.LogError(ErrGitFetch, repoSlug, err)
 		return nil, fmt.Errorf("failed to sync repo %s: %w", repoSlug, err)
 	}
 

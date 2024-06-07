@@ -13,6 +13,7 @@
 // limitations under the License.
 
 // Package types provides common types for data export and import.
+
 package types
 
 import "github.com/drone/go-scm/scm"

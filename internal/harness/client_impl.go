@@ -27,6 +27,8 @@ import (
 	"net/url"
 	"os"
 	"strconv"
+
+	"github.com/harness/harness-migrate/types"
 )
 
 type client struct {
@@ -257,8 +259,8 @@ func (c *client) CreateRepository(org, project string, repo *RepositoryCreateReq
 	return out, nil
 }
 
-func (c *client) UploadHarnessCodeZip(space, zipFileLocation, requestId string, in *RepositoriesImportInput) (*RepositoriesImportOutput, error) {
-	out := new(RepositoriesImportOutput)
+func (c *client) UploadHarnessCodeZip(space, zipFileLocation, requestId string, in *types.RepositoriesImportInput) (*types.RepositoriesImportOutput, error) {
+	out := new(types.RepositoriesImportOutput)
 	uri := fmt.Sprintf("%s/gateway/code/api/v1/spaces/%s/zip-import",
 		c.address,
 		space,
@@ -270,8 +272,8 @@ func (c *client) UploadHarnessCodeZip(space, zipFileLocation, requestId string, 
 	return out, nil
 }
 
-func (c *client) HarnessCodeInviteUser(space, requestId string, in *RepositoryUsersImportInput) (*RepositoryUsersImportOutput, error) {
-	out := new(RepositoryUsersImportOutput)
+func (c *client) HarnessCodeInviteUser(space, requestId string, in *types.RepositoryUsersImportInput) (*types.RepositoryUsersImportOutput, error) {
+	out := new(types.RepositoryUsersImportOutput)
 	uri := fmt.Sprintf("%s/gateway/code/api/v1/spaces/%s/import/%s/users",
 		c.address,
 		space,
@@ -284,8 +286,8 @@ func (c *client) HarnessCodeInviteUser(space, requestId string, in *RepositoryUs
 	return out, nil
 }
 
-func (c *client) HarnessCodeCheckImport(space, requestId string) (*RepositoryImportStatus, error) {
-	out := new(RepositoryImportStatus)
+func (c *client) HarnessCodeCheckImport(space, requestId string) (*types.RepositoryImportStatus, error) {
+	out := new(types.RepositoryImportStatus)
 	uri := fmt.Sprintf("%s/gateway/code/api/v1/spaces/%s/import/%s",
 		c.address,
 		space,
@@ -437,7 +439,7 @@ func (c *client) openMultipart(rawurl, method, filepath, requestId string, in in
 	writer := multipart.NewWriter(&b)
 
 	// Create a form field and write the file content into it
-	part, err := writer.CreateFormFile(MultiPartFileField, filepath)
+	part, err := writer.CreateFormFile(types.MultiPartFileField, filepath)
 	if err != nil {
 		return nil, fmt.Errorf("error creating form file: %w", err)
 	}
@@ -450,7 +452,7 @@ func (c *client) openMultipart(rawurl, method, filepath, requestId string, in in
 		return nil, derr
 	}
 
-	part, err = writer.CreateFormField(MultiPartDataField)
+	part, err = writer.CreateFormField(types.MultiPartDataField)
 	if err != nil {
 		return nil, fmt.Errorf("error creating form field: %w", err)
 	}

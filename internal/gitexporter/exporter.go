@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package common
+package gitexporter
 
 import (
 	"context"
@@ -23,6 +23,7 @@ import (
 	"path/filepath"
 
 	"github.com/harness/harness-migrate/internal/codeerror"
+	"github.com/harness/harness-migrate/internal/common"
 	"github.com/harness/harness-migrate/internal/types"
 	"github.com/harness/harness-migrate/internal/util"
 )
@@ -46,13 +47,13 @@ func (e *Exporter) Export(ctx context.Context) {
 	path := filepath.Join(".", e.zipLocation)
 	err := util.CreateFolder(path)
 	if err != nil {
-		panic(fmt.Sprintf(PanicCannotCreateFolder, err))
+		panic(fmt.Sprintf(common.PanicCannotCreateFolder, err))
 	}
 	data, _ := e.getData(ctx)
 	for _, repo := range data {
 		err = e.writeJsonForRepo(repo)
 		if err != nil {
-			panic(fmt.Sprintf(PanicWritingFileData, err))
+			panic(fmt.Sprintf(common.PanicWritingFileData, err))
 		}
 	}
 }

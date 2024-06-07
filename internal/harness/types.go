@@ -14,6 +14,11 @@
 
 package harness
 
+const (
+	MultiPartFileField = "file"
+	MultiPartDataField = "data"
+)
+
 type (
 	// Pipeline defines a pipeline.
 	Pipeline struct {
@@ -247,5 +252,31 @@ type (
 		DefaultBranch string `json:"default_branch"`
 		Description   string `json:"description"`
 		IsPublic      bool   `json:"is_public"`
+	}
+
+	// RepositoriesImportInput is input object for importing repo(s).
+	RepositoriesImportInput struct {
+	}
+
+	// RepositoriesImportOutput is output object for importing repo(s).
+	RepositoriesImportOutput struct {
+		RequestId string `json:"request_id"`
+		Users     struct {
+			NotPresent []string `json:"not_present"`
+		} `json:"users,omitempty"`
+	}
+
+	// RepositoryUsersImportInput is object for creating/rejecting user invite during repo(s) import.
+	RepositoryUsersImportInput struct {
+		Invite struct {
+			All bool `json:"all"`
+		} `json:"invite"`
+		MapToImporter bool `json:"map_to_importer"`
+	}
+
+	// RepositoryUsersImportOutput is object for reporting back user import.
+	RepositoryUsersImportOutput struct {
+		Success      bool   `json:"success"`
+		ErrorMessage string `json:"error_message"`
 	}
 )

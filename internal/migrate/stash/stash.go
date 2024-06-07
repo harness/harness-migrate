@@ -22,6 +22,7 @@ import (
 	"github.com/harness/harness-migrate/internal/checkpoint"
 	"github.com/harness/harness-migrate/internal/codeerror"
 	"github.com/harness/harness-migrate/internal/common"
+	"github.com/harness/harness-migrate/internal/gitexporter"
 	"github.com/harness/harness-migrate/internal/tracer"
 	"github.com/harness/harness-migrate/internal/types"
 
@@ -120,7 +121,7 @@ func (e *Export) ListPullRequest(
 			e.tracer.LogError(common.ErrPrList, err)
 			return nil, fmt.Errorf("cannot list pr: %w", err)
 		}
-		mappedPrs := common.MapPullRequest(prs)
+		mappedPrs := gitexporter.MapPullRequest(prs)
 		allPrs = append(allPrs, mappedPrs...)
 
 		err = e.checkpointManager.SaveCheckpoint(checkpointDataKey, allPrs)

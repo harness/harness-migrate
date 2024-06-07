@@ -12,18 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package common
+package gitexporter
 
 import (
-	"github.com/harness/harness-migrate/internal/types"
+	"context"
 
-	"github.com/drone/go-scm/scm"
+	"github.com/harness/harness-migrate/internal/types"
 )
 
-func MapPullRequest(prs []*scm.PullRequest) []types.PRResponse {
-	r := make([]types.PRResponse, len(prs))
-	for i, pr := range prs {
-		r[i] = types.PRResponse{PullRequest: *pr}
-	}
-	return r
+// Interface helps to support a generic way of doing export for all git providers
+type Interface interface {
+	ListRepositories(ctx context.Context, opts types.ListRepoOptions) ([]types.RepoResponse, error)
+	ListPullRequest(ctx context.Context, repoSlug string, opts types.PullRequestListOptions) ([]types.PRResponse, error)
+	PullRequestReviewers(ctx context.Context, prNumber int) error
+	PullRequestComments(ctx context.Context, prNumber int) error
 }

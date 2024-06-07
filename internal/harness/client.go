@@ -71,6 +71,9 @@ type Client interface {
 
 	// CreateRepository creates a repository.
 	CreateRepository(org, project string, repo *RepositoryCreateRequest) (*Repository, error)
+
+	// UploadHarnessCodeZip upload zip to harness code for creating repo and other metadata.
+	UploadHarnessCodeZip(space, zipFileLocation, requestId string, request *RepositoriesImportInput) (*RepositoriesImportOutput, error)
 }
 
 // WaitHarnessSecretManager blocks until the harness

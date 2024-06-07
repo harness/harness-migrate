@@ -31,8 +31,8 @@ const (
 	MsgRepoAlreadyExists       = "cloned git repo for %s already exists"
 	MsgGitFetchRef             = "fetching pull request references for %s"
 	MsgCompleteGitFetchRef     = "fetched pull request references for %s"
-	ErrGitCloneMsg             = "cannot clone the git repo %q due to error: %w"
-	ErrGitFetch                = "cannot fetch repo pull request references for %s: %w"
+	MsgGitCloneErr             = "cannot clone the git repo %q due to error: %w"
+	MsgGitFetchErr             = "cannot fetch repo pull request references for %s: %w"
 
 	PanicCheckpointSaveErr  = "error occured in reading checkpoint data"
 	PanicCannotCreateFolder = "cannot create folder: %v"

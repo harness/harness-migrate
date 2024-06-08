@@ -45,7 +45,6 @@ type exportCommand struct {
 }
 
 func (c *exportCommand) run(*kingpin.ParseContext) error {
-
 	// create the logger
 	log := util.CreateLogger(c.debug)
 

@@ -12,18 +12,27 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package common
+package gitimporter
 
 import (
-	"context"
+	"fmt"
+	"time"
 
-	"github.com/harness/harness-migrate/internal/types"
+	"github.com/harness/harness-migrate/types"
 )
 
-// Interface helps to support a generic way of doing export for all git providers
-type Interface interface {
-	ListRepositories(ctx context.Context, opts types.ListRepoOptions) ([]types.RepoResponse, error)
-	ListPullRequest(ctx context.Context, repoSlug string, opts types.PullRequestListOptions) ([]types.PRResponse, error)
-	PullRequestReviewers(ctx context.Context, prNumber int) error
-	PullRequestComments(ctx context.Context, prNumber int) error
+func (c *Importer) UploadZip() (*types.RepositoriesImportOutput, error) {
+	c.Tracer.Start("starting uploading zip file")
+	in := &types.RepositoriesImportInput{
+		RequestId: c.RequestId,
+	}
+
+	start := time.Now()
+	out, err := c.Harness.UploadHarnessCodeZip(c.HarnessSpace, c.ZipFileLocation, c.RequestId, in)
+	if err != nil {
+		c.Tracer.Stop("error uploading zip")
+		return nil, fmt.Errorf("error uploading zip: %w", err)
+	}
+	c.Tracer.Stop("zip upload complete in %d seconds", time.Since(start).Seconds())
+	return out, nil
 }

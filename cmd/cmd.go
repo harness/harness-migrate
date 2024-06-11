@@ -22,6 +22,7 @@ import (
 	"github.com/harness/harness-migrate/cmd/cloudbuild"
 	"github.com/harness/harness-migrate/cmd/drone"
 	"github.com/harness/harness-migrate/cmd/github"
+	"github.com/harness/harness-migrate/cmd/gitimporter"
 	"github.com/harness/harness-migrate/cmd/gitlab"
 	"github.com/harness/harness-migrate/cmd/stash"
 	"github.com/harness/harness-migrate/cmd/terraform"
@@ -53,6 +54,8 @@ func Command() {
 	travis.Register(app)
 	terraform.Register(app)
 	stash.Register(app)
+
+	gitimporter.Register(app)
 
 	app.Version(version)
 	kingpin.MustParse(app.Parse(os.Args[1:]))

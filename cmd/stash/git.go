@@ -21,7 +21,7 @@ import (
 
 	"github.com/harness/harness-migrate/cmd/util"
 	"github.com/harness/harness-migrate/internal/checkpoint"
-	"github.com/harness/harness-migrate/internal/common"
+	"github.com/harness/harness-migrate/internal/gitexporter"
 	"github.com/harness/harness-migrate/internal/migrate/stash"
 	"github.com/harness/harness-migrate/internal/tracer"
 
@@ -88,7 +88,7 @@ func (c *exportCommand) run(*kingpin.ParseContext) error {
 	// extract the data
 	e := stash.New(client, c.stashOrg, checkpointManager, tracer_)
 
-	exporter := common.NewExporter(e, c.file)
+	exporter := gitexporter.NewExporter(e, c.file)
 	exporter.Export(ctx)
 	return nil
 }
@@ -97,7 +97,7 @@ func (c *exportCommand) run(*kingpin.ParseContext) error {
 func registerGit(app *kingpin.CmdClause) {
 	c := new(exportCommand)
 
-	cmd := app.Command("git", "export stash git data").
+	cmd := app.Command("git-export", "export stash git data").
 		Hidden().
 		Action(c.run)
 

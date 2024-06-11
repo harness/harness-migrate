@@ -15,7 +15,11 @@
 // Package harness provides a Harness http client.
 package harness
 
-import "time"
+import (
+	"time"
+
+	"github.com/harness/harness-migrate/types"
+)
 
 // Client is used to communicate with the Harness server.
 type Client interface {
@@ -55,13 +59,13 @@ type Client interface {
 	// CreateSecret creates a secret.
 	CreateSecret(secret *Secret) error
 
-	// CreateSecret creates an organization secret.
+	// CreateSecretOrg creates an organization secret.
 	CreateSecretOrg(secret *Secret) error
 
 	// CreateConnector creates a connector.
 	CreateConnector(connector *Connector) error
 
-	// CreateConnector creates an organization connector.
+	// CreateConnectorOrg creates an organization connector.
 	CreateConnectorOrg(connector *Connector) error
 
 	// CreatePipeline creates a pipeline for the
@@ -71,6 +75,15 @@ type Client interface {
 
 	// CreateRepository creates a repository.
 	CreateRepository(org, project string, repo *RepositoryCreateRequest) (*Repository, error)
+
+	// UploadHarnessCodeZip upload zip to harness code for creating repo and other metadata.
+	UploadHarnessCodeZip(space, zipFileLocation, requestId string, request *types.RepositoriesImportInput) (*types.RepositoriesImportOutput, error)
+
+	// HarnessCodeInviteUser provides all email id to harness code of users which needs to invited.
+	HarnessCodeInviteUser(space, requestId string, in *types.RepositoryUsersImportInput) (*types.RepositoryUsersImportOutput, error)
+
+	// HarnessCodeCheckImport checks status of import.
+	HarnessCodeCheckImport(space, requestId string) (*types.RepositoryImportStatus, error)
 }
 
 // WaitHarnessSecretManager blocks until the harness

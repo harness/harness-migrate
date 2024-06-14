@@ -15,19 +15,22 @@
 package common
 
 const (
-	MsgStartPrImport    = "Starting Pull request import for repo %s"
-	MsgCompletePrImport = "Pull request import finished for repo %s with total %d PRs"
-	MsgCheckpointLoadPr = "Pull request import finished for repo %s with total %d PRs from checkpoint"
-	MsgStartRepoList    = "starting repositories listing for %s org %s"
-	MsgCompleteRepoList = "repositories listing complete. Total repos: %d"
+	MsgStartPrImport            = "Starting Pull request import for repo %s"
+	MsgCompletePrImport         = "Pull request import finished for repo %s with total %d PRs"
+	MsgCheckpointLoadPr         = "Pull request import finished for repo %s with total %d PRs from checkpoint"
+	MsgStartRepoList            = "starting repositories listing for %s org %s"
+	MsgCompleteRepoList         = "repositories listing complete. Total repos: %d"
+	MsgStartPrCommentsImport    = "Starting PR comments import for repo %s pull request %d"
+	MsgCompletePrCommentsImport = "PR comments import finished for repo %s pull request %d with total %d comments"
 
 	ErrRepoList             = "cannot fetch repositories due to error :%v"
 	ErrCheckpointDataRead   = "cannot read checkpoint data: %s"
 	ErrCheckpointPrDataSave = "cannot save checkpoint pr data"
 	ErrCheckpointPrPageSave = "cannot save checkpoint pr page"
 	ErrPrList               = "cannot list pr due to error :%v"
+	ErrCommentsList         = "cannot list comments for repo %s pull request %d: %v"
 
-	PanicCheckpointSaveErr  = "error occured in reading checkpoint data"
+	PanicCheckpointSaveErr  = "error occurred in reading checkpoint data"
 	PanicCannotCreateFolder = "cannot create folder: %v"
 	PanicWritingFileData    = "error writing data in file: %v"
 )

@@ -19,66 +19,85 @@ package types
 import "github.com/drone/go-scm/scm"
 
 // Org defines an organization.
-type Org struct {
-	Name string `json:"name"`
+type (
+	Org struct {
+		Name string `json:"name"`
 
-	Projects []*Project `json:"project,omitempty"`
-	Secrets  []*Secret  `json:"secrets,omitempty"`
-}
+		Projects []*Project `json:"project,omitempty"`
+		Secrets  []*Secret  `json:"secrets,omitempty"`
+	}
 
-// Project defines a project.
-type Project struct {
-	Name   string `json:"name"`
-	Desc   string `json:"desc,omitempty"`
-	Repo   string `json:"repo,omitempty"`
-	Branch string `json:"branch,omitempty"`
-	Type   string `json:"type"` // github, gitlab, bitbucket
-	Yaml   []byte `json:"yaml"`
+	// Project defines a project.
+	Project struct {
+		Name   string `json:"name"`
+		Desc   string `json:"desc,omitempty"`
+		Repo   string `json:"repo,omitempty"`
+		Branch string `json:"branch,omitempty"`
+		Type   string `json:"type"` // github, gitlab, bitbucket
+		Yaml   []byte `json:"yaml"`
 
-	Secrets   []*Secret   `json:"secrets,omitempty"`
-	Pipelines []*Pipeline `json:"pipelines,omitempty"`
-}
+		Secrets   []*Secret   `json:"secrets,omitempty"`
+		Pipelines []*Pipeline `json:"pipelines,omitempty"`
+	}
 
-// Pipeline defines a pipeline.
-type Pipeline struct {
-	Name   string `json:"name"`
-	Repo   string `json:"repo,omitempty"`
-	Branch string `json:"branch,omitempty"`
-	Type   string `json:"type"` // github, gitlab, bitbucket
-	Yaml   string `json:"yaml"`
-}
+	// Pipeline defines a pipeline.
+	Pipeline struct {
+		Name   string `json:"name"`
+		Repo   string `json:"repo,omitempty"`
+		Branch string `json:"branch,omitempty"`
+		Type   string `json:"type"` // github, gitlab, bitbucket
+		Yaml   string `json:"yaml"`
+	}
 
-// Secret defines a secret.
-type Secret struct {
-	Name  string `json:"name"`
-	Desc  string `json:"desc,omitempty"`
-	Value string `json:"value,omitempty"`
-}
+	// Secret defines a secret.
+	Secret struct {
+		Name  string `json:"name"`
+		Desc  string `json:"desc,omitempty"`
+		Value string `json:"value,omitempty"`
+	}
 
-type ListRepoOptions struct {
-}
+	ListRepoOptions struct {
+	}
 
-type PullRequestListOptions struct {
-}
+	PullRequestListOptions struct {
+	}
 
-type RepoResponse struct {
-	scm.Repository
-	RepoSlug string
-}
+	ListOptions struct {
+		URL  string
+		Page int
+		Size int
+	}
 
-type PRResponse struct {
-	scm.PullRequest
-}
+	RepoResponse struct {
+		scm.Repository
+		RepoSlug string
+	}
 
-type PRComments struct {
-}
+	PRResponse struct {
+		scm.PullRequest
+	}
 
-type RepoData struct {
-	Repository      RepoResponse
-	PullRequestData []*PullRequestData
-}
+	CommentMetadata struct {
+		ParentID     int
+		Path         string
+		Line         int
+		LineSpan     int
+		SourceSha    string
+		MergeBaseSha string
+	}
 
-type PullRequestData struct {
-	PullRequest PRResponse
-	Comments    []PRComments
-}
+	PRComment struct {
+		scm.Comment
+		CommentMetadata
+	}
+
+	RepoData struct {
+		Repository      RepoResponse
+		PullRequestData []*PullRequestData
+	}
+
+	PullRequestData struct {
+		PullRequest PRResponse
+		Comments    []*PRComment
+	}
+)

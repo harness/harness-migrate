@@ -148,21 +148,25 @@ func (e *Exporter) getData(ctx context.Context) ([]*types.RepoData, error) {
 
 	// 2. list pr per repo
 	for i, repo := range repositories {
-		prs, err := e.exporter.ListPullRequest(ctx, repo.RepoSlug, types.PullRequestListOptions{})
+		prs, err := e.exporter.ListPullRequests(ctx, repo.RepoSlug, types.PullRequestListOptions{})
 		var notSupportedErr *codeerror.OpNotSupportedError
 		if errors.As(err, &notSupportedErr) {
 			return repoData, nil
 		}
 		if err != nil {
 			log.Default().Printf("encountered error in getting pr: %q", err)
+			return nil, fmt.Errorf("encountered error in getting pr: %w", err)
 		}
 
 		// 3. get all data for each pr
 		prData := make([]*types.PullRequestData, len(prs))
 
 		for j, pr := range prs {
-			// todo: implement comment
-			prData[j] = mapPrData(pr, nil)
+			comments, err := e.exporter.ListPullRequestComments(ctx, repo.RepoSlug, pr.Number, types.ListOptions{Page: 1, Size: 2})
+			if err != nil {
+				return nil, fmt.Errorf("encountered error in getting comments: %w", err)
+			}
+			prData[j] = mapPRData(pr, comments)
 		}
 
 		repoData[i].PullRequestData = prData
@@ -171,7 +175,7 @@ func (e *Exporter) getData(ctx context.Context) ([]*types.RepoData, error) {
 	return repoData, nil
 }
 
-func mapPrData(pr types.PRResponse, comments []types.PRComments) *types.PullRequestData {
+func mapPRData(pr types.PRResponse, comments []*types.PRComment) *types.PullRequestData {
 	return &types.PullRequestData{
 		PullRequest: pr,
 		Comments:    comments,

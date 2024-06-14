@@ -23,7 +23,6 @@ import (
 	"github.com/harness/harness-migrate/internal/codeerror"
 	"github.com/harness/harness-migrate/internal/common"
 	"github.com/harness/harness-migrate/internal/gitexporter"
-	"github.com/harness/harness-migrate/internal/tracer"
 	"github.com/harness/harness-migrate/internal/types"
 
 	"github.com/drone/go-scm/scm"
@@ -33,29 +32,6 @@ const (
 	pullRequestCheckpointPage = "%s/pr"
 	pullRequestCheckpointData = "%s/pr/data"
 )
-
-type Export struct {
-	stash    *scm.Client
-	stashOrg string
-
-	checkpointManager *checkpoint.CheckpointManager
-
-	tracer tracer.Tracer
-}
-
-func New(
-	client *scm.Client,
-	org string,
-	checkpointer *checkpoint.CheckpointManager,
-	tracer tracer.Tracer,
-) *Export {
-	return &Export{
-		stash:             client,
-		stashOrg:          org,
-		checkpointManager: checkpointer,
-		tracer:            tracer,
-	}
-}
 
 func (e *Export) ListRepositories(
 	ctx context.Context,
@@ -82,7 +58,7 @@ func (e *Export) ListRepositories(
 	return mapRepository(allRepos), nil
 }
 
-func (e *Export) ListPullRequest(
+func (e *Export) ListPullRequests(
 	ctx context.Context,
 	repoSlug string,
 	_ types.PullRequestListOptions,
@@ -156,11 +132,27 @@ func (e *Export) PullRequestReviewers(
 	return &codeerror.OpNotSupportedError{Name: "pullreqreview"}
 }
 
-func (e *Export) PullRequestComments(
-	context.Context,
-	int,
-) error {
-	return &codeerror.OpNotSupportedError{Name: "pullreqcomment"}
+func (e *Export) ListPullRequestComments(
+	ctx context.Context,
+	repoSlug string, prNumber int,
+	opts types.ListOptions,
+) ([]*types.PRComment, error) {
+	e.tracer.Start(common.MsgStartPrCommentsImport, repoSlug, prNumber)
+	allComments := []*types.PRComment{}
+	defer e.tracer.Stop(common.MsgCompletePrCommentsImport, repoSlug, prNumber, len(allComments))
+	for {
+		comments, res, err := e.stash.ListPRComments(ctx, repoSlug, prNumber, opts, e.tracer)
+		if err != nil {
+			e.tracer.LogError(common.ErrCommentsList, repoSlug, prNumber, err)
+			return nil, fmt.Errorf(common.ErrCommentsList, repoSlug, prNumber, err)
+		}
+		allComments = append(allComments, comments...)
+		if res.Page.Next == 0 {
+			break
+		}
+		opts.Page = res.Page.Next
+	}
+	return allComments, nil
 }
 
 func mapRepository(repos []*scm.Repository) []types.RepoResponse {

@@ -23,7 +23,7 @@ import (
 // Interface helps to support a generic way of doing export for all git providers
 type Interface interface {
 	ListRepositories(ctx context.Context, opts types.ListRepoOptions) ([]types.RepoResponse, error)
-	ListPullRequest(ctx context.Context, repoSlug string, opts types.PullRequestListOptions) ([]types.PRResponse, error)
+	ListPullRequests(ctx context.Context, repoSlug string, opts types.PullRequestListOptions) ([]types.PRResponse, error)
 	PullRequestReviewers(ctx context.Context, prNumber int) error
-	PullRequestComments(ctx context.Context, prNumber int) error
+	ListPullRequestComments(ctx context.Context, repoSlug string, prNumber int, opts types.ListOptions) ([]*types.PRComment, error)
 }

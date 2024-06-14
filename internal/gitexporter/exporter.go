@@ -185,6 +185,7 @@ func mapRepoData(repoData *types.RepoData) *externalTypes.RepositoryData {
 
 	d.PullRequestData = make([]*externalTypes.PullRequestData, len(repoData.PullRequestData))
 	for i, prData := range repoData.PullRequestData {
+		d.PullRequestData[i] = &externalTypes.PullRequestData{}
 		d.PullRequestData[i].PullRequest.PullRequest = prData.PullRequest.PullRequest
 		// todo: map comment data
 	}

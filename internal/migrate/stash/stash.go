@@ -16,6 +16,7 @@ package stash
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -24,8 +25,12 @@ import (
 	"github.com/harness/harness-migrate/internal/common"
 	"github.com/harness/harness-migrate/internal/gitexporter"
 	"github.com/harness/harness-migrate/internal/types"
+	"github.com/harness/harness-migrate/internal/types/enum"
 
 	"github.com/drone/go-scm/scm"
+	git "github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/config"
+	"github.com/go-git/go-git/v5/plumbing/transport/http"
 )
 
 const (
@@ -63,7 +68,7 @@ func (e *Export) ListPullRequests(
 	repoSlug string,
 	_ types.PullRequestListOptions,
 ) ([]types.PRResponse, error) {
-	e.tracer.Start(common.MsgStartPrImport, repoSlug)
+	e.tracer.Start(common.MsgStartPrExport, repoSlug)
 	var allPrs []types.PRResponse
 	opts := scm.PullRequestListOptions{Size: 25}
 
@@ -116,7 +121,7 @@ func (e *Export) ListPullRequests(
 		opts.Page = resp.Page.Next
 	}
 
-	e.tracer.Stop(common.MsgCompletePrImport, repoSlug, len(allPrs))
+	e.tracer.Stop(common.MsgCompletePrExport, repoSlug, len(allPrs))
 
 	err = e.checkpointManager.SaveCheckpoint(checkpointPageKey, -1)
 	if err != nil {
@@ -124,6 +129,33 @@ func (e *Export) ListPullRequests(
 	}
 
 	return allPrs, nil
+}
+
+func (e *Export) FetchPullRequestRefs(ctx context.Context, repo *git.Repository, repoSlug string, stashLogin string, stashToken string) error {
+	e.tracer.Start(common.MsgGitFetchRef, repoSlug)
+	// skip fetching references for empty repos.
+	if repo == nil {
+		e.tracer.Stop(common.MsgCompleteGitFetchRef, repoSlug)
+		return nil
+	}
+
+	refSpecs := []config.RefSpec{"refs/pull-requests/*/from:refs/pullreq/*/head"}
+	err := repo.Fetch(&git.FetchOptions{
+		RefSpecs: refSpecs,
+		Auth: &http.BasicAuth{
+			Username: stashLogin,
+			Password: stashToken,
+		},
+		Force: true,
+	})
+	if err != nil && !errors.Is(err, git.NoErrAlreadyUpToDate) {
+		e.tracer.LogError(common.ErrGitFetch, repoSlug, err)
+		e.tracer.Stop(common.ErrGitFetch, repoSlug, err)
+		return fmt.Errorf("failed to fetch repo pull requests references %s: %w", repoSlug, err)
+	}
+
+	e.tracer.Stop(common.MsgCompleteGitFetchRef, repoSlug)
+	return nil
 }
 
 func (e *Export) PullRequestReviewers(
@@ -137,9 +169,9 @@ func (e *Export) ListPullRequestComments(
 	repoSlug string, prNumber int,
 	opts types.ListOptions,
 ) ([]*types.PRComment, error) {
-	e.tracer.Start(common.MsgStartPrCommentsImport, repoSlug, prNumber)
+	e.tracer.Start(common.MsgStartPrCommentsExport, repoSlug, prNumber)
 	allComments := []*types.PRComment{}
-	defer e.tracer.Stop(common.MsgCompletePrCommentsImport, repoSlug, prNumber, len(allComments))
+	defer e.tracer.Stop(common.MsgCompletePrCommentsExport, repoSlug, prNumber, len(allComments))
 	for {
 		comments, res, err := e.stash.ListPRComments(ctx, repoSlug, prNumber, opts, e.tracer)
 		if err != nil {
@@ -153,6 +185,56 @@ func (e *Export) ListPullRequestComments(
 		opts.Page = res.Page.Next
 	}
 	return allComments, nil
+}
+
+func (e *Export) ListWebhooks(
+	ctx context.Context,
+	repoSlug string,
+	logger gitexporter.Logger,
+	_ types.WebhookListOptions,
+) (types.WebhookData, error) {
+	e.tracer.Start(common.MsgStartWebhookList, repoSlug)
+
+	var allWebhooks []*scm.Hook
+	defer func() {
+		e.tracer.Stop("fetched repo %q webhooks. Total: %d", repoSlug, len(allWebhooks))
+	}()
+
+	opts := scm.ListOptions{Size: 25, Page: 1}
+
+	for {
+		webhooks, resp, err := e.stash.Repositories.ListHooks(ctx, repoSlug, opts)
+		if err != nil {
+			e.tracer.LogError(common.ErrWebhookList, repoSlug, err)
+			return types.WebhookData{}, err
+		}
+		allWebhooks = append(allWebhooks, webhooks...)
+
+		if resp.Page.Next == 0 {
+			break
+		}
+		opts.Page = resp.Page.Next
+	}
+
+	convertedHooks, notSupportedHooks := mapWebhooks(allWebhooks)
+	// logs the not supported hooks
+	if len(notSupportedHooks) != 0 {
+		var logs []string
+		var warningMsg string
+		for _, hook := range notSupportedHooks {
+			warningMsg = fmt.Sprintf("[%s] Skipped repo %q's webhook with ID %q Name %q for Target URL %q on events %v \n",
+				enum.LogLevelWarning, repoSlug, hook.ID, hook.Name, hook.Target, hook.Events)
+			logs = append(logs, warningMsg)
+		}
+		if err := logger.Log([]byte(strings.Join(logs, ""))); err != nil {
+			return types.WebhookData{}, fmt.Errorf("failed to log the not supported webhooks for repo %q: %w",
+				repoSlug, err)
+		}
+	}
+
+	return types.WebhookData{
+		ConvertedHooks: convertedHooks,
+	}, nil
 }
 
 func mapRepository(repos []*scm.Repository) []types.RepoResponse {
@@ -170,4 +252,75 @@ func mapRepository(repos []*scm.Repository) []types.RepoResponse {
 		r[i] = types.RepoResponse{Repository: *repo, RepoSlug: strings.Join(repoSlug, "/")}
 	}
 	return r
+}
+
+func mapWebhooks(hooks []*scm.Hook) ([]*scm.Hook, []*scm.Hook) {
+	var convertedHooks []*scm.Hook
+	var notSupportedHooks []*scm.Hook
+	for _, hook := range hooks {
+		convertedHook, notSupportedHook := mapWebhook(hook)
+		if convertedHook != nil {
+			convertedHooks = append(convertedHooks, convertedHook)
+		}
+		if notSupportedHook != nil {
+			notSupportedHooks = append(notSupportedHooks, notSupportedHook)
+		}
+	}
+
+	return convertedHooks, notSupportedHooks
+}
+
+// mapWebhook converts the supported events and returns not supported events in a separate webhook
+func mapWebhook(hook *scm.Hook) (*scm.Hook, *scm.Hook) {
+	events, notSupportedEvents := mapEvents(hook.Events)
+
+	var convertedHook *scm.Hook
+	var notSupportedHook *scm.Hook
+
+	if len(events) != 0 {
+		convertedHook = &scm.Hook{
+			ID:     hook.ID,
+			Name:   hook.Name,
+			Target: hook.Target,
+			Active: hook.Active,
+			Events: enum.ToStringSlice(events),
+		}
+	}
+
+	if len(notSupportedEvents) != 0 {
+		notSupportedHook = &scm.Hook{
+			ID:     hook.ID,
+			Name:   hook.Name,
+			Target: hook.Target,
+			Active: hook.Active,
+			Events: notSupportedEvents,
+		}
+	}
+	return convertedHook, notSupportedHook
+}
+
+func mapEvents(triggers []string) ([]enum.WebhookTrigger, []string) {
+	var events []enum.WebhookTrigger
+	var notSupportedEvents []string
+
+	for _, v := range triggers {
+		switch v {
+		case "repo:refs_changed":
+			events = append(events, enum.WebhookTriggerBranchCreated, enum.WebhookTriggerBranchDeleted, enum.WebhookTriggerBranchUpdated, enum.WebhookTriggerTagCreated, enum.WebhookTriggerTagDeleted, enum.WebhookTriggerTagUpdated)
+		case "pr:opened":
+			events = append(events, enum.WebhookTriggerPullReqCreated, enum.WebhookTriggerPullReqReopened)
+		case "pr:merged":
+			events = append(events, enum.WebhookTriggerPullReqMerged)
+		case "pr:declined":
+			events = append(events, enum.WebhookTriggerPullReqClosed)
+		case "pr:from_ref_updated":
+			events = append(events, enum.WebhookTriggerPullReqBranchUpdated)
+		case "pr:comment:added":
+			events = append(events, enum.WebhookTriggerPullReqCommentCreated)
+		default:
+			notSupportedEvents = append(notSupportedEvents, v)
+		}
+	}
+
+	return events, notSupportedEvents
 }

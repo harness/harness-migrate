@@ -15,14 +15,23 @@
 package common
 
 const (
-	MsgStartPrImport            = "Starting Pull request import for repo %s"
-	MsgCompletePrImport         = "Pull request import finished for repo %s with total %d PRs"
-	MsgCheckpointLoadPr         = "Pull request import finished for repo %s with total %d PRs from checkpoint"
+	MsgStartPrExport            = "Starting Pull request export for repo %s"
+	MsgCompletePrExport         = "Pull request export finished for repo %s with total %d PRs"
+	MsgCheckpointLoadPr         = "Pull request export finished for repo %s with total %d PRs from checkpoint"
 	MsgStartRepoList            = "starting repositories listing for %s org %s"
 	MsgCompleteRepoList         = "repositories listing complete. Total repos: %d"
-	MsgStartPrCommentsImport    = "Starting PR comments import for repo %s pull request %d"
-	MsgCompletePrCommentsImport = "PR comments import finished for repo %s pull request %d with total %d comments"
+	MsgStartGitClone            = "starting clone git repo for %q"
+	MsgRepoAlreadyExists        = "cloned git repo for %s already exists"
+	MsgCompleteGitClone         = "git clone finished for %q"
+	MsgGitFetchRef              = "fetching pull request references for %s"
+	MsgCompleteGitFetchRef      = "fetched pull request references for %s"
+	MsgStartWebhookList         = "starting listing webhooks for repo %s"
+	MsgStartPrCommentsExport    = "Starting PR comments export for repo %s pull request %d"
+	MsgCompletePrCommentsExport = "PR comments export finished for repo %s pull request %d with total %d comments"
 
+	ErrGitClone             = "cannot clone the git repo %q due to error: %w"
+	ErrGitFetch             = "cannot fetch repo pull request references for %s: %w"
+	ErrWebhookList          = "cannot list webhooks for repo %s: %w"
 	ErrRepoList             = "cannot fetch repositories due to error :%v"
 	ErrCheckpointDataRead   = "cannot read checkpoint data: %s"
 	ErrCheckpointPrDataSave = "cannot save checkpoint pr data"

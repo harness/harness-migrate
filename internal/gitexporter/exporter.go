@@ -24,6 +24,7 @@ import (
 
 	"github.com/harness/harness-migrate/internal/codeerror"
 	"github.com/harness/harness-migrate/internal/common"
+	"github.com/harness/harness-migrate/internal/tracer"
 	"github.com/harness/harness-migrate/internal/types"
 	"github.com/harness/harness-migrate/internal/util"
 
@@ -38,10 +39,26 @@ const (
 type Exporter struct {
 	exporter    Interface
 	zipLocation string
+	ScmLogin    string
+	ScmToken    string
+
+	Tracer tracer.Tracer
 }
 
-func NewExporter(exporter Interface, location string) Exporter {
-	return Exporter{exporter: exporter, zipLocation: location}
+func NewExporter(
+	exporter Interface,
+	location string,
+	scmLogin string,
+	scmToken string,
+	tracer tracer.Tracer,
+) Exporter {
+	return Exporter{
+		exporter:    exporter,
+		zipLocation: location,
+		ScmLogin:    scmLogin,
+		ScmToken:    scmToken,
+		Tracer:      tracer,
+	}
 }
 
 // Export calls exporter methods in order and serialize an object for import.
@@ -51,9 +68,9 @@ func (e *Exporter) Export(ctx context.Context) {
 	if err != nil {
 		panic(fmt.Sprintf(common.PanicCannotCreateFolder, err))
 	}
-	data, _ := e.getData(ctx)
+	data, _ := e.getData(ctx, path)
 	for _, repo := range data {
-		err = e.writeJsonForRepo(mapRepoData(repo))
+		err = e.writeJsonForRepo(mapRepoData(repo), path)
 		if err != nil {
 			panic(fmt.Sprintf(common.PanicWritingFileData, err))
 		}
@@ -92,17 +109,31 @@ func splitArray(arr []*externalTypes.PullRequestData) [][]*externalTypes.PullReq
 	return chunks
 }
 
-func (e *Exporter) writeJsonForRepo(repo *externalTypes.RepositoryData) error {
+func (e *Exporter) writeJsonForRepo(repo *externalTypes.RepositoryData, path string) error {
 	repoJson, _ := util.GetJson(repo.Repository)
-	pathRepo := filepath.Join(".", e.zipLocation, repo.Repository.Slug)
-	err := util.CreateFolder(pathRepo)
-	if err != nil {
-		return fmt.Errorf("cannot create folder")
-	}
 
-	err = util.WriteFile(filepath.Join(pathRepo, externalTypes.InfoFileName), repoJson)
+	pathRepo := filepath.Join(path, repo.Repository.Slug)
+	err := util.WriteFile(filepath.Join(pathRepo, externalTypes.InfoFileName), repoJson)
 	if err != nil {
 		return err
+	}
+	if len(repo.Webhooks.ConvertedHooks) != 0 {
+		webhookPath := filepath.Join(pathRepo, externalTypes.WebhookDir)
+		err = util.CreateFolder(webhookPath)
+		if err != nil {
+			return err
+		}
+		for i, hook := range repo.Webhooks.ConvertedHooks {
+			hookJson, err := util.GetJson(hook)
+			if err != nil {
+				log.Printf("cannot serialize into json: %v", err)
+			}
+			webhookFilePath := fmt.Sprintf("webhook%d.json", i)
+			err = util.WriteFile(filepath.Join(webhookPath, webhookFilePath), hookJson)
+			if err != nil {
+				return err
+			}
+		}
 	}
 
 	if len(repo.PullRequestData) == 0 {
@@ -110,7 +141,7 @@ func (e *Exporter) writeJsonForRepo(repo *externalTypes.RepositoryData) error {
 	}
 
 	prDataInSize := splitArray(repo.PullRequestData)
-	pathPR := filepath.Join(pathRepo, externalTypes.PRFolderName)
+	pathPR := filepath.Join(pathRepo, externalTypes.PRDir)
 	err = util.CreateFolder(pathPR)
 	if err != nil {
 		return err
@@ -133,8 +164,10 @@ func (e *Exporter) writeJsonForRepo(repo *externalTypes.RepositoryData) error {
 	return nil
 }
 
-func (e *Exporter) getData(ctx context.Context) ([]*types.RepoData, error) {
+func (e *Exporter) getData(ctx context.Context, path string) ([]*types.RepoData, error) {
 	repoData := make([]*types.RepoData, 0)
+	var notSupportedErr *codeerror.OpNotSupportedError
+
 	// 1. list all the repos for the given org
 	repositories, err := e.exporter.ListRepositories(ctx, types.ListRepoOptions{})
 	if err != nil {
@@ -148,6 +181,33 @@ func (e *Exporter) getData(ctx context.Context) ([]*types.RepoData, error) {
 
 	// 2. list pr per repo
 	for i, repo := range repositories {
+		repoPath := filepath.Join(path, repo.RepoSlug)
+		err := util.CreateFolder(repoPath)
+		if err != nil {
+			panic(fmt.Sprintf(common.PanicWritingFileData, err))
+		}
+
+		gitRepo, err := e.CloneRepository(ctx, repo.Repository, repoPath, repo.RepoSlug, e.Tracer)
+		if err != nil {
+			return nil, fmt.Errorf("cannot clone the git repo for %s: %w", repo.RepoSlug, err)
+		}
+
+		err = e.exporter.FetchPullRequestRefs(ctx, gitRepo, repo.RepoSlug, e.ScmLogin, e.ScmToken)
+		if err != nil {
+			return nil, fmt.Errorf("cannot fetch the repo pull request references for %s: %w", repo.RepoSlug, err)
+		}
+
+		// 3. get all webhooks for each repo
+		webhooks, err := e.exporter.ListWebhooks(ctx, repo.RepoSlug, e, types.WebhookListOptions{})
+		if errors.As(err, &notSupportedErr) {
+			return repoData, nil
+		}
+		if err != nil {
+			log.Default().Printf("encountered error in getting webhooks: %w", err)
+		}
+		repoData[i].Webhooks = webhooks
+
+		// 4. get all data for each pr
 		prs, err := e.exporter.ListPullRequests(ctx, repo.RepoSlug, types.PullRequestListOptions{})
 		var notSupportedErr *codeerror.OpNotSupportedError
 		if errors.As(err, &notSupportedErr) {
@@ -158,7 +218,6 @@ func (e *Exporter) getData(ctx context.Context) ([]*types.RepoData, error) {
 			return nil, fmt.Errorf("encountered error in getting pr: %w", err)
 		}
 
-		// 3. get all data for each pr
 		prData := make([]*types.PullRequestData, len(prs))
 
 		for j, pr := range prs {
@@ -189,9 +248,14 @@ func mapRepoData(repoData *types.RepoData) *externalTypes.RepositoryData {
 
 	d.PullRequestData = make([]*externalTypes.PullRequestData, len(repoData.PullRequestData))
 	for i, prData := range repoData.PullRequestData {
-		d.PullRequestData[i] = &externalTypes.PullRequestData{}
-		d.PullRequestData[i].PullRequest.PullRequest = prData.PullRequest.PullRequest
+		d.PullRequestData[i] = new(externalTypes.PullRequestData)
+		d.PullRequestData[i].PullRequest = externalTypes.PR{
+			PullRequest: prData.PullRequest.PullRequest,
+		}
 		// todo: map comment data
 	}
+
+	d.Webhooks.ConvertedHooks = repoData.Webhooks.ConvertedHooks
+
 	return d
 }

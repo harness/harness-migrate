@@ -88,7 +88,7 @@ func (c *exportCommand) run(*kingpin.ParseContext) error {
 	// extract the data
 	e := stash.New(client, c.stashOrg, checkpointManager, tracer_)
 
-	exporter := gitexporter.NewExporter(e, c.file)
+	exporter := gitexporter.NewExporter(e, c.file, c.stashUser, c.stashToken, tracer_)
 	exporter.Export(ctx)
 	return nil
 }

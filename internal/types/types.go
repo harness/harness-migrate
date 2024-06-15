@@ -62,10 +62,7 @@ type (
 	PullRequestListOptions struct {
 	}
 
-	ListOptions struct {
-		URL  string
-		Page int
-		Size int
+	WebhookListOptions struct {
 	}
 
 	RepoResponse struct {
@@ -73,10 +70,26 @@ type (
 		RepoSlug string
 	}
 
+	ListOptions struct {
+		URL  string
+		Page int
+		Size int
+	}
+
 	PRResponse struct {
 		scm.PullRequest
 	}
 
+	WebhookData struct {
+		ConvertedHooks []*scm.Hook
+	}
+
+	RepoData struct {
+		Repository      RepoResponse
+		PullRequestData []*PullRequestData
+		Webhooks        WebhookData
+	}
+	
 	CommentMetadata struct {
 		ParentID     int
 		Path         string
@@ -89,11 +102,6 @@ type (
 	PRComment struct {
 		scm.Comment
 		CommentMetadata
-	}
-
-	RepoData struct {
-		Repository      RepoResponse
-		PullRequestData []*PullRequestData
 	}
 
 	PullRequestData struct {

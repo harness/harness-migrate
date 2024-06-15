@@ -18,12 +18,16 @@ import (
 	"context"
 
 	"github.com/harness/harness-migrate/internal/types"
+
+	git "github.com/go-git/go-git/v5"
 )
 
 // Interface helps to support a generic way of doing export for all git providers
 type Interface interface {
 	ListRepositories(ctx context.Context, opts types.ListRepoOptions) ([]types.RepoResponse, error)
 	ListPullRequests(ctx context.Context, repoSlug string, opts types.PullRequestListOptions) ([]types.PRResponse, error)
-	PullRequestReviewers(ctx context.Context, prNumber int) error
 	ListPullRequestComments(ctx context.Context, repoSlug string, prNumber int, opts types.ListOptions) ([]*types.PRComment, error)
+	PullRequestReviewers(ctx context.Context, prNumber int) error
+	FetchPullRequestRefs(ctx context.Context, repo *git.Repository, repoSlug string, scmLogin string, scmToken string) error
+	ListWebhooks(ctx context.Context, repoSlug string, logger Logger, opts types.WebhookListOptions) (types.WebhookData, error)
 }

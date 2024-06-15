@@ -170,6 +170,18 @@ func WriteFile(path string, prJson []byte) error {
 	return nil
 }
 
+func AppendFile(path string, data []byte) error {
+	file, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+	if _, err := file.Write(data); err != nil {
+		return err
+	}
+	return nil
+}
+
 func GetJson(data any) ([]byte, error) {
 	jsonString, err := json.MarshalIndent(data, "", "    ")
 	if err != nil {

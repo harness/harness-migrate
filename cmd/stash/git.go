@@ -18,6 +18,7 @@ import (
 	"context"
 	"net/http"
 	"net/url"
+	"strings"
 
 	"github.com/harness/harness-migrate/cmd/util"
 	"github.com/harness/harness-migrate/internal/checkpoint"
@@ -36,10 +37,11 @@ type exportCommand struct {
 	trace bool
 	file  string
 
-	stashOrg   string
-	stashUser  string
-	stashToken string
-	stashUrl   string
+	org           string
+	srcRepository string
+	user          string
+	token         string
+	url           string
 
 	checkpoint bool
 }
@@ -54,7 +56,7 @@ func (c *exportCommand) run(*kingpin.ParseContext) error {
 	ctx = slog.NewContext(ctx, log)
 
 	// create the stash client (url, token, org)
-	client, err := scmstash.New(c.stashUrl)
+	client, err := scmstash.New(c.url)
 	if err != nil {
 		return err
 	}
@@ -63,8 +65,8 @@ func (c *exportCommand) run(*kingpin.ParseContext) error {
 	// the PRIVATE_TOKEN header variable.
 	t := &transport.BasicAuth{
 		Base:     nil,
-		Username: c.stashUser,
-		Password: c.stashToken,
+		Username: c.user,
+		Password: c.token,
 	}
 
 	client.Client = &http.Client{
@@ -85,10 +87,15 @@ func (c *exportCommand) run(*kingpin.ParseContext) error {
 		}
 	}
 
-	// extract the data
-	e := stash.New(client, c.stashOrg, checkpointManager, tracer_)
+	var repository string
+	if c.srcRepository != "" {
+		repository = strings.Trim(c.srcRepository, " ")
+	}
 
-	exporter := gitexporter.NewExporter(e, c.file, c.stashUser, c.stashToken, tracer_)
+	// extract the data
+	e := stash.New(client, c.org, repository, checkpointManager, tracer_)
+
+	exporter := gitexporter.NewExporter(e, c.file, c.user, c.token, tracer_)
 	exporter.Export(ctx)
 	return nil
 }
@@ -108,22 +115,26 @@ func registerGit(app *kingpin.CmdClause) {
 	cmd.Flag("host", "stash host url").
 		Required().
 		Envar("stash_HOST").
-		StringVar(&c.stashUrl)
+		StringVar(&c.url)
 
 	cmd.Flag("org", "stash organization").
 		Required().
 		Envar("stash_ORG").
-		StringVar(&c.stashOrg)
+		StringVar(&c.org)
+
+	cmd.Flag("src_repository", "optional name of the source repository to export").
+		Envar("stash_SRC_REPOSITORY").
+		StringVar(&c.srcRepository)
 
 	cmd.Flag("token", "stash token").
 		Required().
 		Envar("stash_TOKEN").
-		StringVar(&c.stashToken)
+		StringVar(&c.token)
 
 	cmd.Flag("username", "stash username").
 		Required().
 		Envar("stash_USERNAME").
-		StringVar(&c.stashUser)
+		StringVar(&c.user)
 
 	cmd.Flag("resume", "resume from last checkpoint").
 		Default("false").

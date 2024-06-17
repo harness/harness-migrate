@@ -46,6 +46,17 @@ func (e *Export) ListRepositories(
 	opts := scm.ListOptions{Size: 25}
 	var allRepos []*scm.Repository
 
+	if e.stashRepository != "" {
+		repoSlug := strings.Join([]string{e.stashOrg, e.stashRepository}, "/")
+		repo, _, err := e.stash.Repositories.Find(ctx, repoSlug)
+		if err != nil {
+			e.tracer.LogError(common.ErrRepoList, err)
+			return nil, fmt.Errorf("failed to get the repo %s: %w", repoSlug, err)
+		}
+		e.tracer.Stop(common.MsgCompleteRepoList, 1)
+		return mapRepository([]*scm.Repository{repo}), nil
+	}
+
 	for {
 		repos, resp, err := e.stash.Repositories.ListNamespace(ctx, e.stashOrg, opts)
 		if err != nil {
@@ -58,8 +69,8 @@ func (e *Export) ListRepositories(
 		}
 		opts.Page = resp.Page.Next
 	}
-	e.tracer.Stop(common.MsgCompleteRepoList, len(allRepos))
 
+	e.tracer.Stop(common.MsgCompleteRepoList, len(allRepos))
 	return mapRepository(allRepos), nil
 }
 

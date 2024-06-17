@@ -221,7 +221,7 @@ func (e *Exporter) getData(ctx context.Context, path string) ([]*types.RepoData,
 		prData := make([]*types.PullRequestData, len(prs))
 
 		for j, pr := range prs {
-			comments, err := e.exporter.ListPullRequestComments(ctx, repo.RepoSlug, pr.Number, types.ListOptions{Page: 1, Size: 2})
+			comments, err := e.exporter.ListPullRequestComments(ctx, repo.RepoSlug, pr.Number, types.ListOptions{Page: 1})
 			if err != nil {
 				return nil, fmt.Errorf("encountered error in getting comments: %w", err)
 			}

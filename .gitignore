@@ -6,3 +6,4 @@ harness-migrate
 /data.json
 /release
 .idea
+migrator

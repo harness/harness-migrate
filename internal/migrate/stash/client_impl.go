@@ -21,9 +21,9 @@ type (
 	}
 
 	Export struct {
-		stash    *wrapper
-		stashOrg string
-		stashRepository string
+		stash      *wrapper
+		org        string
+		repository string
 
 		checkpointManager *checkpoint.CheckpointManager
 
@@ -40,16 +40,23 @@ func New(
 ) *Export {
 	return &Export{
 		stash:             &wrapper{client},
-		stashOrg:          org,
-		stashRepository:   repo,
+		org:               org,
+		repository:        repo,
 		checkpointManager: checkpointer,
 		tracer:            tracer,
 	}
 }
 
-func (c *wrapper) ListPRComments(ctx context.Context, repoSlug string, prNumber int, opts types.ListOptions, tracer tracer.Tracer) ([]*types.PRComment, *scm.Response, error) {
+func (c *wrapper) ListPRComments(
+	ctx context.Context,
+	repoSlug string,
+	prNumber int,
+	opts types.ListOptions,
+	tracer tracer.Tracer,
+) ([]*types.PRComment, *scm.Response, error) {
 	namespace, name := scm.Split(repoSlug)
-	path := fmt.Sprintf("rest/api/1.0/projects/%s/repos/%s/pull-requests/%d/activities?%s", namespace, name, prNumber, encodeListOptions(opts))
+	path := fmt.Sprintf("rest/api/1.0/projects/%s/repos/%s/pull-requests/%d/activities?%s",
+		namespace, name, prNumber, encodeListOptions(opts))
 	out := new(activities)
 	res, err := c.do(ctx, "GET", path, out)
 	if !out.pagination.LastPage {
@@ -59,10 +66,15 @@ func (c *wrapper) ListPRComments(ctx context.Context, repoSlug string, prNumber 
 	return convertPullRequestCommentsList(out.Values, tracer), res, err
 }
 
-func (c *wrapper) ListBranchRules(ctx context.Context, repoSlug string, opts types.ListOptions) ([]*types.BranchRule, *scm.Response, error) {
+func (c *wrapper) ListBranchRules(
+	ctx context.Context,
+	repoSlug string,
+	opts types.ListOptions,
+) ([]*types.BranchRule, *scm.Response, error) {
 	namespace, name := scm.Split(repoSlug)
 	branchModels, _, _ := c.listBranchModels(ctx, namespace, name)
-	path := fmt.Sprintf("rest/branch-permissions/2.0/projects/%s/repos/%s/restrictions?%s", namespace, name, encodeListOptions(opts))
+	path := fmt.Sprintf("rest/branch-permissions/2.0/projects/%s/repos/%s/restrictions?%s",
+		namespace, name, encodeListOptions(opts))
 	out := new(branchPermissions)
 	res, err := c.do(ctx, "GET", path, out)
 	if !out.pagination.LastPage {
@@ -72,7 +84,11 @@ func (c *wrapper) ListBranchRules(ctx context.Context, repoSlug string, opts typ
 	return convertBranchRulesList(out.Values, branchModels), res, err
 }
 
-func (c *wrapper) listBranchModels(ctx context.Context, namespace string, repoName string) (map[string]modelValue, *scm.Response, error) {
+func (c *wrapper) listBranchModels(
+	ctx context.Context,
+	namespace string,
+	repoName string,
+) (map[string]modelValue, *scm.Response, error) {
 	path := fmt.Sprintf("rest/branch-utils/1.0/projects/%s/repos/%s/branchmodel/configuration", namespace, repoName)
 	out := new(branchModels)
 	res, err := c.do(ctx, "GET", path, out)

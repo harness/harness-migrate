@@ -11,5 +11,5 @@ import (
 
 type Client interface {
 	ListPRComments(ctx context.Context, repoSlug string, prNumber int, opts types.ListOptions, tracer tracer.Tracer) ([]*types.PRComment, *scm.Response, error)
-	ListBranchPermissions(ctx context.Context, repoSlug string, opts types.ListOptions) ([]*types.BranchRule, *scm.Response, error)
+	ListBranchRules(ctx context.Context, repoSlug string, opts types.ListOptions) ([]*types.BranchRule, *scm.Response, error)
 }

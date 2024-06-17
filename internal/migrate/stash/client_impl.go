@@ -59,7 +59,27 @@ func (c *wrapper) ListPRComments(ctx context.Context, repoSlug string, prNumber 
 	return convertPullRequestCommentsList(out.Values, tracer), res, err
 }
 
-func (c *wrapper) do(ctx context.Context, method, path string, out interface{}) (*scm.Response, error) {
+func (c *wrapper) ListBranchRules(ctx context.Context, repoSlug string, opts types.ListOptions) ([]*types.BranchRule, *scm.Response, error) {
+	namespace, name := scm.Split(repoSlug)
+	branchModels, _, _ := c.listBranchModels(ctx, namespace, name)
+	path := fmt.Sprintf("rest/branch-permissions/2.0/projects/%s/repos/%s/restrictions?%s", namespace, name, encodeListOptions(opts))
+	out := new(branchPermissions)
+	res, err := c.do(ctx, "GET", path, out)
+	if !out.pagination.LastPage {
+		res.Page.First = 1
+		res.Page.Next = opts.Page + 1
+	}
+	return convertBranchRulesList(out.Values, branchModels), res, err
+}
+
+func (c *wrapper) listBranchModels(ctx context.Context, namespace string, repoName string) (map[string]modelValue, *scm.Response, error) {
+	path := fmt.Sprintf("rest/branch-utils/1.0/projects/%s/repos/%s/branchmodel/configuration", namespace, repoName)
+	out := new(branchModels)
+	res, err := c.do(ctx, "GET", path, out)
+	return convertBranchModelsMap(*out), res, err
+}
+
+func (c *wrapper) do(ctx context.Context, method, path string, out any) (*scm.Response, error) {
 	req := &scm.Request{
 		Method: method,
 		Path:   path,

@@ -27,7 +27,6 @@ import (
 	"github.com/harness/harness-migrate/internal/tracer"
 	"github.com/harness/harness-migrate/internal/types"
 	"github.com/harness/harness-migrate/internal/util"
-
 	externalTypes "github.com/harness/harness-migrate/types"
 )
 
@@ -68,7 +67,10 @@ func (e *Exporter) Export(ctx context.Context) {
 	if err != nil {
 		panic(fmt.Sprintf(common.PanicCannotCreateFolder, err))
 	}
-	data, _ := e.getData(ctx, path)
+	data, err := e.getData(ctx, path)
+	if err != nil {
+		panic(fmt.Sprintf(common.PanicFetchingFileData, err))
+	}
 	for _, repo := range data {
 		err = e.writeJsonForRepo(mapRepoData(repo), path)
 		if err != nil {
@@ -136,6 +138,17 @@ func (e *Exporter) writeJsonForRepo(repo *externalTypes.RepositoryData, path str
 		}
 	}
 
+	rulesJson, err := util.GetJson(repo.BranchRules)
+	if err != nil {
+		log.Printf("cannot serialize branch rules into json: %v", err)
+	}
+	if len(repo.BranchRules) != 0 {
+		err = util.WriteFile(filepath.Join(pathRepo, externalTypes.BranchRulesFileName), rulesJson)
+		if err != nil {
+			return fmt.Errorf("couldn't write branch rules into a file: %w", err)
+		}
+	}
+
 	if len(repo.PullRequestData) == 0 {
 		return nil
 	}
@@ -169,7 +182,7 @@ func (e *Exporter) getData(ctx context.Context, path string) ([]*types.RepoData,
 	var notSupportedErr *codeerror.OpNotSupportedError
 
 	// 1. list all the repos for the given org
-	repositories, err := e.exporter.ListRepositories(ctx, types.ListRepoOptions{})
+	repositories, err := e.exporter.ListRepositories(ctx, types.ListOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("cannot list repositories: %w", err)
 	}
@@ -207,19 +220,23 @@ func (e *Exporter) getData(ctx context.Context, path string) ([]*types.RepoData,
 		}
 		repoData[i].Webhooks = webhooks
 
-		// 4. get all data for each pr
+		// 4. get all branch rules for each repo
+		branchRules, err := e.exporter.ListBranchRules(ctx, repo.RepoSlug, types.ListOptions{Page: 1})
+		if err != nil {
+			return nil, fmt.Errorf("encountered error in getting branch rules: %w", err)
+		}
+		repoData[i].BranchRules = branchRules
+
+		// 5. get all data for each pr
 		prs, err := e.exporter.ListPullRequests(ctx, repo.RepoSlug, types.PullRequestListOptions{})
-		var notSupportedErr *codeerror.OpNotSupportedError
 		if errors.As(err, &notSupportedErr) {
 			return repoData, nil
 		}
 		if err != nil {
-			log.Default().Printf("encountered error in getting pr: %q", err)
 			return nil, fmt.Errorf("encountered error in getting pr: %w", err)
 		}
 
 		prData := make([]*types.PullRequestData, len(prs))
-
 		for j, pr := range prs {
 			comments, err := e.exporter.ListPullRequestComments(ctx, repo.RepoSlug, pr.Number, types.ListOptions{Page: 1})
 			if err != nil {
@@ -227,7 +244,6 @@ func (e *Exporter) getData(ctx context.Context, path string) ([]*types.RepoData,
 			}
 			prData[j] = mapPRData(pr, comments)
 		}
-
 		repoData[i].PullRequestData = prData
 	}
 
@@ -245,6 +261,7 @@ func mapRepoData(repoData *types.RepoData) *externalTypes.RepositoryData {
 	d := new(externalTypes.RepositoryData)
 	d.Repository.Slug = repoData.Repository.RepoSlug
 	d.Repository.Repository = repoData.Repository.Repository
+	d.BranchRules = MapBranchRules(repoData.BranchRules)
 
 	d.PullRequestData = make([]*externalTypes.PullRequestData, len(repoData.PullRequestData))
 	for i, prData := range repoData.PullRequestData {
@@ -252,7 +269,7 @@ func mapRepoData(repoData *types.RepoData) *externalTypes.RepositoryData {
 		d.PullRequestData[i].PullRequest = externalTypes.PR{
 			PullRequest: prData.PullRequest.PullRequest,
 		}
-		// todo: map comment data
+		d.PullRequestData[i].Comments = MapPRComment(prData.Comments)
 	}
 
 	d.Webhooks.ConvertedHooks = repoData.Webhooks.ConvertedHooks

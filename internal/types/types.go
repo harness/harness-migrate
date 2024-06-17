@@ -56,10 +56,11 @@ type (
 		Value string `json:"value,omitempty"`
 	}
 
-	ListRepoOptions struct {
-	}
-
 	PullRequestListOptions struct {
+		Page   int
+		Size   int
+		Open   bool
+		Closed bool
 	}
 
 	WebhookListOptions struct {
@@ -88,8 +89,9 @@ type (
 		Repository      RepoResponse
 		PullRequestData []*PullRequestData
 		Webhooks        WebhookData
+		BranchRules     []*BranchRule
 	}
-	
+
 	CommentMetadata struct {
 		ParentID     int
 		Path         string
@@ -107,5 +109,18 @@ type (
 	PullRequestData struct {
 		PullRequest PRResponse
 		Comments    []*PRComment
+	}
+
+	BranchRule struct {
+		ID               int
+		Name             string
+		Type             string
+		IncludeDefault   bool
+		Branches         []string
+		IncludedPatterns []string
+		ExcludedPatterns []string
+		BypassUsers      []string
+		BypassGroups     []string
+		BypassKeys       []string
 	}
 )

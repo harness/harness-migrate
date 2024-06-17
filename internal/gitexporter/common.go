@@ -16,6 +16,7 @@ package gitexporter
 
 import (
 	"github.com/harness/harness-migrate/internal/types"
+	externalTypes "github.com/harness/harness-migrate/types"
 
 	"github.com/drone/go-scm/scm"
 )
@@ -24,6 +25,36 @@ func MapPullRequest(prs []*scm.PullRequest) []types.PRResponse {
 	r := make([]types.PRResponse, len(prs))
 	for i, pr := range prs {
 		r[i] = types.PRResponse{PullRequest: *pr}
+	}
+	return r
+}
+
+func MapPRComment(comments []*types.PRComment) []externalTypes.Comment {
+	r := make([]externalTypes.Comment, len(comments))
+	for i, c := range comments {
+		r[i] = externalTypes.Comment{
+			Comment:         c.Comment,
+			CommentMetadata: externalTypes.CommentMetadata(c.CommentMetadata),
+		}
+	}
+	return r
+}
+
+func MapBranchRules(rules []*types.BranchRule) []externalTypes.BranchRule {
+	r := make([]externalTypes.BranchRule, len(rules))
+	for i, b := range rules {
+		r[i] = externalTypes.BranchRule{
+			ID:               b.ID,
+			Name:             b.Name,
+			Type:             b.Type,
+			IncludeDefault:   b.IncludeDefault,
+			Branches:         b.Branches,
+			IncludedPatterns: b.IncludedPatterns,
+			ExcludedPatterns: b.ExcludedPatterns,
+			BypassUsers:      b.BypassUsers,
+			BypassGroups:     b.BypassGroups,
+			BypassKeys:       b.BypassKeys,
+		}
 	}
 	return r
 }

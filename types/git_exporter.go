@@ -8,42 +8,59 @@ const (
 	PRDir                = "pr"
 	GitDir               = "git"
 	WebhookDir           = "webhooks"
+	BranchRulesFileName  = "rules.json"
 )
 
-type Repository struct {
-	scm.Repository
-	Slug string
-}
+type (
+	Repository struct {
+		scm.Repository
+		Slug string
+	}
 
-type PR struct {
-	scm.PullRequest
-}
+	PR struct {
+		scm.PullRequest
+	}
 
-type CommentMetadata struct {
-	ParentID     int
-	Path         string
-	Line         int
-	LineSpan     int
-	SourceSha    string
-	MergeBaseSha string
-}
+	CommentMetadata struct {
+		ParentID     int
+		Path         string
+		Line         int
+		LineSpan     int
+		SourceSha    string
+		MergeBaseSha string
+	}
 
-type PRComment struct {
-	scm.Comment
-	CommentMetadata
-}
+	Comment struct {
+		scm.Comment
+		CommentMetadata
+	}
 
-type RepositoryData struct {
-	Repository      Repository
-	PullRequestData []*PullRequestData
-	Webhooks        WebhookData
-}
+	BranchRule struct {
+		ID               int
+		Name             string
+		Type             string
+		IncludeDefault   bool
+		Branches         []string
+		IncludedPatterns []string
+		ExcludedPatterns []string
+		BypassUsers      []string
+		BypassGroups     []string
+		BypassKeys       []string
+	}
 
-type PullRequestData struct {
-	PullRequest PR
-	Comments    []PRComment
-}
+	RepositoryData struct {
+		Repository      Repository
+		PullRequestData []*PullRequestData
+		BranchRules     []BranchRule
+		Webhooks        WebhookData
+	}
 
-type WebhookData struct {
-	ConvertedHooks []*scm.Hook
-}
+	PullRequestData struct {
+		PullRequest PR
+		Comments    []Comment
+	}
+
+	WebhookData struct {
+		ConvertedHooks []*scm.Hook
+	}
+)

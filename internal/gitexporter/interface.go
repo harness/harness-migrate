@@ -24,10 +24,11 @@ import (
 
 // Interface helps to support a generic way of doing export for all git providers
 type Interface interface {
-	ListRepositories(ctx context.Context, opts types.ListRepoOptions) ([]types.RepoResponse, error)
+	ListRepositories(ctx context.Context, opts types.ListOptions) ([]types.RepoResponse, error)
 	ListPullRequests(ctx context.Context, repoSlug string, opts types.PullRequestListOptions) ([]types.PRResponse, error)
 	ListPullRequestComments(ctx context.Context, repoSlug string, prNumber int, opts types.ListOptions) ([]*types.PRComment, error)
 	PullRequestReviewers(ctx context.Context, prNumber int) error
 	FetchPullRequestRefs(ctx context.Context, repo *git.Repository, repoSlug string, scmLogin string, scmToken string) error
 	ListWebhooks(ctx context.Context, repoSlug string, logger Logger, opts types.WebhookListOptions) (types.WebhookData, error)
+	ListBranchRules(ctx context.Context, repoSlug string, opts types.ListOptions) ([]*types.BranchRule, error)
 }

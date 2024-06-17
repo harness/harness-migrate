@@ -86,4 +86,58 @@ type (
 			Deletable bool `json:"deletable"`
 		} `json:"permittedOperations"`
 	}
+
+	matcher struct {
+		ID        string `json:"id"`
+		DisplayID string `json:"displayId"`
+		Type      struct {
+			ID   string `json:"id"`
+			Name string `json:"name"`
+		} `json:"type"`
+		Active bool `json:"active"`
+	}
+
+	scope struct {
+		Type       string `json:"type"`
+		ResourceID int    `json:"resourceId"`
+	}
+
+	branchPermission struct {
+		ID         int      `json:"id"`
+		Scope      scope    `json:"scope"`
+		Type       string   `json:"type"`
+		Matcher    matcher  `json:"matcher"`
+		Users      []string `json:"users"`
+		Groups     []string `json:"groups"`
+		AccessKeys []string `json:"accessKeys"`
+	}
+
+	branchPermissions struct {
+		pagination
+		Values []*branchPermission `json:"values"`
+	}
+
+	modelBranch struct {
+		RefID      string `json:"refId"`
+		UseDefault bool   `json:"useDefault"`
+	}
+
+	modelCategory struct {
+		ID          string `json:"id"`
+		DisplayName string `json:"displayName"`
+		Enabled     bool   `json:"enabled"`
+		Prefix      string `json:"prefix"`
+	}
+
+	branchModels struct {
+		Development modelBranch     `json:"development"`
+		Production  modelBranch     `json:"production"`
+		Categories  []modelCategory `json:"types"`
+		Scope       scope           `json:"scope"`
+	}
+
+	modelValue struct {
+		modelBranch
+		Prefix string
+	}
 )

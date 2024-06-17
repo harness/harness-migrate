@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/url"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/harness/harness-migrate/internal/tracer"
@@ -14,11 +15,21 @@ import (
 )
 
 const (
-	defaultLimit = 25
-	COMMENTED    = "COMMENTED"
+	defaultLimit   = 25
+	COMMENTED      = "COMMENTED"
+	DEVELOPMENT    = "development"
+	PRODUCTION     = "production"
+	BUGFIX         = "BUGFIX"
+	FEATURE        = "FEATURE"
+	HOTFIX         = "HOTFIX"
+	RELEASE        = "RELEASE"
+	BRANCH         = "BRANCH"
+	PATTERN        = "PATTERN"
+	MODEL_BRANCH   = "MODEL_BRANCH"
+	MODEL_CATEGORY = "MODEL_CATEGORY"
 )
 
-func filterOutCommentActivities(from []interface{}, tracer tracer.Tracer) []prCommentActivity {
+func filterOutCommentActivities(from []any, tracer tracer.Tracer) []prCommentActivity {
 	to := []prCommentActivity{}
 	for i, activity := range from {
 		if activityMap, ok := activity.(map[string]any); ok {
@@ -41,7 +52,7 @@ func filterOutCommentActivities(from []interface{}, tracer tracer.Tracer) []prCo
 	return to
 }
 
-func convertPullRequestCommentsList(from []interface{}, tracer tracer.Tracer) []*types.PRComment {
+func convertPullRequestCommentsList(from []any, tracer tracer.Tracer) []*types.PRComment {
 	commentActivities := filterOutCommentActivities(from, tracer)
 	to := []*types.PRComment{}
 	for _, c := range commentActivities {
@@ -90,6 +101,67 @@ func convertPullRequestComment(from pullRequestComment, parentID int, anchor *co
 		}},
 		CommentMetadata: metadata,
 	}
+}
+
+func convertBranchRulesList(from []*branchPermission, m map[string]modelValue) []*types.BranchRule {
+	rules := []*types.BranchRule{}
+	for _, p := range from {
+		rules = append(rules, convertBranchRule(p, m))
+	}
+	return rules
+}
+
+func convertBranchRule(from *branchPermission, m map[string]modelValue) *types.BranchRule {
+	includeDefault := false
+	branches := []string{}
+	includedPatterns := []string{}
+	switch from.Matcher.Type.ID {
+	case BRANCH:
+		// displayID will give just branch name main and ID will give refs/heads/main
+		branches = append(branches, from.Matcher.DisplayID)
+	case PATTERN:
+		includedPatterns = append(includedPatterns, convertIntoGlobstar(from.Matcher.ID))
+	case MODEL_BRANCH:
+		v := m[from.Matcher.ID]
+		if v.UseDefault {
+			includeDefault = true
+		} else {
+			branches = append(branches, extractBranch(v.RefID))
+		}
+	case MODEL_CATEGORY:
+		includedPatterns = append(includedPatterns, convertIntoGlobstar(m[from.Matcher.ID].Prefix))
+	}
+	return &types.BranchRule{
+		ID:               from.ID,
+		Name:             from.Matcher.DisplayID,
+		Type:             from.Type,
+		IncludeDefault:   includeDefault,
+		Branches:         branches,
+		IncludedPatterns: includedPatterns,
+		BypassUsers:      from.Users,
+	}
+}
+
+func convertBranchModelsMap(from branchModels) map[string]modelValue {
+	m := map[string]modelValue{}
+	m[DEVELOPMENT] = modelValue{modelBranch: from.Development}
+	m[PRODUCTION] = modelValue{modelBranch: from.Production}
+	for _, c := range from.Categories {
+		m[c.ID] = modelValue{Prefix: c.Prefix}
+	}
+	return m
+}
+
+func convertIntoGlobstar(s string) string {
+	if strings.HasSuffix(s, "/") {
+		return s + "**"
+	}
+	return s
+}
+
+func extractBranch(b string) string {
+	parts := strings.Split(b, "/")
+	return parts[len(parts)-1]
 }
 
 func (e *Error) Error() string {

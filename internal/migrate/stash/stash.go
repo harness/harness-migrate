@@ -42,10 +42,10 @@ const (
 
 func (e *Export) ListRepositories(
 	ctx context.Context,
-	_ types.ListRepoOptions,
+	_ types.ListOptions,
 ) ([]types.RepoResponse, error) {
 	e.tracer.Start(common.MsgStartRepoList, "bitbucket", e.stashOrg)
-	opts := scm.ListOptions{Size: 25}
+	opts := scm.ListOptions{Page: 1, Size: 25}
 	var allRepos []*scm.Repository
 
 	if e.stashRepository != "" {
@@ -82,8 +82,8 @@ func (e *Export) ListPullRequests(
 	_ types.PullRequestListOptions,
 ) ([]types.PRResponse, error) {
 	e.tracer.Start(common.MsgStartPrExport, repoSlug)
+	opts := scm.PullRequestListOptions{Page: 1, Size: 25}
 	var allPrs []types.PRResponse
-	opts := scm.PullRequestListOptions{Size: 25}
 	msgPrExport := common.MsgCompletePrExport
 	defer func() {
 		e.tracer.Stop(msgPrExport, repoSlug, len(allPrs))
@@ -245,6 +245,31 @@ func (e *Export) ListPullRequestComments(
 	}
 
 	return allComments, nil
+}
+
+func (e *Export) ListBranchRules(
+	ctx context.Context,
+	repoSlug string,
+	opts types.ListOptions,
+) ([]*types.BranchRule, error) {
+	e.tracer.Start(common.MsgStartBranchRulesExport, repoSlug)
+	allRules := []*types.BranchRule{}
+	defer func() {
+		e.tracer.Stop(common.MsgCompleteBranchRulesExport, repoSlug, len(allRules))
+	}()
+	for {
+		rules, res, err := e.stash.ListBranchRules(ctx, repoSlug, opts)
+		if err != nil {
+			e.tracer.LogError(common.ErrBranchRulesList, repoSlug, err)
+			return nil, fmt.Errorf(common.ErrBranchRulesList, repoSlug, err)
+		}
+		allRules = append(allRules, rules...)
+		if res.Page.Next == 0 {
+			break
+		}
+		opts.Page = res.Page.Next
+	}
+	return allRules, nil
 }
 
 func (e *Export) ListWebhooks(

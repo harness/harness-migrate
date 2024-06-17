@@ -20,13 +20,13 @@ import (
 	"net/http"
 	"os"
 
-	scmgitlab "github.com/drone/go-scm/scm/driver/gitlab"
-	"github.com/drone/go-scm/scm/transport"
 	"github.com/harness/harness-migrate/cmd/util"
 	"github.com/harness/harness-migrate/internal/migrate/gitlab"
 	"github.com/harness/harness-migrate/internal/tracer"
 
 	"github.com/alecthomas/kingpin/v2"
+	scmgitlab "github.com/drone/go-scm/scm/driver/gitlab"
+	"github.com/drone/go-scm/scm/transport"
 	"golang.org/x/exp/slog"
 )
 

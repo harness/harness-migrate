@@ -20,13 +20,12 @@ import (
 	"os"
 
 	"github.com/harness/harness-migrate/cmd/util"
-
-	"golang.org/x/exp/slog"
-
-	"github.com/alecthomas/kingpin/v2"
 	"github.com/harness/harness-migrate/internal/migrate/circle"
 	"github.com/harness/harness-migrate/internal/migrate/circle/client"
 	"github.com/harness/harness-migrate/internal/tracer"
+
+	"github.com/alecthomas/kingpin/v2"
+	"golang.org/x/exp/slog"
 )
 
 type exportCommand struct {

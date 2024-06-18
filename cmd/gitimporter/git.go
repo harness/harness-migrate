@@ -123,28 +123,25 @@ func doUserFollowUp() (UserInvite, error) {
 func registerGitImporter(app *kingpin.CmdClause) {
 	c := new(gitImport)
 
-	cmd := app.Command("git-import", "import git data into harness/gitness").
-		Hidden().
-		Action(c.run)
+	cmd := app.Action(c.run)
 
 	cmd.Arg("filePath", "location of the zip file").
 		Required().
-		Envar("HARNESS_FILEPATH").
 		StringVar(&c.filePath)
 
 	cmd.Flag("harnessEndpoint", "url of harness code host").
 		Default("https://app.harness.io/").
-		Envar("HARNESS_HOST").
+		Envar("harness_HOST").
 		StringVar(&c.harnessEndpoint)
 
 	cmd.Flag("token", "harness api token").
 		Required().
-		Envar("HARNESS_TOKEN").
+		Envar("harness_TOKEN").
 		StringVar(&c.harnessToken)
 
 	cmd.Flag("space", "harness path where import should take place. Example: account/org/project").
 		Required().
-		Envar("HARNESS_TOKEN").
+		Envar("harness_SPACE").
 		StringVar(&c.harnessSpace)
 
 	// cmd.Flag("repo", "Required in case of single repo import which already exists.").

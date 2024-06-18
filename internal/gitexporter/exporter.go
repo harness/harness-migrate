@@ -22,6 +22,7 @@ import (
 	"log"
 	"path/filepath"
 
+	"github.com/harness/harness-migrate/internal/checkpoint"
 	"github.com/harness/harness-migrate/internal/codeerror"
 	"github.com/harness/harness-migrate/internal/common"
 	"github.com/harness/harness-migrate/internal/tracer"
@@ -33,6 +34,7 @@ import (
 const (
 	maxChunkSize = 25 * 1024 * 1024 // 25 MB
 	prFileName   = "pr%d.json"
+	zipFileName  = "harness.zip"
 )
 
 type Exporter struct {
@@ -76,6 +78,21 @@ func (e *Exporter) Export(ctx context.Context) {
 		if err != nil {
 			panic(fmt.Sprintf(common.PanicWritingFileData, err))
 		}
+	}
+
+	err = checkpoint.CleanupCheckpoint(path)
+	if err != nil {
+		log.Printf("error cleaning checkpoint: %v", err)
+	}
+
+	err = zipFolder(path)
+	if err != nil {
+		log.Printf("zipping error: %v", err)
+	}
+
+	err = deleteFolders(path)
+	if err != nil {
+		log.Printf("error cleaning up folder: %v", err)
 	}
 }
 
@@ -275,4 +292,25 @@ func mapRepoData(repoData *types.RepoData) *externalTypes.RepositoryData {
 	d.Webhooks.ConvertedHooks = repoData.Webhooks.ConvertedHooks
 
 	return d
+}
+
+func zipFolder(path string) error {
+	err := util.ZipFolder(path, getZipFilePath(path))
+	if err != nil {
+		return fmt.Errorf("error zipping folder: %w", err)
+	}
+	return nil
+}
+
+func getZipFilePath(path string) string {
+	return filepath.Join(path, zipFileName)
+}
+
+func deleteFolders(path string) error {
+	err := util.DeleteDirsExcept(path, getZipFilePath(path))
+	if err != nil {
+		return fmt.Errorf("error cleaning up already zipped folders: %w", err)
+	}
+
+	return nil
 }

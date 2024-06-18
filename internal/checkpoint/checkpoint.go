@@ -24,7 +24,7 @@ import (
 	"github.com/harness/harness-migrate/internal/util"
 )
 
-const checkpointFile = "checkpoint.ckpt"
+const filePath = "checkpoint.ckpt"
 
 // CheckpointManager manages the checkpoints for different types of data
 type CheckpointManager struct {
@@ -55,7 +55,7 @@ func (cm *CheckpointManager) SaveCheckpoint(key string, value any) error {
 		return fmt.Errorf("failed to marshal checkpoint: %v", err)
 	}
 
-	if err := util.WriteFile(filepath.Join(cm.checkpointLocation, checkpointFile), data); err != nil {
+	if err := util.WriteFile(filepath.Join(cm.checkpointLocation, filePath), data); err != nil {
 		return fmt.Errorf("failed to write checkpoint file: %v", err)
 	}
 	return nil
@@ -63,11 +63,11 @@ func (cm *CheckpointManager) SaveCheckpoint(key string, value any) error {
 
 // LoadCheckpoint loads the checkpoint data from a file
 func (cm *CheckpointManager) LoadCheckpoint() error {
-	if _, err := os.Stat(filepath.Join(cm.checkpointLocation, checkpointFile)); os.IsNotExist(err) {
+	if _, err := os.Stat(filepath.Join(cm.checkpointLocation, filePath)); os.IsNotExist(err) {
 		return nil // No checkpoint file exists
 	}
 
-	data, err := os.ReadFile(filepath.Join(cm.checkpointLocation, checkpointFile))
+	data, err := os.ReadFile(filepath.Join(cm.checkpointLocation, filePath))
 	if err != nil {
 		return fmt.Errorf("failed to read checkpoint file: %v", err)
 	}
@@ -88,4 +88,12 @@ func (cm *CheckpointManager) GetCheckpoint(key string) (any, bool) {
 
 	value, exists := cm.data[key]
 	return value, exists
+}
+
+func CleanupCheckpoint(path string) error {
+	err := os.Remove(filepath.Join(path, filePath))
+	if err != nil {
+		return fmt.Errorf("error deleting checkpoint file: %w", err)
+	}
+	return nil
 }

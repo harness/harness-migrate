@@ -35,7 +35,7 @@ type (
 	}
 
 	Export struct {
-		stash      *wrapper
+		github     *wrapper
 		org        string
 		repository string
 
@@ -53,7 +53,7 @@ func New(
 	tracer tracer.Tracer,
 ) *Export {
 	return &Export{
-		stash:             &wrapper{client},
+		github:            &wrapper{client},
 		org:               org,
 		repository:        repo,
 		checkpointManager: checkpointer,

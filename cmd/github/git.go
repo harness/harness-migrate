@@ -12,23 +12,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package stash
+package github
 
 import (
 	"context"
 	"net/http"
-	"net/url"
 	"strings"
 
 	"github.com/harness/harness-migrate/cmd/util"
 	"github.com/harness/harness-migrate/internal/checkpoint"
 	"github.com/harness/harness-migrate/internal/gitexporter"
-	"github.com/harness/harness-migrate/internal/migrate/stash"
+	"github.com/harness/harness-migrate/internal/migrate/github"
 	"github.com/harness/harness-migrate/internal/tracer"
 
 	"github.com/alecthomas/kingpin/v2"
-	scmstash "github.com/drone/go-scm/scm/driver/stash"
-	"github.com/drone/go-scm/scm/transport"
+	"github.com/drone/go-scm/scm"
+	scmgithub "github.com/drone/go-scm/scm/driver/github"
+	"github.com/drone/go-scm/scm/transport/oauth2"
 	"golang.org/x/exp/slog"
 )
 
@@ -47,7 +47,6 @@ type exportCommand struct {
 }
 
 func (c *exportCommand) run(*kingpin.ParseContext) error {
-
 	// create the logger
 	log := util.CreateLogger(c.debug)
 
@@ -55,18 +54,17 @@ func (c *exportCommand) run(*kingpin.ParseContext) error {
 	ctx := context.Background()
 	ctx = slog.NewContext(ctx, log)
 
-	// create the stash client (url, token, org)
-	client, err := scmstash.New(c.url)
+	// create the github client (url, token, org)
+	client, err := scmgithub.New(c.url)
 	if err != nil {
 		return err
 	}
 	// provide a custom http.Client with a transport
-	// that injects the private stash token through
+	// that injects the private github token through
 	// the PRIVATE_TOKEN header variable.
-	t := &transport.BasicAuth{
-		Base:     nil,
-		Username: c.user,
-		Password: c.token,
+	t := &oauth2.Transport{
+		Scheme: oauth2.SchemeBearer,
+		Source: oauth2.StaticTokenSource(&scm.Token{Token: c.token}),
 	}
 
 	client.Client = &http.Client{
@@ -93,7 +91,7 @@ func (c *exportCommand) run(*kingpin.ParseContext) error {
 	}
 
 	// extract the data
-	e := stash.New(client, c.org, repository, checkpointManager, tracer_)
+	e := github.New(client, c.org, repository, checkpointManager, tracer_)
 
 	exporter := gitexporter.NewExporter(e, c.file, c.user, c.token, tracer_)
 	exporter.Export(ctx)
@@ -104,7 +102,7 @@ func (c *exportCommand) run(*kingpin.ParseContext) error {
 func registerGit(app *kingpin.CmdClause) {
 	c := new(exportCommand)
 
-	cmd := app.Command("git-export", "export stash git data").
+	cmd := app.Command("git-export", "export github git data").
 		Hidden().
 		Action(c.run)
 
@@ -112,28 +110,28 @@ func registerGit(app *kingpin.CmdClause) {
 		Default("harness").
 		StringVar(&c.file)
 
-	cmd.Flag("host", "stash host url").
+	cmd.Flag("host", "github host url").
 		Required().
-		Envar("stash_HOST").
+		Envar("github_HOST").
 		StringVar(&c.url)
 
-	cmd.Flag("org", "stash organization").
+	cmd.Flag("org", "github organization").
 		Required().
-		Envar("stash_ORG").
+		Envar("github_ORG").
 		StringVar(&c.org)
 
 	cmd.Flag("src_repository", "optional name of the source repository to export").
-		Envar("stash_SRC_REPOSITORY").
+		Envar("github_SRC_REPOSITORY").
 		StringVar(&c.srcRepository)
 
-	cmd.Flag("token", "stash token").
+	cmd.Flag("token", "github token").
 		Required().
-		Envar("stash_TOKEN").
+		Envar("github_TOKEN").
 		StringVar(&c.token)
 
-	cmd.Flag("username", "stash username").
+	cmd.Flag("username", "github username").
 		Required().
-		Envar("stash_USERNAME").
+		Envar("github_USERNAME").
 		StringVar(&c.user)
 
 	cmd.Flag("resume", "resume from last checkpoint").
@@ -145,21 +143,4 @@ func registerGit(app *kingpin.CmdClause) {
 
 	cmd.Flag("trace", "enable trace logging").
 		BoolVar(&c.trace)
-}
-
-// defaultTransport provides a default http.Transport.
-// If skip verify is true, the transport will skip ssl verification.
-// Otherwise, it will append all the certs from the provided path.
-func defaultTransport(proxy string) http.RoundTripper {
-	if proxy == "" {
-		return &http.Transport{
-			Proxy: http.ProxyFromEnvironment,
-		}
-	}
-
-	proxyURL, _ := url.Parse(proxy)
-
-	return &http.Transport{
-		Proxy: http.ProxyURL(proxyURL),
-	}
 }

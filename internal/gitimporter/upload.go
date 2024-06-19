@@ -14,25 +14,19 @@
 
 package gitimporter
 
-import (
-	"fmt"
-	"time"
-
-	"github.com/harness/harness-migrate/types"
-)
-
-func (c *Importer) UploadZip() (*types.RepositoriesImportOutput, error) {
-	c.Tracer.Start("starting uploading zip file")
-	in := &types.RepositoriesImportInput{
-		RequestId: c.RequestId,
-	}
-
-	start := time.Now()
-	out, err := c.Harness.UploadHarnessCodeZip(c.HarnessSpace, c.ZipFileLocation, c.RequestId, in)
-	if err != nil {
-		c.Tracer.Stop("error uploading zip")
-		return nil, fmt.Errorf("error uploading zip: %w", err)
-	}
-	c.Tracer.Stop("zip upload complete in %d seconds", time.Since(start).Seconds())
-	return out, nil
+func (c *Importer) UploadZip() error {
+	//c.Tracer.Start("starting uploading zip file")
+	//in := &types.RepositoriesImportInput{
+	//	RequestId: c.RequestId,
+	//}
+	//
+	//start := time.Now()
+	//out, err := c.Harness.UploadHarnessCodeZip(c.HarnessSpace, c.ZipFileLocation, c.RequestId, in)
+	//if err != nil {
+	//	c.Tracer.Stop("error uploading zip")
+	//	return nil, fmt.Errorf("error uploading zip: %w", err)
+	//}
+	//c.Tracer.Stop("zip upload complete in %d seconds", time.Since(start).Seconds())
+	//return out, nil
+	return nil
 }

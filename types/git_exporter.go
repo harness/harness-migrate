@@ -7,7 +7,7 @@ const (
 	ExporterLogsFileName = "ExporterLogs.log"
 	PRDir                = "pr"
 	GitDir               = "git"
-	WebhookDir           = "webhooks"
+	WebhookFileName      = "webhooks.json"
 	BranchRulesFileName  = "rules.json"
 )
 
@@ -36,31 +36,31 @@ type (
 	}
 
 	BranchRule struct {
-		ID               int
-		Name             string
-		Type             string
-		IncludeDefault   bool
-		Branches         []string
-		IncludedPatterns []string
-		ExcludedPatterns []string
-		BypassUsers      []string
-		BypassGroups     []string
-		BypassKeys       []string
+		ID               int      `json:"id"`
+		Name             string   `json:"name"`
+		Type             string   `json:"type"`
+		IncludeDefault   bool     `json:"includeDefault"`
+		Branches         []string `json:"branches"`
+		IncludedPatterns []string `json:"included_patterns"`
+		ExcludedPatterns []string `json:"excluded_patterns"`
+		BypassUsers      []string `json:"bypass_users"`
+		BypassGroups     []string `json:"bypass_groups"`
+		BypassKeys       []string `json:"bypass_keys"`
 	}
 
 	RepositoryData struct {
-		Repository      Repository
-		PullRequestData []*PullRequestData
-		BranchRules     []BranchRule
-		Webhooks        WebhookData
+		Repository      Repository         `json:"repository"`
+		PullRequestData []*PullRequestData `json:"pull_request_data"`
+		BranchRules     []BranchRule       `json:"branch_rules"`
+		Webhooks        WebhookData        `json:"webhooks"`
 	}
 
 	PullRequestData struct {
-		PullRequest PR
-		Comments    []Comment
+		PullRequest PR        `json:"pull_request"`
+		Comments    []Comment `json:"comments"`
 	}
 
 	WebhookData struct {
-		ConvertedHooks []*scm.Hook
+		Hooks []*scm.Hook `json:"hooks"`
 	}
 )

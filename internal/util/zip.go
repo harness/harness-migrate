@@ -52,6 +52,10 @@ func ZipFolder(source, destination string) error {
 		}
 
 		// Create a file entry in the zip archive
+		if strings.HasSuffix(localPath, ".zip") {
+			return nil
+		}
+
 		file, err := zipWriter.Create(localPath)
 		if err != nil {
 			return err
@@ -70,4 +74,42 @@ func ZipFolder(source, destination string) error {
 	})
 
 	return err
+}
+
+func Unzip(src string, dest string) error {
+	r, err := zip.OpenReader(src)
+	if err != nil {
+		return err
+	}
+	defer r.Close()
+
+	for _, f := range r.File {
+		rc, err := f.Open()
+		if err != nil {
+			return err
+		}
+		defer rc.Close()
+
+		path := filepath.Join(dest, f.Name)
+		if f.FileInfo().IsDir() {
+			CreateFolder(path)
+		} else {
+			if err := CreateFolder(filepath.Dir(path)); err != nil {
+				return err
+			}
+
+			outFile, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.Mode())
+			if err != nil {
+				return err
+			}
+			defer outFile.Close()
+
+			_, err = io.Copy(outFile, rc)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
 }

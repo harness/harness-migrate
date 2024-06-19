@@ -18,11 +18,12 @@ import (
 	"context"
 	"strings"
 
-	"github.com/alecthomas/kingpin/v2"
-	"github.com/google/uuid"
 	"github.com/harness/harness-migrate/cmd/util"
 	"github.com/harness/harness-migrate/internal/gitimporter"
 	"github.com/harness/harness-migrate/internal/tracer"
+
+	"github.com/alecthomas/kingpin/v2"
+	"github.com/google/uuid"
 	"golang.org/x/exp/slog"
 )
 

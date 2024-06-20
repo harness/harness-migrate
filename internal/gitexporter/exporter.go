@@ -240,7 +240,7 @@ func (e *Exporter) writeBranchRules(repo *externalTypes.RepositoryData, err erro
 	}
 	rulesJson, err := util.GetJson(repo.BranchRules)
 	if err != nil {
-		return fmt.Errorf("cannot serialize branch rules into json: %v", err)
+		return fmt.Errorf("cannot serialize branch rules into json: %w", err)
 	}
 	err = util.WriteFile(filepath.Join(pathRepo, externalTypes.BranchRulesFileName), rulesJson)
 	if err != nil {
@@ -253,11 +253,11 @@ func (e *Exporter) writeWebhooks(repo *externalTypes.RepositoryData, pathRepo st
 	if len(repo.Webhooks.Hooks) == 0 {
 		return nil
 	}
-	hookJson, err := util.GetJson(repo.Webhooks)
+	hooksJson, err := util.GetJson(repo.Webhooks)
 	if err != nil {
 		log.Printf("cannot serialize into json: %v", err)
 	}
-	err = util.WriteFile(filepath.Join(pathRepo, externalTypes.WebhookFileName), hookJson)
+	err = util.WriteFile(filepath.Join(pathRepo, externalTypes.WebhookFileName), hooksJson)
 	if err != nil {
 		return fmt.Errorf("error writing webhook json: %w", err)
 	}

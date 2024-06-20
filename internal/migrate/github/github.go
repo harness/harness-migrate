@@ -81,11 +81,6 @@ func (e *Export) ListPullRequests(ctx context.Context, repoSlug string, opts typ
 	panic("unimplemented")
 }
 
-// ListRepositories implements gitexporter.Interface.
-func (e *Export) ListRepositories(ctx context.Context, opts types.ListOptions) ([]types.RepoResponse, error) {
-	panic("unimplemented")
-}
-
 // ListWebhooks implements gitexporter.Interface.
 func (e *Export) ListWebhooks(ctx context.Context, repoSlug string, logger gitexporter.Logger, opts types.WebhookListOptions) (types.WebhookData, error) {
 	panic("unimplemented")

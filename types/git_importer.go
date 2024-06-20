@@ -29,6 +29,5 @@ type (
 
 	RepositoryPRsImportInput struct {
 		PullRequestData
-		MapUnknownUsersToImporter bool `json:"map_unknown_users_to_importer"`
 	}
 )

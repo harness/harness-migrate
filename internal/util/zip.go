@@ -51,11 +51,12 @@ func ZipFolder(source, destination string) error {
 			return err
 		}
 
-		// Create a file entry in the zip archive
+		// Skip .zip files
 		if strings.HasSuffix(localPath, ".zip") {
 			return nil
 		}
 
+		// Create a file entry in the zip archive
 		file, err := zipWriter.Create(localPath)
 		if err != nil {
 			return err

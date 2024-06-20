@@ -76,9 +76,6 @@ type Client interface {
 	// CreateRepository creates a repository.
 	CreateRepository(org, project string, repo *RepositoryCreateRequest) (*Repository, error)
 
-	// CreateRepositoryWithSpace creates a repository with space path.
-	CreateRepositoryWithSpace(space string, repo *RepositoryCreateRequest) (*Repository, error)
-
 	// HarnessCodePRImport imports PR within a repository.
 	HarnessCodePRImport(repoRef string, in *types.RepositoryPRsImportInput) (*types.Response, error)
 

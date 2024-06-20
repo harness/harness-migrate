@@ -258,18 +258,6 @@ func (c *client) CreateRepository(org, project string, repo *RepositoryCreateReq
 	return out, nil
 }
 
-func (c *client) CreateRepositoryWithSpace(space string, repo *RepositoryCreateRequest) (*Repository, error) {
-	out := new(Repository)
-	uri := fmt.Sprintf("%s/api/v1/repos?space_ref=%s",
-		c.address,
-		space,
-	)
-	if err := c.post(uri, repo, out); err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 func (c *client) HarnessCodePRImport(repoRef string, in *types.RepositoryPRsImportInput) (*types.Response, error) {
 	out := new(types.Response)
 	uri := fmt.Sprintf("%s/api/v1/repos/%s/pullreq/import",

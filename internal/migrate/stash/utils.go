@@ -27,6 +27,7 @@ const (
 	PATTERN        = "PATTERN"
 	MODEL_BRANCH   = "MODEL_BRANCH"
 	MODEL_CATEGORY = "MODEL_CATEGORY"
+	refPrefix      = "refs/heads/"
 )
 
 func filterOutCommentActivities(from []any, tracer tracer.Tracer) []prCommentActivity {
@@ -126,7 +127,7 @@ func convertBranchRule(from *branchPermission, m map[string]modelValue) *types.B
 		if v.UseDefault {
 			includeDefault = true
 		} else {
-			branches = append(branches, extractBranch(v.RefID))
+			branches = append(branches, strings.TrimPrefix(v.RefID, refPrefix))
 		}
 	case MODEL_CATEGORY:
 		includedPatterns = append(includedPatterns, convertIntoGlobstar(m[from.Matcher.ID].Prefix))
@@ -157,11 +158,6 @@ func convertIntoGlobstar(s string) string {
 		return s + "**"
 	}
 	return s
-}
-
-func extractBranch(b string) string {
-	parts := strings.Split(b, "/")
-	return parts[len(parts)-1]
 }
 
 func (e *Error) Error() string {

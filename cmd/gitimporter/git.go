@@ -15,16 +15,12 @@
 package gitimporter
 
 import (
-	"bufio"
 	"context"
-	"fmt"
-	"os"
 	"strings"
 
 	"github.com/harness/harness-migrate/cmd/util"
 	"github.com/harness/harness-migrate/internal/gitimporter"
 	"github.com/harness/harness-migrate/internal/tracer"
-	"github.com/harness/harness-migrate/types"
 
 	"github.com/alecthomas/kingpin/v2"
 	"github.com/google/uuid"
@@ -39,6 +35,8 @@ type gitImport struct {
 	harnessToken    string
 	harnessSpace    string
 	//harnessRepo     string
+
+	skipUsers bool
 
 	filePath string
 }
@@ -57,67 +55,11 @@ func (c *gitImport) run(*kingpin.ParseContext) error {
 	defer tracer_.Close()
 
 	importUuid := uuid.New().String()
-	importer := gitimporter.NewImporter(c.harnessSpace, c.harnessToken, c.filePath, importUuid, tracer_)
+	c.harnessEndpoint, _ = strings.CutSuffix(c.harnessEndpoint, "/")
+	importer := gitimporter.NewImporter(c.harnessEndpoint, c.harnessSpace, c.harnessToken, c.filePath, importUuid, c.skipUsers, tracer_)
 
 	tracer_.Log("starting operation with id: %s", importUuid)
-
-	repositoriesImportOutput, err := importer.UploadZip()
-
-	if err != nil {
-		tracer_.LogError("encountered error uploading zip: %s", err)
-		return err
-	}
-
-	if err := checkAndPerformUserInvite(repositoriesImportOutput, tracer_, importer); err != nil {
-		return err
-	}
-
-	if err := importer.IsComplete(); err != nil {
-		return err
-	}
-	return nil
-}
-
-func checkAndPerformUserInvite(repositoriesImportOutput *types.RepositoriesImportOutput, tracer_ tracer.Tracer, importer *gitimporter.Importer) error {
-	if repositoriesImportOutput != nil && len(repositoriesImportOutput.Users.NotPresent) != 0 {
-		tracer_.Log("Found users which are not in harness and are present in import data: ")
-		tracer_.Log("%v", repositoriesImportOutput.Users.NotPresent)
-		userFollowUp, err := doUserFollowUp()
-		if err != nil {
-			return err
-		}
-		if userFollowUp {
-			err = importer.InviteUsers(repositoriesImportOutput.Users.NotPresent)
-			if err != nil {
-				return err
-			}
-		}
-	}
-	return nil
-}
-
-func doUserFollowUp() (UserInvite, error) {
-	reader := bufio.NewReader(os.Stdin)
-
-	fmt.Println("Please select one of the following options:")
-	fmt.Println("1. Map missing user to yourself")
-	fmt.Println("2. Invite missing users (needs admin permission for space)")
-	fmt.Print("Enter your choice (1 or 2): ")
-
-	choice, _ := reader.ReadString('\n')
-	choice = strings.TrimSpace(choice)
-
-	switch choice {
-	case "1":
-		fmt.Println("You selected Option 1")
-		return false, nil
-	case "2":
-		fmt.Println("You selected Option 2")
-		return true, nil
-	default:
-		fmt.Println("Invalid choice. Please enter 1 or 2.")
-		return false, fmt.Errorf("invalid option selected for user invite")
-	}
+	return importer.Import()
 }
 
 func registerGitImporter(app *kingpin.CmdClause) {
@@ -130,7 +72,7 @@ func registerGitImporter(app *kingpin.CmdClause) {
 		StringVar(&c.filePath)
 
 	cmd.Flag("harnessEndpoint", "url of harness code host").
-		Default("https://app.harness.io/").
+		Default("https://app.harness.io/gateway/code").
 		Envar("harness_HOST").
 		StringVar(&c.harnessEndpoint)
 
@@ -143,6 +85,11 @@ func registerGitImporter(app *kingpin.CmdClause) {
 		Required().
 		Envar("harness_SPACE").
 		StringVar(&c.harnessSpace)
+
+	cmd.Flag("skip-users", "skip unknown user and map to token uuid (Default:true)").
+		Default("true").
+		Envar("harness_SKIP_USERS").
+		BoolVar(&c.skipUsers)
 
 	// cmd.Flag("repo", "Required in case of single repo import which already exists.").
 	//	Envar("HARNESS_REPO").

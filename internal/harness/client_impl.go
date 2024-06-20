@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"mime/multipart"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
@@ -259,25 +258,11 @@ func (c *client) CreateRepository(org, project string, repo *RepositoryCreateReq
 	return out, nil
 }
 
-func (c *client) UploadHarnessCodeZip(space, zipFileLocation, requestId string, in *types.RepositoriesImportInput) (*types.RepositoriesImportOutput, error) {
-	out := new(types.RepositoriesImportOutput)
-	uri := fmt.Sprintf("%s/gateway/code/api/v1/spaces/%s/zip-import",
+func (c *client) HarnessCodePRImport(repoRef string, in *types.RepositoryPRsImportInput) (*types.Response, error) {
+	out := new(types.Response)
+	uri := fmt.Sprintf("%s/api/v1/repos/%s/pullreq/import",
 		c.address,
-		space,
-	)
-
-	if err := c.doMultiPart(uri, "POST", zipFileLocation, requestId, in, out); err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *client) HarnessCodeInviteUser(space, requestId string, in *types.RepositoryUsersImportInput) (*types.RepositoryUsersImportOutput, error) {
-	out := new(types.RepositoryUsersImportOutput)
-	uri := fmt.Sprintf("%s/gateway/code/api/v1/spaces/%s/import/%s/users",
-		c.address,
-		space,
-		requestId,
+		repoRef,
 	)
 
 	if err := c.post(uri, in, out); err != nil {
@@ -286,15 +271,14 @@ func (c *client) HarnessCodeInviteUser(space, requestId string, in *types.Reposi
 	return out, nil
 }
 
-func (c *client) HarnessCodeCheckImport(space, requestId string) (*types.RepositoryImportStatus, error) {
-	out := new(types.RepositoryImportStatus)
-	uri := fmt.Sprintf("%s/gateway/code/api/v1/spaces/%s/import/%s",
+func (c *client) HarnessCodeInviteUser(space string, in *types.RepositoryUsersImportInput) (*types.Response, error) {
+	out := new(types.Response)
+	uri := fmt.Sprintf("%s/api/v1/spaces/%s/import/users",
 		c.address,
 		space,
-		requestId,
 	)
 
-	if err := c.get(uri, out); err != nil {
+	if err := c.post(uri, in, out); err != nil {
 		return nil, err
 	}
 	return out, nil
@@ -327,19 +311,6 @@ func (c *client) delete(rawurl string) error {
 // helper function to make an http request
 func (c *client) do(rawurl, method string, in, out interface{}) error {
 	body, err := c.open(rawurl, method, in, out)
-	if err != nil {
-		return err
-	}
-	defer body.Close()
-	if out != nil {
-		return json.NewDecoder(body).Decode(out)
-	}
-	return nil
-}
-
-// helper function to make an http multipart request
-func (c *client) doMultiPart(rawurl, method, filePath, requestId string, in, out interface{}) error {
-	body, err := c.openMultipart(rawurl, method, filePath, requestId, in)
 	if err != nil {
 		return err
 	}
@@ -400,94 +371,6 @@ func (c *client) open(rawurl, method string, in, out interface{}) (io.ReadCloser
 	if resp.StatusCode > 299 {
 		defer resp.Body.Close()
 		out, _ := ioutil.ReadAll(resp.Body)
-		// attempt to unmarshal the error into the
-		// custom Error structure.
-		resperr := new(Error)
-		if jsonerr := json.Unmarshal(out, resperr); jsonerr == nil {
-			return nil, resperr
-		}
-		// else return the error body as a string
-		return nil, fmt.Errorf("client error %d: %s", resp.StatusCode, string(out))
-	}
-	return resp.Body, nil
-}
-
-// helper function to openMultipart  http request
-func (c *client) openMultipart(rawurl, method, filepath, requestId string, in interface{}) (io.ReadCloser, error) {
-	uri, err := url.Parse(rawurl)
-	if err != nil {
-		return nil, err
-	}
-	req, err := http.NewRequest(method, uri.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-	req.Header.Set("x-api-key", c.token)
-	req.Header.Set("Accept", "*/*")
-	req.Header.Set("User-Agent", "harness-migrator")
-	req.Header.Set("X-Request-ID", requestId)
-
-	// Open the file
-	file, err := os.Open(filepath)
-	if err != nil {
-		return nil, fmt.Errorf("error opening file: %w", err)
-	}
-	defer file.Close()
-
-	// Create a buffer to hold the multipart data
-	var b bytes.Buffer
-	writer := multipart.NewWriter(&b)
-
-	// Create a form field and write the file content into it
-	part, err := writer.CreateFormFile(types.MultiPartFileField, filepath)
-	if err != nil {
-		return nil, fmt.Errorf("error creating form file: %w", err)
-	}
-	if _, err := io.Copy(part, file); err != nil {
-		return nil, fmt.Errorf("error copying file: %w", err)
-	}
-
-	jsonData, derr := json.Marshal(in)
-	if derr != nil {
-		return nil, derr
-	}
-
-	part, err = writer.CreateFormField(types.MultiPartDataField)
-	if err != nil {
-		return nil, fmt.Errorf("error creating form field: %w", err)
-	}
-
-	if _, err := part.Write(jsonData); err != nil {
-		return nil, fmt.Errorf("error writing JSON field: %w", err)
-	}
-
-	// Close the writer to finalize the multipart form
-	if err := writer.Close(); err != nil {
-		return nil, fmt.Errorf("error closing writer: %w", err)
-	}
-
-	req.Header.Set("Content-Type", writer.FormDataContentType())
-
-	// if tracing enabled, dump the request body.
-	if c.tracing {
-		dump, _ := httputil.DumpRequest(req, true)
-		os.Stdout.Write(dump)
-	}
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return nil, err
-	}
-
-	// if tracing enabled, dump the response body.
-	if c.tracing {
-		dump, _ := httputil.DumpResponse(resp, true)
-		os.Stdout.Write(dump)
-	}
-
-	if resp.StatusCode > 299 {
-		defer resp.Body.Close()
-		out, _ := io.ReadAll(resp.Body)
 		// attempt to unmarshal the error into the
 		// custom Error structure.
 		resperr := new(Error)

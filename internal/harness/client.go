@@ -76,14 +76,11 @@ type Client interface {
 	// CreateRepository creates a repository.
 	CreateRepository(org, project string, repo *RepositoryCreateRequest) (*Repository, error)
 
-	// UploadHarnessCodeZip upload zip to harness code for creating repo and other metadata.
-	UploadHarnessCodeZip(space, zipFileLocation, requestId string, request *types.RepositoriesImportInput) (*types.RepositoriesImportOutput, error)
+	// HarnessCodePRImport imports PR within a repository.
+	HarnessCodePRImport(repoRef string, in *types.RepositoryPRsImportInput) (*types.Response, error)
 
 	// HarnessCodeInviteUser provides all email id to harness code of users which needs to invited.
-	HarnessCodeInviteUser(space, requestId string, in *types.RepositoryUsersImportInput) (*types.RepositoryUsersImportOutput, error)
-
-	// HarnessCodeCheckImport checks status of import.
-	HarnessCodeCheckImport(space, requestId string) (*types.RepositoryImportStatus, error)
+	HarnessCodeInviteUser(space string, in *types.RepositoryUsersImportInput) (*types.Response, error)
 }
 
 // WaitHarnessSecretManager blocks until the harness

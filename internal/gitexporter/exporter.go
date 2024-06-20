@@ -134,45 +134,35 @@ func (e *Exporter) writeJsonForRepo(repo *externalTypes.RepositoryData, path str
 	pathRepo := filepath.Join(path, repo.Repository.Slug)
 	err := util.WriteFile(filepath.Join(pathRepo, externalTypes.InfoFileName), repoJson)
 	if err != nil {
-		return err
-	}
-	if len(repo.Webhooks.ConvertedHooks) != 0 {
-		webhookPath := filepath.Join(pathRepo, externalTypes.WebhookDir)
-		err = util.CreateFolder(webhookPath)
-		if err != nil {
-			return err
-		}
-		for i, hook := range repo.Webhooks.ConvertedHooks {
-			hookJson, err := util.GetJson(hook)
-			if err != nil {
-				log.Printf("cannot serialize into json: %v", err)
-			}
-			webhookFilePath := fmt.Sprintf("webhook%d.json", i)
-			err = util.WriteFile(filepath.Join(webhookPath, webhookFilePath), hookJson)
-			if err != nil {
-				return err
-			}
-		}
+		return fmt.Errorf("error writing info file: %w", err)
 	}
 
-	rulesJson, err := util.GetJson(repo.BranchRules)
+	err = e.writeWebhooks(repo, pathRepo)
 	if err != nil {
-		log.Printf("cannot serialize branch rules into json: %v", err)
-	}
-	if len(repo.BranchRules) != 0 {
-		err = util.WriteFile(filepath.Join(pathRepo, externalTypes.BranchRulesFileName), rulesJson)
-		if err != nil {
-			return fmt.Errorf("couldn't write branch rules into a file: %w", err)
-		}
+		return fmt.Errorf("unable to write webhook: %w", err)
 	}
 
+	err = e.writeBranchRules(repo, err, pathRepo)
+	if err != nil {
+		return fmt.Errorf("cannot write branch rules: %w", err)
+	}
+
+	err = e.writePRs(repo, pathRepo)
+	if err != nil {
+		return fmt.Errorf("cannot write PRs: %w", err)
+	}
+
+	return nil
+}
+
+func (e *Exporter) writePRs(repo *externalTypes.RepositoryData, pathRepo string) error {
 	if len(repo.PullRequestData) == 0 {
 		return nil
 	}
 
 	prDataInSize := splitArray(repo.PullRequestData)
 	pathPR := filepath.Join(pathRepo, externalTypes.PRDir)
-	err = util.CreateFolder(pathPR)
+	err := util.CreateFolder(pathPR)
 	if err != nil {
 		return err
 	}
@@ -190,7 +180,34 @@ func (e *Exporter) writeJsonForRepo(repo *externalTypes.RepositoryData, path str
 			return err
 		}
 	}
+	return nil
+}
 
+func (e *Exporter) writeBranchRules(repo *externalTypes.RepositoryData, err error, pathRepo string) error {
+	rulesJson, err := util.GetJson(repo.BranchRules)
+	if err != nil {
+		return fmt.Errorf("cannot serialize branch rules into json: %w", err)
+	}
+	if len(repo.BranchRules) != 0 {
+		err = util.WriteFile(filepath.Join(pathRepo, externalTypes.BranchRulesFileName), rulesJson)
+		if err != nil {
+			return fmt.Errorf("couldn't write branch rules into a file: %w", err)
+		}
+	}
+	return nil
+}
+
+func (e *Exporter) writeWebhooks(repo *externalTypes.RepositoryData, pathRepo string) error {
+	if len(repo.Webhooks.Hooks) != 0 {
+		hooksJson, err := util.GetJson(repo.Webhooks)
+		if err != nil {
+			log.Printf("cannot serialize into json: %v", err)
+		}
+		err = util.WriteFile(filepath.Join(pathRepo, externalTypes.WebhookFileName), hooksJson)
+		if err != nil {
+			return fmt.Errorf("error writing webhook json: %w", err)
+		}
+	}
 	return nil
 }
 
@@ -289,7 +306,7 @@ func mapRepoData(repoData *types.RepoData) *externalTypes.RepositoryData {
 		d.PullRequestData[i].Comments = MapPRComment(prData.Comments)
 	}
 
-	d.Webhooks.ConvertedHooks = repoData.Webhooks.ConvertedHooks
+	d.Webhooks.Hooks = repoData.Webhooks.ConvertedHooks
 
 	return d
 }

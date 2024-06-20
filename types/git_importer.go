@@ -16,46 +16,19 @@
 
 package types
 
-const (
-	MultiPartFileField = "file"
-	MultiPartDataField = "data"
-)
-
 type (
-	// RepositoriesImportInput is input object for importing repo(s).
-	RepositoriesImportInput struct {
-		RequestId string `json:"request_id"`
-	}
-
-	// RepositoriesImportOutput is output object for importing repo(s).
-	RepositoriesImportOutput struct {
-		RequestId string `json:"request_id"`
-		Users     struct {
-			NotPresent []string `json:"not_present"`
-		} `json:"users,omitempty"`
-	}
-
-	// RepositoryUsersImportInput is object for creating/rejecting user invite during repo(s) import.
-	RepositoryUsersImportInput struct {
-		Emails        []string `json:"emails"`
-		MapToImporter bool     `json:"map_to_importer"`
-	}
-
-	// RepositoryUsersImportOutput is object for reporting back user import.
-	RepositoryUsersImportOutput struct {
+	Response struct {
 		Success      bool   `json:"success"`
 		ErrorMessage string `json:"error_message"`
 	}
 
-	// RepositoryImportStatus is object for reporting back status of import.
-	RepositoryImportStatus struct {
-		Status RepoImportStatus `json:"status"`
+	// RepositoryUsersImportInput is object for creating/rejecting user invite during repo(s) import.
+	RepositoryUsersImportInput struct {
+		Emails []string `json:"emails"`
 	}
-)
 
-type RepoImportStatus string
-
-const (
-	RepoImportStatusComplete   RepoImportStatus = "complete"
-	RepoImportStatusInProgress RepoImportStatus = "in_progress"
+	RepositoryPRsImportInput struct {
+		PullRequestData
+		MapUnknownUsersToImporter bool `json:"map_unknown_users_to_importer"`
+	}
 )

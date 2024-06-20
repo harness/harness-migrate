@@ -15,27 +15,33 @@
 package gitimporter
 
 import (
+	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/harness/harness-migrate/internal/harness"
 	"github.com/harness/harness-migrate/internal/tracer"
+	"github.com/harness/harness-migrate/internal/util"
 )
 
 // Importer imports data from gitlab to Harness.
 type Importer struct {
 	Harness harness.Client
 
-	HarnessSpace string
-	HarnessToken string
+	HarnessSpace    string
+	HarnessToken    string
+	HarnessEndpoint string
 
 	ZipFileLocation string
+	SkipUsers       bool
 
 	Tracer tracer.Tracer
 
 	RequestId string
 }
 
-func NewImporter(space, token, location, requestId string, tracer tracer.Tracer) *Importer {
+func NewImporter(baseURL, space, token, location, requestId string, skipUsers bool, tracer tracer.Tracer) *Importer {
 	spaceSplit := strings.Split(space, "/")
 	client := harness.New(spaceSplit[0], token)
 
@@ -43,8 +49,50 @@ func NewImporter(space, token, location, requestId string, tracer tracer.Tracer)
 		Harness:         client,
 		HarnessSpace:    space,
 		HarnessToken:    token,
-		ZipFileLocation: location,
 		Tracer:          tracer,
 		RequestId:       requestId,
+		HarnessEndpoint: baseURL,
+		ZipFileLocation: location,
+		SkipUsers:       skipUsers,
 	}
+}
+
+func (c *Importer) Import() error {
+	unzipLocation := filepath.Dir(c.ZipFileLocation)
+	err := util.Unzip(c.ZipFileLocation, unzipLocation)
+	if err != nil {
+		return fmt.Errorf("error unzipping: %w", err)
+	}
+	folders, err := getRepoBaseFolders(unzipLocation)
+	if err != nil {
+		return fmt.Errorf("cannot get repo folders in unzip: %w", err)
+	}
+
+	c.Tracer.Log("importing folders: %v", folders)
+
+	// call git importer and other importers after this.
+	return nil
+}
+
+func getRepoBaseFolders(directory string) ([]string, error) {
+	var folders []string
+
+	entries, err := os.ReadDir(directory)
+	if err != nil {
+		return nil, fmt.Errorf("cannot get folders: %w", err)
+	}
+
+	for _, entry := range entries {
+		if entry.IsDir() {
+			dirs, err := os.ReadDir(filepath.Join(directory, entry.Name()))
+			if err != nil {
+				return nil, fmt.Errorf("cannot get folders inside org: %w", err)
+			}
+			for _, dir := range dirs {
+				folders = append(folders, filepath.Join(directory, entry.Name(), dir.Name()))
+			}
+		}
+	}
+
+	return folders, nil
 }

@@ -96,8 +96,7 @@ func (c *exportCommand) run(*kingpin.ParseContext) error {
 	e := stash.New(client, c.org, repository, checkpointManager, tracer_)
 
 	exporter := gitexporter.NewExporter(e, c.file, c.user, c.token, tracer_)
-	exporter.Export(ctx)
-	return nil
+	return exporter.Export(ctx)
 }
 
 // helper function registers the export command

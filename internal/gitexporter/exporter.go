@@ -63,7 +63,7 @@ func NewExporter(
 }
 
 // Export calls exporter methods in order and serialize an object for import.
-func (e *Exporter) Export(ctx context.Context) {
+func (e *Exporter) Export(ctx context.Context) error {
 	path := filepath.Join(".", e.zipLocation)
 	err := util.CreateFolder(path)
 	if err != nil {
@@ -73,11 +73,19 @@ func (e *Exporter) Export(ctx context.Context) {
 	if err != nil {
 		panic(fmt.Sprintf(common.PanicFetchingFileData, err))
 	}
+
+	users := make(map[string]bool)
 	for _, repo := range data {
 		err = e.writeJsonForRepo(mapRepoData(repo), path)
 		if err != nil {
 			panic(fmt.Sprintf(common.PanicWritingFileData, err))
 		}
+		extractUsers(repo, users)
+	}
+
+	err = e.writeUsersJson(users)
+	if err != nil {
+		return fmt.Errorf("error writing users json: %w", err)
 	}
 
 	err = checkpoint.CleanupCheckpoint(path)
@@ -87,127 +95,14 @@ func (e *Exporter) Export(ctx context.Context) {
 
 	err = zipFolder(path)
 	if err != nil {
-		log.Printf("zipping error: %v", err)
+		return fmt.Errorf("zipping error: %v", err)
 	}
 
 	err = deleteFolders(path)
 	if err != nil {
 		log.Printf("error cleaning up folder: %v", err)
 	}
-}
 
-// Calculate the size of the struct in bytes
-func calculateSize(s *externalTypes.PullRequestData) int {
-	data, err := json.Marshal(s)
-	// will never happen
-	if err != nil {
-		panic(err)
-	}
-	return len(data)
-}
-
-// Split the array into smaller chunks if the size exceeds the maxChunkSize
-func splitArray(arr []*externalTypes.PullRequestData) [][]*externalTypes.PullRequestData {
-	var chunks [][]*externalTypes.PullRequestData
-	var currentChunk []*externalTypes.PullRequestData
-	currentSize := 0
-
-	for _, item := range arr {
-		itemSize := calculateSize(item)
-		if currentSize+itemSize > maxChunkSize {
-			chunks = append(chunks, currentChunk)
-			currentChunk = []*externalTypes.PullRequestData{}
-			currentSize = 0
-		}
-		currentChunk = append(currentChunk, item)
-		currentSize += itemSize
-	}
-	if len(currentChunk) > 0 {
-		chunks = append(chunks, currentChunk)
-	}
-	return chunks
-}
-
-func (e *Exporter) writeJsonForRepo(repo *externalTypes.RepositoryData, path string) error {
-	repoJson, _ := util.GetJson(repo.Repository)
-
-	pathRepo := filepath.Join(path, repo.Repository.Slug)
-	err := util.WriteFile(filepath.Join(pathRepo, externalTypes.InfoFileName), repoJson)
-	if err != nil {
-		return fmt.Errorf("error writing info file: %w", err)
-	}
-
-	err = e.writeWebhooks(repo, pathRepo)
-	if err != nil {
-		return fmt.Errorf("unable to write webhook: %w", err)
-	}
-
-	err = e.writeBranchRules(repo, err, pathRepo)
-	if err != nil {
-		return fmt.Errorf("cannot write branch rules: %w", err)
-	}
-
-	err = e.writePRs(repo, pathRepo)
-	if err != nil {
-		return fmt.Errorf("cannot write PRs: %w", err)
-	}
-
-	return nil
-}
-
-func (e *Exporter) writePRs(repo *externalTypes.RepositoryData, pathRepo string) error {
-	if len(repo.PullRequestData) == 0 {
-		return nil
-	}
-
-	prDataInSize := splitArray(repo.PullRequestData)
-	pathPR := filepath.Join(pathRepo, externalTypes.PRDir)
-	err := util.CreateFolder(pathPR)
-	if err != nil {
-		return err
-	}
-
-	for i, data := range prDataInSize {
-		prJson, err := util.GetJson(data)
-		if err != nil {
-			// todo: fix this
-			log.Printf("cannot serialize into json: %v", err)
-		}
-		prFilePath := fmt.Sprintf(prFileName, i)
-
-		err = util.WriteFile(filepath.Join(pathPR, prFilePath), prJson)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (e *Exporter) writeBranchRules(repo *externalTypes.RepositoryData, err error, pathRepo string) error {
-	rulesJson, err := util.GetJson(repo.BranchRules)
-	if err != nil {
-		return fmt.Errorf("cannot serialize branch rules into json: %v", err)
-	}
-	if len(repo.BranchRules) != 0 {
-		err = util.WriteFile(filepath.Join(pathRepo, externalTypes.BranchRulesFileName), rulesJson)
-		if err != nil {
-			return fmt.Errorf("couldn't write branch rules into a file: %w", err)
-		}
-	}
-	return nil
-}
-
-func (e *Exporter) writeWebhooks(repo *externalTypes.RepositoryData, pathRepo string) error {
-	if len(repo.Webhooks.Hooks) != 0 {
-		hookJson, err := util.GetJson(repo.Webhooks)
-		if err != nil {
-			log.Printf("cannot serialize into json: %v", err)
-		}
-		err = util.WriteFile(filepath.Join(pathRepo, externalTypes.WebhookFileName), hookJson)
-		if err != nil {
-			return fmt.Errorf("error writing webhook json: %w", err)
-		}
-	}
 	return nil
 }
 
@@ -282,6 +177,156 @@ func (e *Exporter) getData(ctx context.Context, path string) ([]*types.RepoData,
 	}
 
 	return repoData, nil
+}
+
+func (e *Exporter) writeJsonForRepo(repo *externalTypes.RepositoryData, path string) error {
+	repoJson, _ := util.GetJson(repo.Repository)
+
+	pathRepo := filepath.Join(path, repo.Repository.Slug)
+	err := util.WriteFile(filepath.Join(pathRepo, externalTypes.InfoFileName), repoJson)
+	if err != nil {
+		return fmt.Errorf("error writing info file: %w", err)
+	}
+
+	err = e.writeWebhooks(repo, pathRepo)
+	if err != nil {
+		return fmt.Errorf("unable to write webhook: %w", err)
+	}
+
+	err = e.writeBranchRules(repo, err, pathRepo)
+	if err != nil {
+		return fmt.Errorf("cannot write branch rules: %w", err)
+	}
+
+	err = e.writePRs(repo, pathRepo)
+	if err != nil {
+		return fmt.Errorf("cannot write PRs: %w", err)
+	}
+
+	return nil
+}
+
+func (e *Exporter) writePRs(repo *externalTypes.RepositoryData, pathRepo string) error {
+	if len(repo.PullRequestData) == 0 {
+		return nil
+	}
+
+	prDataInSize := splitArray(repo.PullRequestData)
+	pathPR := filepath.Join(pathRepo, externalTypes.PRDir)
+	err := util.CreateFolder(pathPR)
+	if err != nil {
+		return err
+	}
+
+	for i, data := range prDataInSize {
+		prJson, err := util.GetJson(data)
+		if err != nil {
+			// todo: fix this
+			log.Printf("cannot serialize into json: %v", err)
+		}
+		prFilePath := fmt.Sprintf(prFileName, i)
+
+		err = util.WriteFile(filepath.Join(pathPR, prFilePath), prJson)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (e *Exporter) writeBranchRules(repo *externalTypes.RepositoryData, err error, pathRepo string) error {
+	if len(repo.BranchRules) == 0 {
+		return nil
+	}
+	rulesJson, err := util.GetJson(repo.BranchRules)
+	if err != nil {
+		return fmt.Errorf("cannot serialize branch rules into json: %v", err)
+	}
+	err = util.WriteFile(filepath.Join(pathRepo, externalTypes.BranchRulesFileName), rulesJson)
+	if err != nil {
+		return fmt.Errorf("couldn't write branch rules into a file: %w", err)
+	}
+	return nil
+}
+
+func (e *Exporter) writeWebhooks(repo *externalTypes.RepositoryData, pathRepo string) error {
+	if len(repo.Webhooks.Hooks) == 0 {
+		return nil
+	}
+	hookJson, err := util.GetJson(repo.Webhooks)
+	if err != nil {
+		log.Printf("cannot serialize into json: %v", err)
+	}
+	err = util.WriteFile(filepath.Join(pathRepo, externalTypes.WebhookFileName), hookJson)
+	if err != nil {
+		return fmt.Errorf("error writing webhook json: %w", err)
+	}
+	return nil
+}
+
+func (e *Exporter) writeUsersJson(users map[string]bool) error {
+	if len(users) == 0 {
+		return nil
+	}
+
+	usersJson, err := util.GetJson(users)
+	if err != nil {
+		log.Printf("cannot serialize into json: %v", err)
+	}
+	err = util.WriteFile(filepath.Join(e.zipLocation, externalTypes.UsersFileName), usersJson)
+	if err != nil {
+		return fmt.Errorf("couldn't write users into a file: %w", err)
+	}
+	return nil
+}
+
+// Calculate the size of the struct in bytes
+func calculateSize(s *externalTypes.PullRequestData) int {
+	data, err := json.Marshal(s)
+	// will never happen
+	if err != nil {
+		panic(err)
+	}
+	return len(data)
+}
+
+// Split the array into smaller chunks if the size exceeds the maxChunkSize
+func splitArray(arr []*externalTypes.PullRequestData) [][]*externalTypes.PullRequestData {
+	var chunks [][]*externalTypes.PullRequestData
+	var currentChunk []*externalTypes.PullRequestData
+	currentSize := 0
+
+	for _, item := range arr {
+		itemSize := calculateSize(item)
+		if currentSize+itemSize > maxChunkSize {
+			chunks = append(chunks, currentChunk)
+			currentChunk = []*externalTypes.PullRequestData{}
+			currentSize = 0
+		}
+		currentChunk = append(currentChunk, item)
+		currentSize += itemSize
+	}
+	if len(currentChunk) > 0 {
+		chunks = append(chunks, currentChunk)
+	}
+	return chunks
+}
+
+func extractUsers(repo *types.RepoData, users map[string]bool) {
+	if repo.PullRequestData == nil {
+		return
+	}
+
+	for _, prData := range repo.PullRequestData {
+		for _, comment := range prData.Comments {
+			if comment.Author.Email != "" {
+				users[comment.Author.Email] = true
+			}
+		}
+		if prData.PullRequest.Author.Email != "" {
+			users[prData.PullRequest.Author.Email] = true
+		}
+	}
 }
 
 func mapPRData(pr types.PRResponse, comments []*types.PRComment) *types.PullRequestData {

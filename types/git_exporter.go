@@ -9,6 +9,7 @@ const (
 	GitDir               = "git"
 	WebhookFileName      = "webhooks.json"
 	BranchRulesFileName  = "rules.json"
+	UsersFileName        = "users.json"
 )
 
 type (

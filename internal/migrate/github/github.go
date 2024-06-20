@@ -76,11 +76,6 @@ func (e *Export) ListPullRequestComments(ctx context.Context, repoSlug string, p
 	panic("unimplemented")
 }
 
-// ListPullRequests implements gitexporter.Interface.
-func (e *Export) ListPullRequests(ctx context.Context, repoSlug string, opts types.PullRequestListOptions) ([]types.PRResponse, error) {
-	panic("unimplemented")
-}
-
 // ListRepositories implements gitexporter.Interface.
 func (e *Export) ListRepositories(ctx context.Context, opts types.ListOptions) ([]types.RepoResponse, error) {
 	panic("unimplemented")

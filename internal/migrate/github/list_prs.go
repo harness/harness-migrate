@@ -1,4 +1,4 @@
-package stash
+package github
 
 import (
 	"context"
@@ -50,7 +50,7 @@ func (e *Export) ListPullRequests(
 	}
 
 	for {
-		prs, resp, err := e.stash.PullRequests.List(ctx, repoSlug, opts)
+		prs, resp, err := e.github.PullRequests.List(ctx, repoSlug, opts)
 		if err != nil {
 			e.tracer.LogError(common.ErrPrList, err)
 			return nil, fmt.Errorf("cannot list pr: %w", err)

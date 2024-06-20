@@ -27,7 +27,7 @@ type (
 		Emails []string `json:"emails"`
 	}
 
-	RepositoryPRImportInput struct {
+	RepositoryPRsImportInput struct {
 		PullRequestData
 		MapUnknownToImporter bool `json:"map_unknown_to_importer"`
 	}

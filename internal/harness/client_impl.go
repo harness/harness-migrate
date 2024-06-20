@@ -270,11 +270,11 @@ func (c *client) CreateRepositoryWithSpace(space string, repo *RepositoryCreateR
 	return out, nil
 }
 
-func (c *client) HarnessCodePRImport(space string, in *types.RepositoryPRImportInput) (*types.Response, error) {
+func (c *client) HarnessCodePRImport(repoRef string, in *types.RepositoryPRsImportInput) (*types.Response, error) {
 	out := new(types.Response)
-	uri := fmt.Sprintf("%s/api/v1/%s/repos/pullreq/import",
+	uri := fmt.Sprintf("%s/api/v1/repos/%s/pullreq/import",
 		c.address,
-		space,
+		repoRef,
 	)
 
 	if err := c.post(uri, in, out); err != nil {

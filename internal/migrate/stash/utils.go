@@ -3,12 +3,12 @@ package stash
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/url"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/harness/harness-migrate/internal/tracer"
 	"github.com/harness/harness-migrate/internal/types"
 
 	"github.com/drone/go-scm/scm"
@@ -30,7 +30,7 @@ const (
 	refPrefix      = "refs/heads/"
 )
 
-func filterOutCommentActivities(from []any, tracer tracer.Tracer) []prCommentActivity {
+func filterOutCommentActivities(from []any) []prCommentActivity {
 	to := []prCommentActivity{}
 	for i, activity := range from {
 		if activityMap, ok := activity.(map[string]any); ok {
@@ -38,12 +38,12 @@ func filterOutCommentActivities(from []any, tracer tracer.Tracer) []prCommentAct
 				// Marshal the map to JSON, then unmarshal to prCommentActivity
 				data, err := json.Marshal(activityMap)
 				if err != nil {
-					tracer.LogError("Error parsing JSON from activity %d: %v", i, err)
+					log.Default().Printf("Error parsing JSON from activity %d: %v", i, err)
 					continue
 				}
 				var prComment prCommentActivity
 				if err := json.Unmarshal(data, &prComment); err != nil {
-					tracer.LogError("Error converting comment activity %d from JSON: %v", i, err)
+					log.Default().Printf("Error converting comment activity %d from JSON: %v", i, err)
 					continue
 				}
 				to = append(to, prComment)
@@ -53,8 +53,8 @@ func filterOutCommentActivities(from []any, tracer tracer.Tracer) []prCommentAct
 	return to
 }
 
-func convertPullRequestCommentsList(from []any, tracer tracer.Tracer) []*types.PRComment {
-	commentActivities := filterOutCommentActivities(from, tracer)
+func convertPullRequestCommentsList(from []any) []*types.PRComment {
+	commentActivities := filterOutCommentActivities(from)
 	to := []*types.PRComment{}
 	for _, c := range commentActivities {
 		comment := c.Comment

@@ -24,6 +24,7 @@ import (
 	"github.com/harness/harness-migrate/internal/slug"
 	"github.com/harness/harness-migrate/internal/tracer"
 	"github.com/harness/harness-migrate/internal/types"
+	"github.com/harness/harness-migrate/internal/util"
 
 	git "github.com/go-git/go-git/v5"
 
@@ -151,7 +152,9 @@ func (m *Importer) Import(ctx context.Context, data *types.Org) error {
 			DefaultBranch: srcProject.Branch,
 			IsPublic:      false, // TODO: Harness doesn't have private repos at the moment
 		}
-		repo, err := m.Harness.CreateRepository(project.Orgidentifier, project.Identifier, repoCreate)
+
+		repoRef := util.JoinPaths(project.Orgidentifier, project.Identifier)
+		repo, err := m.Harness.CreateRepository(repoRef, repoCreate)
 		if err != nil {
 			// if the error indicates the project already exists, continue with next project.
 			// This is a temporary workaround to avoid conflicts while pushing the git repo.

@@ -17,18 +17,18 @@ package harness
 import "strings"
 
 // Option configures a Digital Ocean provider option.
-type Option func(*client)
+type Option func(*gitnessClient)
 
 // WithAddress returns an option to set the base address.
 func WithAddress(address string) Option {
-	return func(p *client) {
+	return func(p *gitnessClient) {
 		p.address = strings.TrimSuffix(address, "/")
 	}
 }
 
 // WithTracing returns an option to enable tracing.
 func WithTracing(tracing bool) Option {
-	return func(p *client) {
+	return func(p *gitnessClient) {
 		p.tracing = tracing
 	}
 }

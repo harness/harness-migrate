@@ -15,6 +15,7 @@
 package gitimporter
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -23,27 +24,34 @@ import (
 	"github.com/harness/harness-migrate/internal/harness"
 	"github.com/harness/harness-migrate/internal/tracer"
 	"github.com/harness/harness-migrate/internal/util"
+	"github.com/harness/harness-migrate/types"
 )
 
 // Importer imports data from gitlab to Harness.
 type Importer struct {
 	Harness harness.Client
 
-	HarnessSpace    string
-	HarnessToken    string
-	HarnessEndpoint string
+	HarnessSpace string
+	HarnessToken string
+	Endpoint     string
 
 	ZipFileLocation string
 	SkipUsers       bool
+	Gitness         bool
 
 	Tracer tracer.Tracer
 
 	RequestId string
 }
 
-func NewImporter(baseURL, space, token, location, requestId string, skipUsers bool, tracer tracer.Tracer) *Importer {
+func NewImporter(baseURL, space, token, location, requestId string, skipUsers, gitness, trace bool, tracer tracer.Tracer) *Importer {
 	spaceSplit := strings.Split(space, "/")
-	client := harness.New(spaceSplit[0], token)
+
+	client := harness.New(spaceSplit[0], token, harness.WithAddress(baseURL), harness.WithTracing(trace))
+
+	if gitness {
+		client = harness.NewGitness(token, baseURL, harness.WithTracing(trace))
+	}
 
 	return &Importer{
 		Harness:         client,
@@ -51,15 +59,16 @@ func NewImporter(baseURL, space, token, location, requestId string, skipUsers bo
 		HarnessToken:    token,
 		Tracer:          tracer,
 		RequestId:       requestId,
-		HarnessEndpoint: baseURL,
+		Endpoint:        baseURL,
+		Gitness:         gitness,
 		ZipFileLocation: location,
 		SkipUsers:       skipUsers,
 	}
 }
 
-func (c *Importer) Import() error {
-	unzipLocation := filepath.Dir(c.ZipFileLocation)
-	err := util.Unzip(c.ZipFileLocation, unzipLocation)
+func (m *Importer) Import(ctx context.Context) error {
+	unzipLocation := filepath.Dir(m.ZipFileLocation)
+	err := util.Unzip(m.ZipFileLocation, unzipLocation)
 	if err != nil {
 		return fmt.Errorf("error unzipping: %w", err)
 	}
@@ -68,9 +77,32 @@ func (c *Importer) Import() error {
 		return fmt.Errorf("cannot get repo folders in unzip: %w", err)
 	}
 
-	c.Tracer.Log("importing folders: %v", folders)
+	m.Tracer.Log("importing folders: %v", folders)
 
 	// call git importer and other importers after this.
+	var dupRepos []types.Repository
+	for _, f := range folders {
+		repo, err := m.ReadRepoInfo(f)
+		if err != nil {
+			return fmt.Errorf("failed to read repo infos: %w", err)
+		}
+
+		hRepo, err := m.CreateRepo(repo, m.HarnessSpace, m.Tracer)
+		if err != nil && util.IsErrConflict(err) {
+			m.Tracer.LogError("found a duplicate repo for %q: %w", repo.Slug, err)
+			dupRepos = append(dupRepos, repo)
+			continue
+		}
+		if err != nil {
+			return fmt.Errorf("failed to create repo %q: %w", repo.Slug, err)
+		}
+
+		err = m.Push(ctx, f, hRepo, m.Tracer)
+		if err != nil {
+			return fmt.Errorf("failed to push to repo: %w", err)
+		}
+	}
+
 	return nil
 }
 

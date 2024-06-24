@@ -22,12 +22,12 @@ type (
 		ErrorMessage string `json:"error_message"`
 	}
 
-	// RepositoryUsersImportInput is object for creating/rejecting user invite during repo(s) import.
-	RepositoryUsersImportInput struct {
+	// UsersImportInput is object for creating/rejecting user invite during repo(s) import.
+	UsersImportInput struct {
 		Emails []string `json:"emails"`
 	}
 
-	RepositoryPRsImportInput struct {
+	PRsImportInput struct {
 		PullRequestData
 	}
 )

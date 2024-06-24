@@ -74,13 +74,13 @@ type Client interface {
 	CreatePipeline(org, project string, pipeline []byte) error
 
 	// CreateRepository creates a repository.
-	CreateRepository(org, project string, repo *RepositoryCreateRequest) (*Repository, error)
+	CreateRepository(parentRef string, repo *RepositoryCreateRequest) (*Repository, error)
 
-	// HarnessCodePRImport imports PR within a repository.
-	HarnessCodePRImport(repoRef string, in *types.RepositoryPRsImportInput) (*types.Response, error)
+	// ImportPRs imports PRs within a repository.
+	ImportPRs(repoRef string, in *types.PRsImportInput) (*types.Response, error)
 
-	// HarnessCodeInviteUser provides all email id to harness code of users which needs to invited.
-	HarnessCodeInviteUser(space string, in *types.RepositoryUsersImportInput) (*types.Response, error)
+	// InviteUser provides all users emails which need to be invited.
+	InviteUser(space string, in *types.UsersImportInput) (*types.Response, error)
 }
 
 // WaitHarnessSecretManager blocks until the harness

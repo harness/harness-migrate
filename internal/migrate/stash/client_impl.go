@@ -22,7 +22,7 @@ type (
 
 	Export struct {
 		stash      *wrapper
-		org        string
+		project    string
 		repository string
 
 		checkpointManager *checkpoint.CheckpointManager
@@ -33,14 +33,14 @@ type (
 
 func New(
 	client *scm.Client,
-	org string,
+	project string,
 	repo string,
 	checkpointer *checkpoint.CheckpointManager,
 	tracer tracer.Tracer,
 ) *Export {
 	return &Export{
 		stash:             &wrapper{client},
-		org:               org,
+		project:           project,
 		repository:        repo,
 		checkpointManager: checkpointer,
 		tracer:            tracer,

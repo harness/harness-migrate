@@ -31,12 +31,13 @@ type gitImport struct {
 	debug bool
 	trace bool
 
-	harnessEndpoint string
-	harnessToken    string
-	harnessSpace    string
+	endpoint     string
+	harnessToken string
+	harnessSpace string
 	//harnessRepo     string
 
 	skipUsers bool
+	Gitness   bool
 
 	filePath string
 }
@@ -55,11 +56,11 @@ func (c *gitImport) run(*kingpin.ParseContext) error {
 	defer tracer_.Close()
 
 	importUuid := uuid.New().String()
-	c.harnessEndpoint, _ = strings.CutSuffix(c.harnessEndpoint, "/")
-	importer := gitimporter.NewImporter(c.harnessEndpoint, c.harnessSpace, c.harnessToken, c.filePath, importUuid, c.skipUsers, tracer_)
+	c.endpoint, _ = strings.CutSuffix(c.endpoint, "/")
+	importer := gitimporter.NewImporter(c.endpoint, c.harnessSpace, c.harnessToken, c.filePath, importUuid, c.skipUsers, c.Gitness, c.trace, tracer_)
 
 	tracer_.Log("starting operation with id: %s", importUuid)
-	return importer.Import()
+	return importer.Import(ctx)
 }
 
 func registerGitImporter(app *kingpin.CmdClause) {
@@ -71,10 +72,10 @@ func registerGitImporter(app *kingpin.CmdClause) {
 		Required().
 		StringVar(&c.filePath)
 
-	cmd.Flag("harnessEndpoint", "url of harness code host").
-		Default("https://app.harness.io/gateway/code").
-		Envar("harness_HOST").
-		StringVar(&c.harnessEndpoint)
+	cmd.Flag("endpoint", "url of target Harness Code/Gitness host").
+		Default("https://app.harness.io/").
+		Envar("target_HOST").
+		StringVar(&c.endpoint)
 
 	cmd.Flag("token", "harness api token").
 		Required().
@@ -94,6 +95,11 @@ func registerGitImporter(app *kingpin.CmdClause) {
 	// cmd.Flag("repo", "Required in case of single repo import which already exists.").
 	//	Envar("HARNESS_REPO").
 	//	StringVar(&c.harnessRepo)
+
+	cmd.Flag("Gitness", "import into a Gitness instance").
+		Default("false").
+		Envar("Gitness").
+		BoolVar(&c.Gitness)
 
 	cmd.Flag("debug", "enable debug logging").
 		BoolVar(&c.debug)

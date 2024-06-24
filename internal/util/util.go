@@ -189,3 +189,25 @@ func GetJson(data any) ([]byte, error) {
 	}
 	return jsonString, nil
 }
+
+// Join joins any number of path elements into a single path,
+// separating them with slashes. Empty elements are ignored.
+func JoinPaths(elem ...string) string {
+	size := 0
+	for _, e := range elem {
+		size += len(e)
+	}
+	if size == 0 {
+		return ""
+	}
+	buf := make([]byte, 0, size+len(elem)-1)
+	for _, e := range elem {
+		if len(buf) > 0 || e != "" {
+			if len(buf) > 0 {
+				buf = append(buf, '/')
+			}
+			buf = append(buf, e...)
+		}
+	}
+	return string(buf)
+}

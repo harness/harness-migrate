@@ -15,12 +15,12 @@ func (e *Export) ListRepositories(
 	ctx context.Context,
 	_ types.ListOptions,
 ) ([]types.RepoResponse, error) {
-	e.tracer.Start(common.MsgStartRepoList, "bitbucket", e.org)
+	e.tracer.Start(common.MsgStartRepoList, "bitbucket", e.project)
 	opts := scm.ListOptions{Page: 1, Size: 25}
 	var allRepos []*scm.Repository
 
 	if e.repository != "" {
-		repoSlug := strings.Join([]string{e.org, e.repository}, "/")
+		repoSlug := strings.Join([]string{e.project, e.repository}, "/")
 		repo, _, err := e.stash.Repositories.Find(ctx, repoSlug)
 		if err != nil {
 			e.tracer.LogError(common.ErrRepoList, err)
@@ -31,7 +31,7 @@ func (e *Export) ListRepositories(
 	}
 
 	for {
-		repos, resp, err := e.stash.Repositories.ListNamespace(ctx, e.org, opts)
+		repos, resp, err := e.stash.Repositories.ListNamespace(ctx, e.project, opts)
 		if err != nil {
 			e.tracer.LogError(common.ErrRepoList, err)
 		}

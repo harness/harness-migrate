@@ -14,7 +14,7 @@
 
 package gitimporter
 
-func (c *Importer) InviteUsers(users []string) error {
+func (m *Importer) InviteUsers(users []string) error {
 	// todo: implement
 	return nil
 }

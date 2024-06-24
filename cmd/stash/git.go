@@ -37,7 +37,7 @@ type exportCommand struct {
 	trace bool
 	file  string
 
-	org           string
+	project       string
 	srcRepository string
 	user          string
 	token         string
@@ -93,7 +93,7 @@ func (c *exportCommand) run(*kingpin.ParseContext) error {
 	}
 
 	// extract the data
-	e := stash.New(client, c.org, repository, checkpointManager, tracer_)
+	e := stash.New(client, c.project, repository, checkpointManager, tracer_)
 
 	exporter := gitexporter.NewExporter(e, c.file, c.user, c.token, tracer_)
 	return exporter.Export(ctx)
@@ -116,10 +116,10 @@ func registerGit(app *kingpin.CmdClause) {
 		Envar("stash_HOST").
 		StringVar(&c.url)
 
-	cmd.Flag("org", "stash organization").
+	cmd.Flag("project", "stash project").
 		Required().
-		Envar("stash_ORG").
-		StringVar(&c.org)
+		Envar("stash_PROJECT").
+		StringVar(&c.project)
 
 	cmd.Flag("src_repository", "optional name of the source repository to export").
 		Envar("stash_SRC_REPOSITORY").

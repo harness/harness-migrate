@@ -135,10 +135,6 @@ func registerGit(app *kingpin.CmdClause) {
 		Envar("github_TOKEN").
 		StringVar(&c.token)
 
-	cmd.Flag("username", "github username").
-		Envar("github_USERNAME").
-		StringVar(&c.user)
-
 	cmd.Flag("resume", "resume from last checkpoint").
 		Default("false").
 		BoolVar(&c.checkpoint)

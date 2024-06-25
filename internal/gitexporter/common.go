@@ -33,11 +33,23 @@ func MapPRComment(comments []*types.PRComment) []externalTypes.Comment {
 	r := make([]externalTypes.Comment, len(comments))
 	for i, c := range comments {
 		r[i] = externalTypes.Comment{
-			Comment:         c.Comment,
-			CommentMetadata: externalTypes.CommentMetadata(c.CommentMetadata),
+			Comment:     c.Comment,
+			ParentID:    c.ParentID,
+			CodeComment: mapCodeComment(c.CodeComment),
 		}
 	}
 	return r
+}
+
+func mapCodeComment(c *types.CodeComment) *externalTypes.CodeComment {
+	return &externalTypes.CodeComment{
+		Path:         c.Path,
+		CodeSnippet:  externalTypes.Hunk(c.CodeSnippet),
+		Side:         c.Side,
+		HunkHeader:   c.HunkHeader,
+		SourceSha:    c.SourceSha,
+		MergeBaseSha: c.MergeBaseSha,
+	}
 }
 
 func MapBranchRules(rules []*types.BranchRule) []externalTypes.BranchRule {

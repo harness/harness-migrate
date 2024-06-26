@@ -18,7 +18,7 @@ func (e *Export) ListPullRequests(
 	_ types.PullRequestListOptions,
 ) ([]types.PRResponse, error) {
 	e.tracer.Start(common.MsgStartPrExport, repoSlug)
-	opts := scm.PullRequestListOptions{Page: 1, Open: true, Closed: true}
+	opts := scm.PullRequestListOptions{Page: 1, Size: 25, Open: true, Closed: true}
 	var allPrs []types.PRResponse
 	msgPrExport := common.MsgCompletePrExport
 	defer func() {

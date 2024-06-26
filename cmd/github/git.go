@@ -54,11 +54,18 @@ func (c *exportCommand) run(*kingpin.ParseContext) error {
 	ctx := context.Background()
 	ctx = slog.NewContext(ctx, log)
 
-	// create the github client (url, token, org)
-	client, err := scmgithub.New(c.url)
-	if err != nil {
-		return err
+	// create the github client
+	var client *scm.Client
+	var err error
+	if c.url != "" {
+		client, err = scmgithub.New(c.url)
+		if err != nil {
+			return err
+		}
+	} else {
+		client = scmgithub.NewDefault()
 	}
+
 	// provide a custom http.Client with a transport
 	// that injects the private github token through
 	// the PRIVATE_TOKEN header variable.
@@ -111,7 +118,6 @@ func registerGit(app *kingpin.CmdClause) {
 		StringVar(&c.file)
 
 	cmd.Flag("host", "github host url").
-		Required().
 		Envar("github_HOST").
 		StringVar(&c.url)
 
@@ -128,11 +134,6 @@ func registerGit(app *kingpin.CmdClause) {
 		Required().
 		Envar("github_TOKEN").
 		StringVar(&c.token)
-
-	cmd.Flag("username", "github username").
-		Required().
-		Envar("github_USERNAME").
-		StringVar(&c.user)
 
 	cmd.Flag("resume", "resume from last checkpoint").
 		Default("false").

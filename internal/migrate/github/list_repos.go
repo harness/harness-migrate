@@ -34,6 +34,7 @@ func (e *Export) ListRepositories(
 		repos, resp, err := e.github.Repositories.ListNamespace(ctx, e.org, opts)
 		if err != nil {
 			e.tracer.LogError(common.ErrRepoList, err)
+			return nil, fmt.Errorf("failed to get repos for org %s: %w", e.org, err)
 		}
 		allRepos = append(allRepos, repos...)
 

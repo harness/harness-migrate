@@ -85,14 +85,6 @@ func (e *Export) ListPullRequestComments(ctx context.Context, repoSlug string, p
 	return comments, nil
 }
 
-// ListPullRequests implements gitexporter.Interface.
-func (e *Export) ListPullRequests(ctx context.Context, repoSlug string, opts types.PullRequestListOptions) ([]types.PRResponse, error) {
-	// Mock implementation
-	fmt.Printf("Listing pull requests for repo: %s\n", repoSlug)
-	prs := []types.PRResponse{}
-	return prs, nil
-}
-
 // ListWebhooks implements gitexporter.Interface.
 func (e *Export) ListWebhooks(ctx context.Context, repoSlug string, logger gitexporter.Logger, opts types.WebhookListOptions) (types.WebhookData, error) {
 	// Mock implementation

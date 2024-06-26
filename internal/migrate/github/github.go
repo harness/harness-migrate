@@ -17,6 +17,7 @@ package github
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/harness/harness-migrate/internal/checkpoint"
 	"github.com/harness/harness-migrate/internal/gitexporter"
@@ -63,30 +64,38 @@ func New(
 
 // FetchPullRequestRefs implements gitexporter.Interface.
 func (e *Export) FetchPullRequestRefs(ctx context.Context, repo *git.Repository, repoSlug string, scmLogin string, scmToken string) error {
-	panic("unimplemented")
+	// Mock implementation
+	fmt.Printf("Fetching pull request refs for repo: %s\n", repoSlug)
+	return nil
 }
 
 // ListBranchRules implements gitexporter.Interface.
 func (e *Export) ListBranchRules(ctx context.Context, repoSlug string, opts types.ListOptions) ([]*types.BranchRule, error) {
-	panic("unimplemented")
+	// Mock implementation
+	fmt.Printf("Listing branch rules for repo: %s\n", repoSlug)
+	rules := []*types.BranchRule{}
+	return rules, nil
 }
 
 // ListPullRequestComments implements gitexporter.Interface.
 func (e *Export) ListPullRequestComments(ctx context.Context, repoSlug string, prNumber int, opts types.ListOptions) ([]*types.PRComment, error) {
-	panic("unimplemented")
-}
-
-// ListRepositories implements gitexporter.Interface.
-func (e *Export) ListRepositories(ctx context.Context, opts types.ListOptions) ([]types.RepoResponse, error) {
-	panic("unimplemented")
+	// Mock implementation
+	fmt.Printf("Listing comments for pull request #%d in repo: %s\n", prNumber, repoSlug)
+	comments := []*types.PRComment{}
+	return comments, nil
 }
 
 // ListWebhooks implements gitexporter.Interface.
 func (e *Export) ListWebhooks(ctx context.Context, repoSlug string, logger gitexporter.Logger, opts types.WebhookListOptions) (types.WebhookData, error) {
-	panic("unimplemented")
+	// Mock implementation
+	fmt.Printf("Listing webhooks for repo: %s\n", repoSlug)
+	webhooks := types.WebhookData{}
+	return webhooks, nil
 }
 
 // PullRequestReviewers implements gitexporter.Interface.
 func (e *Export) PullRequestReviewers(ctx context.Context, prNumber int) error {
-	panic("unimplemented")
+	// Mock implementation
+	fmt.Printf("Fetching reviewers for pull request #%d\n", prNumber)
+	return nil
 }

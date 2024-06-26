@@ -3,46 +3,44 @@ package stash
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/url"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/harness/harness-migrate/internal/tracer"
 	"github.com/harness/harness-migrate/internal/types"
 
 	"github.com/drone/go-scm/scm"
 )
 
 const (
-	defaultLimit   = 25
-	COMMENTED      = "COMMENTED"
-	DEVELOPMENT    = "development"
-	PRODUCTION     = "production"
-	BUGFIX         = "BUGFIX"
-	FEATURE        = "FEATURE"
-	HOTFIX         = "HOTFIX"
-	RELEASE        = "RELEASE"
-	BRANCH         = "BRANCH"
-	PATTERN        = "PATTERN"
-	MODEL_BRANCH   = "MODEL_BRANCH"
-	MODEL_CATEGORY = "MODEL_CATEGORY"
+	defaultLimit             = 25
+	segmentAdded             = "ADDED"
+	segmentRemoved           = "REMOVED"
+	segmentContext           = "CONTEXT"
+	branchDevelopment        = "development"
+	branchProduction         = "production"
+	matcherTypeBranch        = "BRANCH"
+	matcherTypePattern       = "PATTERN"
+	matcherTypeModelBranch   = "MODEL_BRANCH"
+	matcherTypeModelCategory = "MODEL_CATEGORY"
 )
 
-func filterOutCommentActivities(from []any, tracer tracer.Tracer) []prCommentActivity {
+func filterOutCommentActivities(from []any) []prCommentActivity {
 	to := []prCommentActivity{}
 	for i, activity := range from {
 		if activityMap, ok := activity.(map[string]any); ok {
-			if action, ok := activityMap["action"].(string); ok && action == COMMENTED {
+			if action, ok := activityMap["action"].(string); ok && action == "COMMENTED" {
 				// Marshal the map to JSON, then unmarshal to prCommentActivity
 				data, err := json.Marshal(activityMap)
 				if err != nil {
-					tracer.LogError("Error parsing JSON from activity %d: %v", i, err)
+					log.Default().Printf("Error parsing JSON from activity %d: %v", i, err)
 					continue
 				}
 				var prComment prCommentActivity
 				if err := json.Unmarshal(data, &prComment); err != nil {
-					tracer.LogError("Error converting comment activity %d from JSON: %v", i, err)
+					log.Default().Printf("Error converting comment activity %d from JSON: %v", i, err)
 					continue
 				}
 				to = append(to, prComment)
@@ -52,12 +50,12 @@ func filterOutCommentActivities(from []any, tracer tracer.Tracer) []prCommentAct
 	return to
 }
 
-func convertPullRequestCommentsList(from []any, tracer tracer.Tracer) []*types.PRComment {
-	commentActivities := filterOutCommentActivities(from, tracer)
+func convertPullRequestCommentsList(from []any) []*types.PRComment {
+	commentActivities := filterOutCommentActivities(from)
 	to := []*types.PRComment{}
 	for _, c := range commentActivities {
 		comment := c.Comment
-		to = append(to, convertPullRequestComment(comment, 0, &c.CommentAnchor))
+		to = append(to, convertPullRequestComment(comment, 0, c.CommentAnchor, c.Diff))
 		childComments := comment.Comments
 		// child comments are nested
 		for len(childComments) > 0 {
@@ -65,28 +63,33 @@ func convertPullRequestCommentsList(from []any, tracer tracer.Tracer) []*types.P
 				break
 			}
 			childComment := childComments[0]
-			to = append(to, convertPullRequestComment(childComment, comment.ID, nil))
+			to = append(to, convertPullRequestComment(childComment, comment.ID, commentAnchor{}, codeDiff{}))
 			childComments = childComment.Comments
 		}
 	}
 	return to
 }
 
-func convertPullRequestComment(from pullRequestComment, parentID int, anchor *commentAnchor) *types.PRComment {
-	var metadata types.CommentMetadata
-	if anchor != nil && (*anchor).Path != "" {
-		commentAnchor := *anchor
-		metadata = types.CommentMetadata{
-			Path:         commentAnchor.Path,
-			Line:         commentAnchor.Line,
-			LineSpan:     1,
-			SourceSha:    commentAnchor.FromHash,
-			MergeBaseSha: commentAnchor.ToHash,
+func convertPullRequestComment(from pullRequestComment, parentID int, anchor commentAnchor, diff codeDiff) *types.PRComment {
+	var metadata types.CodeComment
+	if anchor.Path != "" {
+		commentSide := "NEW"
+		if anchor.FileType == "FROM" {
+			commentSide = "OLD"
 		}
-	}
-	if parentID != 0 {
-		metadata = types.CommentMetadata{
-			ParentID: parentID,
+		var snippet types.Hunk
+		var hunkHeader string
+		if anchor.Line != 0 {
+			snippet = extractSnippetInfo(diff)
+			hunkHeader = extractHunkInfo(anchor, diff)
+		}
+		metadata = types.CodeComment{
+			Path:         anchor.Path,
+			CodeSnippet:  snippet,
+			Side:         commentSide,
+			HunkHeader:   hunkHeader,
+			SourceSha:    anchor.FromHash,
+			MergeBaseSha: anchor.ToHash,
 		}
 	}
 	return &types.PRComment{Comment: scm.Comment{
@@ -99,8 +102,56 @@ func convertPullRequestComment(from pullRequestComment, parentID int, anchor *co
 			Name:  from.Author.DisplayName,
 			Email: from.Author.EmailAddress,
 		}},
-		CommentMetadata: metadata,
+		ParentID:    parentID,
+		CodeComment: &metadata,
 	}
+}
+
+func extractSnippetInfo(diff codeDiff) types.Hunk {
+	hunk := diff.Hunks[0]
+	header := fmt.Sprintf("-%d,%d +%d,%d", hunk.SourceLine, hunk.SourceSpan, hunk.DestinationLine, hunk.DestinationSpan)
+	lines := []string{}
+	for _, segment := range hunk.Segments {
+		l := ""
+		switch segment.Type {
+		case segmentAdded:
+			l += "+"
+		case segmentRemoved:
+			l += "-"
+		case segmentContext:
+			l += " "
+		}
+		for _, line := range segment.Lines {
+			lines = append(lines, l+line.Line)
+		}
+	}
+	return types.Hunk{
+		Header: header,
+		Lines:  lines,
+	}
+}
+
+func extractHunkInfo(anchor commentAnchor, diff codeDiff) string {
+	hunk := diff.Hunks[0]
+	for _, segment := range hunk.Segments {
+		if anchor.LineType != segment.Type {
+			continue
+		}
+		for _, line := range segment.Lines {
+			if line.CommentIDs == nil {
+				continue
+			}
+			sourceSpan, destinationSpan := 1, 1
+			if segment.Type == segmentAdded {
+				sourceSpan = 0
+			}
+			if segment.Type == segmentRemoved {
+				destinationSpan = 0
+			}
+			return fmt.Sprintf("-%d,%d +%d,%d", line.Source, sourceSpan, line.Destination, destinationSpan)
+		}
+	}
+	return ""
 }
 
 func convertBranchRulesList(from []*branchPermission, m map[string]modelValue) []*types.BranchRule {
@@ -116,19 +167,19 @@ func convertBranchRule(from *branchPermission, m map[string]modelValue) *types.B
 	branches := []string{}
 	includedPatterns := []string{}
 	switch from.Matcher.Type.ID {
-	case BRANCH:
+	case matcherTypeBranch:
 		// displayID will give just branch name main and ID will give refs/heads/main
 		branches = append(branches, from.Matcher.DisplayID)
-	case PATTERN:
+	case matcherTypePattern:
 		includedPatterns = append(includedPatterns, convertIntoGlobstar(from.Matcher.ID))
-	case MODEL_BRANCH:
+	case matcherTypeModelBranch:
 		v := m[from.Matcher.ID]
 		if v.UseDefault {
 			includeDefault = true
 		} else {
-			branches = append(branches, extractBranch(v.RefID))
+			branches = append(branches, strings.TrimPrefix(v.RefID, "refs/heads/"))
 		}
-	case MODEL_CATEGORY:
+	case matcherTypeModelCategory:
 		includedPatterns = append(includedPatterns, convertIntoGlobstar(m[from.Matcher.ID].Prefix))
 	}
 	return &types.BranchRule{
@@ -144,8 +195,8 @@ func convertBranchRule(from *branchPermission, m map[string]modelValue) *types.B
 
 func convertBranchModelsMap(from branchModels) map[string]modelValue {
 	m := map[string]modelValue{}
-	m[DEVELOPMENT] = modelValue{modelBranch: from.Development}
-	m[PRODUCTION] = modelValue{modelBranch: from.Production}
+	m[branchDevelopment] = modelValue{modelBranch: from.Development}
+	m[branchProduction] = modelValue{modelBranch: from.Production}
 	for _, c := range from.Categories {
 		m[c.ID] = modelValue{Prefix: c.Prefix}
 	}
@@ -157,11 +208,6 @@ func convertIntoGlobstar(s string) string {
 		return s + "**"
 	}
 	return s
-}
-
-func extractBranch(b string) string {
-	parts := strings.Split(b, "/")
-	return parts[len(parts)-1]
 }
 
 func (e *Error) Error() string {

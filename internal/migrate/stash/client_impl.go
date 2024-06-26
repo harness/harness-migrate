@@ -22,7 +22,7 @@ type (
 
 	Export struct {
 		stash      *wrapper
-		org        string
+		project    string
 		repository string
 
 		checkpointManager *checkpoint.CheckpointManager
@@ -33,14 +33,14 @@ type (
 
 func New(
 	client *scm.Client,
-	org string,
+	project string,
 	repo string,
 	checkpointer *checkpoint.CheckpointManager,
 	tracer tracer.Tracer,
 ) *Export {
 	return &Export{
 		stash:             &wrapper{client},
-		org:               org,
+		project:           project,
 		repository:        repo,
 		checkpointManager: checkpointer,
 		tracer:            tracer,
@@ -52,7 +52,6 @@ func (c *wrapper) ListPRComments(
 	repoSlug string,
 	prNumber int,
 	opts types.ListOptions,
-	tracer tracer.Tracer,
 ) ([]*types.PRComment, *scm.Response, error) {
 	namespace, name := scm.Split(repoSlug)
 	path := fmt.Sprintf("rest/api/1.0/projects/%s/repos/%s/pull-requests/%d/activities?%s",
@@ -63,7 +62,7 @@ func (c *wrapper) ListPRComments(
 		res.Page.First = 1
 		res.Page.Next = opts.Page + 1
 	}
-	return convertPullRequestCommentsList(out.Values, tracer), res, err
+	return convertPullRequestCommentsList(out.Values), res, err
 }
 
 func (c *wrapper) ListBranchRules(

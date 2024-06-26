@@ -92,18 +92,24 @@ type (
 		BranchRules     []*BranchRule
 	}
 
-	CommentMetadata struct {
-		ParentID     int
+	Hunk struct {
+		Header string
+		Lines  []string
+	}
+
+	CodeComment struct {
 		Path         string
-		Line         int
-		LineSpan     int
+		CodeSnippet  Hunk
+		Side         string
+		HunkHeader   string
 		SourceSha    string
 		MergeBaseSha string
 	}
 
 	PRComment struct {
 		scm.Comment
-		CommentMetadata
+		ParentID    int
+		CodeComment *CodeComment
 	}
 
 	PullRequestData struct {

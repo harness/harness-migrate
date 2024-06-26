@@ -47,6 +47,37 @@ type (
 		Orphaned bool   `json:"orphaned"`
 	}
 
+	line struct {
+		Destination int    `json:"destination"`
+		Source      int    `json:"source"`
+		Line        string `json:"line"`
+		Truncated   bool   `json:"truncated"`
+		CommentIDs  []int  `json:"commentIds"`
+	}
+
+	segment struct {
+		Type      string `json:"type"`
+		Lines     []line `json:"lines"`
+		Truncated bool   `json:"truncated"`
+	}
+
+	hunk struct {
+		SourceLine      int       `json:"sourceLine"`
+		SourceSpan      int       `json:"sourceSpan"`
+		DestinationLine int       `json:"destinationLine"`
+		DestinationSpan int       `json:"destinationSpan"`
+		Segments        []segment `json:"segments"`
+		Truncated       bool      `json:"truncated"`
+	}
+
+	codeDiff struct {
+		Source      interface{} `json:"source"`
+		Destination interface{} `json:"destination"`
+		Hunks       []hunk      `json:"hunks"`
+		Truncated   bool        `json:"truncated"`
+		Properties  interface{} `json:"properties"`
+	}
+
 	prCommentActivity struct {
 		ID            int                `json:"id"`
 		CreatedDate   int64              `json:"createdDate"`
@@ -55,13 +86,7 @@ type (
 		CommentAction string             `json:"commentAction"`
 		Comment       pullRequestComment `json:"comment"`
 		CommentAnchor commentAnchor      `json:"commentAnchor"`
-		Diff          struct {
-			Source      interface{}   `json:"source"`
-			Destination interface{}   `json:"destination"`
-			Hunks       []interface{} `json:"hunks"`
-			Truncated   bool          `json:"truncated"`
-			Properties  interface{}   `json:"properties"`
-		}
+		Diff          codeDiff           `json:"diff"`
 	}
 
 	activities struct {

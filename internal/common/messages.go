@@ -44,6 +44,7 @@ const (
 	ErrPrList                       = "cannot list pr due to error :%v"
 	ErrCommentsList                 = "cannot list comments for repo %s pull request %d: %v"
 	ErrBranchRulesList              = "cannot list branch rules for repo %s: %v"
+	ErrGitPush                      = "cannot push to %q for repo %q: %w"
 
 	PanicCheckpointSaveErr  = "error occurred in reading checkpoint data"
 	PanicCannotCreateFolder = "cannot create folder: %v"

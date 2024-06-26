@@ -248,4 +248,14 @@ type (
 		Description   string `json:"description"`
 		IsPublic      bool   `json:"is_public"`
 	}
+
+	// GitnessRepositoryCreateRequest defines a repo creation request on Gitness.
+	GitnessRepositoryCreateRequest struct {
+		RepositoryCreateRequest
+		ParentRef string `json:"parent_ref"`
+	}
+
+	UpdateDefaultBranchInput struct {
+		Name string `json:"name"`
+	}
 )

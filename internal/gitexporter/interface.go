@@ -19,7 +19,7 @@ import (
 
 	"github.com/harness/harness-migrate/internal/types"
 
-	git "github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/config"
 )
 
 // Interface helps to support a generic way of doing export for all git providers
@@ -32,7 +32,7 @@ type Interface interface {
 
 	PullRequestReviewers(ctx context.Context, prNumber int) error
 
-	FetchPullRequestRefs(ctx context.Context, repo *git.Repository, repoSlug string, scmLogin string, scmToken string) error
+	PullRequestRefs() []config.RefSpec
 
 	ListWebhooks(ctx context.Context, repoSlug string, logger Logger, opts types.WebhookListOptions) (types.WebhookData, error)
 

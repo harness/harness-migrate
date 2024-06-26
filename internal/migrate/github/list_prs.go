@@ -29,7 +29,7 @@ func (e *Export) ListPullRequests(
 	val, ok, err := checkpoint.GetCheckpointData[[]types.PRResponse](e.checkpointManager, checkpointDataKey)
 	if err != nil {
 		e.tracer.LogError(common.ErrCheckpointDataRead, err)
-		panic(common.PanicCheckpointSaveErr)
+		return nil, fmt.Errorf(common.PanicCheckpointSaveErr)
 	}
 	if ok && val != nil {
 		allPrs = append(allPrs, val...)
@@ -53,7 +53,7 @@ func (e *Export) ListPullRequests(
 		prs, resp, err := e.github.PullRequests.List(ctx, repoSlug, opts)
 		if err != nil {
 			e.tracer.LogError(common.ErrPrList, err)
-			return nil, fmt.Errorf("cannot list pr: %w", err)
+			return nil, fmt.Errorf("cannot list prs: %w", err)
 		}
 		mappedPrs := gitexporter.MapPullRequest(prs)
 		allPrs = append(allPrs, mappedPrs...)

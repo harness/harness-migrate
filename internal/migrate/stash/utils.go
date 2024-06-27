@@ -71,22 +71,18 @@ func convertPullRequestCommentsList(from []any) []*types.PRComment {
 }
 
 func convertPullRequestComment(from pullRequestComment, parentID int, anchor commentAnchor, diff codeDiff) *types.PRComment {
-	var metadata types.CodeComment
+	var codeComment *types.CodeComment
 	if anchor.Path != "" {
-		commentSide := "NEW"
-		if anchor.FileType == "FROM" {
-			commentSide = "OLD"
-		}
 		var snippet types.Hunk
 		var hunkHeader string
 		if anchor.Line != 0 {
 			snippet = extractSnippetInfo(diff)
 			hunkHeader = extractHunkInfo(anchor, diff)
 		}
-		metadata = types.CodeComment{
+		codeComment = &types.CodeComment{
 			Path:         anchor.Path,
 			CodeSnippet:  snippet,
-			Side:         commentSide,
+			Side:         getCommentSide(anchor.FileType),
 			HunkHeader:   hunkHeader,
 			SourceSha:    anchor.ToHash,
 			MergeBaseSha: anchor.FromHash,
@@ -103,13 +99,20 @@ func convertPullRequestComment(from pullRequestComment, parentID int, anchor com
 			Email: from.Author.EmailAddress,
 		}},
 		ParentID:    parentID,
-		CodeComment: &metadata,
+		CodeComment: codeComment,
 	}
+}
+
+func getCommentSide(fileType string) string {
+	if fileType == "FROM" {
+		return "OLD"
+	}
+	return "NEW"
 }
 
 func extractSnippetInfo(diff codeDiff) types.Hunk {
 	hunk := diff.Hunks[0]
-	header := fmt.Sprintf("-%d,%d +%d,%d", hunk.SourceLine, hunk.SourceSpan, hunk.DestinationLine, hunk.DestinationSpan)
+	header := fmt.Sprintf("@@ -%d,%d +%d,%d @@", hunk.SourceLine, hunk.SourceSpan, hunk.DestinationLine, hunk.DestinationSpan)
 	lines := []string{}
 	for _, segment := range hunk.Segments {
 		l := ""
@@ -148,7 +151,7 @@ func extractHunkInfo(anchor commentAnchor, diff codeDiff) string {
 			if segment.Type == segmentRemoved {
 				destinationSpan = 0
 			}
-			return fmt.Sprintf("-%d,%d +%d,%d", line.Source, sourceSpan, line.Destination, destinationSpan)
+			return fmt.Sprintf("@@ -%d,%d +%d,%d @@", line.Source, sourceSpan, line.Destination, destinationSpan)
 		}
 	}
 	return ""

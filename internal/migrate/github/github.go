@@ -25,25 +25,7 @@ import (
 	"github.com/harness/harness-migrate/internal/types"
 
 	"github.com/drone/go-scm/scm"
-	git "github.com/go-git/go-git/v5"
-)
-
-type (
-	// wrapper wraps the Client to provide high level helper functions
-	// for making http requests and unmarshalling the response.
-	wrapper struct {
-		*scm.Client
-	}
-
-	Export struct {
-		github     *wrapper
-		org        string
-		repository string
-
-		checkpointManager *checkpoint.CheckpointManager
-
-		tracer tracer.Tracer
-	}
+	"github.com/go-git/go-git/v5/config"
 )
 
 func New(
@@ -63,9 +45,9 @@ func New(
 }
 
 // FetchPullRequestRefs implements gitexporter.Interface.
-func (e *Export) FetchPullRequestRefs(ctx context.Context, repo *git.Repository, repoSlug string, scmLogin string, scmToken string) error {
+func (e *Export) PullRequestRefs() []config.RefSpec {
 	// Mock implementation
-	fmt.Printf("Fetching pull request refs for repo: %s\n", repoSlug)
+	fmt.Printf("Fetching pull request refs\n")
 	return nil
 }
 
@@ -75,14 +57,6 @@ func (e *Export) ListBranchRules(ctx context.Context, repoSlug string, opts type
 	fmt.Printf("Listing branch rules for repo: %s\n", repoSlug)
 	rules := []*types.BranchRule{}
 	return rules, nil
-}
-
-// ListPullRequestComments implements gitexporter.Interface.
-func (e *Export) ListPullRequestComments(ctx context.Context, repoSlug string, prNumber int, opts types.ListOptions) ([]*types.PRComment, error) {
-	// Mock implementation
-	fmt.Printf("Listing comments for pull request #%d in repo: %s\n", prNumber, repoSlug)
-	comments := []*types.PRComment{}
-	return comments, nil
 }
 
 // ListWebhooks implements gitexporter.Interface.

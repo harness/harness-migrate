@@ -13,10 +13,10 @@ import (
 
 func (e *Export) ListRepositories(
 	ctx context.Context,
-	_ types.ListOptions,
+	params types.ListOptions,
 ) ([]types.RepoResponse, error) {
 	e.tracer.Start(common.MsgStartRepoList, "github", e.org)
-	opts := scm.ListOptions{Page: 1, Size: 25}
+	opts := scm.ListOptions{Page: params.Page, Size: params.Size}
 	var allRepos []*scm.Repository
 
 	if e.repository != "" {

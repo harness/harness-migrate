@@ -17,17 +17,7 @@ package gitexporter
 import (
 	"github.com/harness/harness-migrate/internal/types"
 	externalTypes "github.com/harness/harness-migrate/types"
-
-	"github.com/drone/go-scm/scm"
 )
-
-func MapPullRequest(prs []*scm.PullRequest) []types.PRResponse {
-	r := make([]types.PRResponse, len(prs))
-	for i, pr := range prs {
-		r[i] = types.PRResponse{PullRequest: *pr}
-	}
-	return r
-}
 
 func MapPRComment(comments []*types.PRComment) []externalTypes.Comment {
 	r := make([]externalTypes.Comment, len(comments))
@@ -42,6 +32,9 @@ func MapPRComment(comments []*types.PRComment) []externalTypes.Comment {
 }
 
 func mapCodeComment(c *types.CodeComment) *externalTypes.CodeComment {
+	if c == nil {
+		return nil
+	}
 	return &externalTypes.CodeComment{
 		Path:         c.Path,
 		CodeSnippet:  externalTypes.Hunk(c.CodeSnippet),

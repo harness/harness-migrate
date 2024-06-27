@@ -24,3 +24,19 @@ func MapRepository(repos []*scm.Repository) []types.RepoResponse {
 	}
 	return r
 }
+
+func MapPullRequest(prs []*scm.PullRequest) []types.PRResponse {
+	r := make([]types.PRResponse, len(prs))
+	for i, pr := range prs {
+		r[i] = types.PRResponse{PullRequest: *pr}
+	}
+	return r
+}
+
+func MapPRComment(comments []*scm.Comment) []*types.PRComment {
+	r := make([]*types.PRComment, len(comments))
+	for i, c := range comments {
+		r[i] = &types.PRComment{Comment: *c}
+	}
+	return r
+}

@@ -222,7 +222,7 @@ func (e *Exporter) getData(ctx context.Context, path string) ([]*types.RepoData,
 	var notSupportedErr *codeerror.OpNotSupportedError
 
 	// 1. list all the repos for the given org
-	repositories, err := e.exporter.ListRepositories(ctx, types.ListOptions{})
+	repositories, err := e.exporter.ListRepositories(ctx, types.ListOptions{Page: 1, Size: 25})
 	if err != nil {
 		return nil, fmt.Errorf("cannot list repositories: %w", err)
 	}
@@ -263,7 +263,7 @@ func (e *Exporter) getData(ctx context.Context, path string) ([]*types.RepoData,
 		repoData[i].BranchRules = branchRules
 
 		// 5. get all data for each pr
-		prs, err := e.exporter.ListPullRequests(ctx, repo.RepoSlug, types.PullRequestListOptions{})
+		prs, err := e.exporter.ListPullRequests(ctx, repo.RepoSlug, types.PullRequestListOptions{Page: 1, Size: 25, Open: true, Closed: true})
 		if errors.As(err, &notSupportedErr) {
 			return repoData, nil
 		}
@@ -273,7 +273,7 @@ func (e *Exporter) getData(ctx context.Context, path string) ([]*types.RepoData,
 
 		prData := make([]*types.PullRequestData, len(prs))
 		for j, pr := range prs {
-			comments, err := e.exporter.ListPullRequestComments(ctx, repo.RepoSlug, pr.Number, types.ListOptions{Page: 1})
+			comments, err := e.exporter.ListPullRequestComments(ctx, repo.RepoSlug, pr.Number, types.ListOptions{Page: 1, Size: 25})
 			if err != nil {
 				return nil, fmt.Errorf("encountered error in getting comments: %w", err)
 			}

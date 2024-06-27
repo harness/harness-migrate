@@ -6,7 +6,6 @@ import (
 
 	"github.com/harness/harness-migrate/internal/checkpoint"
 	"github.com/harness/harness-migrate/internal/common"
-	"github.com/harness/harness-migrate/internal/gitexporter"
 	"github.com/harness/harness-migrate/internal/types"
 
 	"github.com/drone/go-scm/scm"
@@ -15,10 +14,15 @@ import (
 func (e *Export) ListPullRequests(
 	ctx context.Context,
 	repoSlug string,
-	_ types.PullRequestListOptions,
+	params types.PullRequestListOptions,
 ) ([]types.PRResponse, error) {
 	e.tracer.Start(common.MsgStartPrExport, repoSlug)
-	opts := scm.PullRequestListOptions{Page: 1, Open: true, Closed: true}
+	opts := scm.PullRequestListOptions{
+		Page:   params.Page,
+		Size:   params.Size,
+		Open:   params.Open,
+		Closed: params.Closed,
+	}
 	var allPrs []types.PRResponse
 	msgPrExport := common.MsgCompletePrExport
 	defer func() {
@@ -55,7 +59,7 @@ func (e *Export) ListPullRequests(
 			e.tracer.LogError(common.ErrPrList, err)
 			return nil, fmt.Errorf("cannot list prs: %w", err)
 		}
-		mappedPrs := gitexporter.MapPullRequest(prs)
+		mappedPrs := common.MapPullRequest(prs)
 		allPrs = append(allPrs, mappedPrs...)
 
 		err = e.checkpointManager.SaveCheckpoint(checkpointDataKey, allPrs)

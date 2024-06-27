@@ -112,7 +112,7 @@ func getCommentSide(fileType string) string {
 
 func extractSnippetInfo(diff codeDiff) types.Hunk {
 	hunk := diff.Hunks[0]
-	header := fmt.Sprintf("@@ -%d,%d +%d,%d @@", hunk.SourceLine, hunk.SourceSpan, hunk.DestinationLine, hunk.DestinationSpan)
+	header := formatHunkHeader(hunk.SourceLine, hunk.SourceSpan, hunk.DestinationLine, hunk.DestinationSpan, "")
 	lines := []string{}
 	for _, segment := range hunk.Segments {
 		l := ""
@@ -151,10 +151,36 @@ func extractHunkInfo(anchor commentAnchor, diff codeDiff) string {
 			if segment.Type == segmentRemoved {
 				destinationSpan = 0
 			}
-			return fmt.Sprintf("@@ -%d,%d +%d,%d @@", line.Source, sourceSpan, line.Destination, destinationSpan)
+			return formatHunkHeader(line.Source, sourceSpan, line.Destination, destinationSpan, "")
 		}
 	}
 	return ""
+}
+
+func formatHunkHeader(source, sourceSpan, destination, destinationSpan int, sectionHeading string) string {
+	sb := strings.Builder{}
+	sb.Grow(20 + len(sectionHeading))
+
+	sb.WriteString("@@ -")
+	sb.WriteString(strconv.Itoa(source))
+	if sourceSpan != 1 {
+		sb.WriteByte(',')
+		sb.WriteString(strconv.Itoa(sourceSpan))
+	}
+	sb.WriteString(" +")
+	sb.WriteString(strconv.Itoa(destination))
+	if destinationSpan != 1 {
+		sb.WriteByte(',')
+		sb.WriteString(strconv.Itoa(destinationSpan))
+	}
+	sb.WriteString(" @@")
+
+	if sectionHeading != "" {
+		sb.WriteByte(' ')
+		sb.WriteString(sectionHeading)
+	}
+
+	return sb.String()
 }
 
 func convertBranchRulesList(from []*branchPermission, m map[string]modelValue) []*types.BranchRule {

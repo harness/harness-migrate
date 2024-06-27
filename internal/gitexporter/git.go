@@ -23,12 +23,13 @@ func (e *Exporter) CloneRepository(
 	repoData scm.Repository,
 	repoPath string,
 	repoSlug string, //for logging
+	pullreqRef []config.RefSpec,
 	tracer tracer.Tracer,
-) (*git.Repository, error) {
+) error {
 	tracer.Start(common.MsgStartGitClone, repoSlug)
 	gitPath := filepath.Join(repoPath, types.GitDir)
 	if err := util.CreateFolder(gitPath); err != nil {
-		return nil, err
+		return err
 	}
 
 	repo, err := git.PlainCloneContext(ctx, gitPath, true, &git.CloneOptions{
@@ -44,14 +45,15 @@ func (e *Exporter) CloneRepository(
 
 	if errors.Is(err, git.ErrRepositoryAlreadyExists) {
 		tracer.Log(common.MsgRepoAlreadyExists, repoSlug)
-		return nil, nil
+		return nil
 	}
 	if err != nil && !errors.Is(err, transport.ErrEmptyRemoteRepository) {
 		tracer.LogError(common.ErrGitClone, repoSlug, err)
-		return nil, fmt.Errorf("failed to clone repo %s from %q: %w", repoSlug, repoData.Clone, err)
+		return fmt.Errorf("failed to clone repo %s from %q: %w", repoSlug, repoData.Clone, err)
 	}
 
 	refSpecs := []config.RefSpec{"refs/heads/*:refs/heads/*", "refs/tags/*:refs/tags/*"}
+	refSpecs = append(refSpecs, pullreqRef...)
 
 	err = repo.Fetch(&git.FetchOptions{
 		RefSpecs: refSpecs,
@@ -63,10 +65,10 @@ func (e *Exporter) CloneRepository(
 	})
 	if err != nil && !errors.Is(err, git.NoErrAlreadyUpToDate) {
 		tracer.LogError(common.ErrGitFetch, repoSlug, err)
-		return nil, fmt.Errorf("failed to sync repo %s from %q: %w", repoSlug, repoData.Clone, err)
+		return fmt.Errorf("failed to sync repo %s from %q: %w", repoSlug, repoData.Clone, err)
 	}
 
 	tracer.Stop(common.MsgCompleteGitClone, repoSlug)
 
-	return repo, nil
+	return nil
 }

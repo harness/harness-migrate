@@ -240,14 +240,9 @@ func (e *Exporter) getData(ctx context.Context, path string) ([]*types.RepoData,
 			panic(fmt.Sprintf(common.PanicWritingFileData, err))
 		}
 
-		gitRepo, err := e.CloneRepository(ctx, repo.Repository, repoPath, repo.RepoSlug, e.Tracer)
+		err = e.CloneRepository(ctx, repo.Repository, repoPath, repo.RepoSlug, e.exporter.PullRequestRefs(), e.Tracer)
 		if err != nil {
 			return nil, fmt.Errorf("cannot clone the git repo for %s: %w", repo.RepoSlug, err)
-		}
-
-		err = e.exporter.FetchPullRequestRefs(ctx, gitRepo, repo.RepoSlug, e.ScmLogin, e.ScmToken)
-		if err != nil {
-			return nil, fmt.Errorf("cannot fetch the repo pull request references for %s: %w", repo.RepoSlug, err)
 		}
 
 		// 3. get all webhooks for each repo

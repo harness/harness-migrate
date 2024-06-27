@@ -23,8 +23,6 @@ const (
 	MsgStartGitClone             = "starting clone git repo for %q"
 	MsgRepoAlreadyExists         = "cloned git repo for %s already exists"
 	MsgCompleteGitClone          = "git clone finished for %q"
-	MsgGitFetchRef               = "fetching pull request references for %s"
-	MsgCompleteGitFetchRef       = "fetched pull request references for %s"
 	MsgStartWebhookList          = "starting listing webhooks for repo %s"
 	MsgStartPrCommentsExport     = "Starting PR comments export for repo %s pull request %d"
 	MsgCompletePrCommentsExport  = "PR comments export finished for repo %s pull request %d with total %d comments"
@@ -33,7 +31,7 @@ const (
 	MsgCompleteBranchRulesExport = "Branch rules export finished for repo %s with total %d rules"
 
 	ErrGitClone                     = "cannot clone the git repo %q due to error: %w"
-	ErrGitFetch                     = "cannot fetch repo pull request references for %s: %w"
+	ErrGitFetch                     = "cannot fetch repo references for %s: %w"
 	ErrWebhookList                  = "cannot list webhooks for repo %s: %w"
 	ErrRepoList                     = "cannot fetch repositories due to error :%v"
 	ErrCheckpointDataRead           = "cannot read checkpoint data: %s"

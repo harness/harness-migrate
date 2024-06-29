@@ -190,12 +190,11 @@ func convertBranchRulesList(from []*branchPermission, m map[string]modelValue) [
 
 func convertBranchRule(from *branchPermission, m map[string]modelValue) *types.BranchRule {
 	includeDefault := false
-	branches := []string{}
 	includedPatterns := []string{}
 	switch from.Matcher.Type.ID {
 	case matcherTypeBranch:
 		// displayID will give just branch name main and ID will give refs/heads/main
-		branches = append(branches, from.Matcher.DisplayID)
+		includedPatterns = append(includedPatterns, from.Matcher.DisplayID)
 	case matcherTypePattern:
 		includedPatterns = append(includedPatterns, convertIntoGlobstar(from.Matcher.ID))
 	case matcherTypeModelBranch:
@@ -203,7 +202,7 @@ func convertBranchRule(from *branchPermission, m map[string]modelValue) *types.B
 		if v.UseDefault {
 			includeDefault = true
 		} else {
-			branches = append(branches, strings.TrimPrefix(v.RefID, "refs/heads/"))
+			includedPatterns = append(includedPatterns, strings.TrimPrefix(v.RefID, "refs/heads/"))
 		}
 	case matcherTypeModelCategory:
 		includedPatterns = append(includedPatterns, convertIntoGlobstar(m[from.Matcher.ID].Prefix))
@@ -211,11 +210,9 @@ func convertBranchRule(from *branchPermission, m map[string]modelValue) *types.B
 	return &types.BranchRule{
 		ID:               from.ID,
 		Name:             from.Matcher.DisplayID,
-		Type:             from.Type,
+		RuleDefinition:   mapRuleDefinition(from.Type, from.Users),
 		IncludeDefault:   includeDefault,
-		Branches:         branches,
 		IncludedPatterns: includedPatterns,
-		BypassUsers:      from.Users,
 	}
 }
 
@@ -227,6 +224,28 @@ func convertBranchModelsMap(from branchModels) map[string]modelValue {
 		m[c.ID] = modelValue{Prefix: c.Prefix}
 	}
 	return m
+}
+
+func mapRuleDefinition(t string, bypassUsers []string) types.RuleDefinition {
+	var definition types.RuleDefinition
+	var lifecycle types.Lifecycle
+
+	switch t {
+	case "read-only":
+		lifecycle.CreateForbidden = true
+		lifecycle.UpdateForbidden = true
+		lifecycle.DeleteForbidden = true
+	case "no-deletes":
+		lifecycle.DeleteForbidden = true
+	case "pull-request-only":
+		lifecycle.UpdateForbidden = true
+	case "fast-forward-only":
+		lifecycle.UpdateForbidden = true
+	}
+
+	definition.Lifecycle = lifecycle
+	definition.Bypass.UserIDs = bypassUsers
+	return definition
 }
 
 func convertIntoGlobstar(s string) string {

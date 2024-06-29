@@ -58,15 +58,26 @@ func MapBranchRules(rules []*types.BranchRule) []externalTypes.BranchRule {
 		r[i] = externalTypes.BranchRule{
 			ID:               b.ID,
 			Name:             b.Name,
-			Type:             b.Type,
+			RuleDefinition:   mapRuleDefinition(b.RuleDefinition),
 			IncludeDefault:   b.IncludeDefault,
-			Branches:         b.Branches,
 			IncludedPatterns: b.IncludedPatterns,
 			ExcludedPatterns: b.ExcludedPatterns,
-			BypassUsers:      b.BypassUsers,
 			BypassGroups:     b.BypassGroups,
 			BypassKeys:       b.BypassKeys,
 		}
 	}
 	return r
+}
+
+func mapRuleDefinition(d types.RuleDefinition) externalTypes.RuleDefinition {
+	return externalTypes.RuleDefinition{
+		Bypass: externalTypes.Bypass(d.Bypass),
+		PullReq: externalTypes.PullReq{
+			Approvals:    externalTypes.Approvals(d.Approvals),
+			Comments:     externalTypes.Comments(d.Comments),
+			Merge:        externalTypes.Merge(d.Merge),
+			StatusChecks: externalTypes.StatusChecks(d.StatusChecks),
+		},
+		Lifecycle: externalTypes.Lifecycle(d.Lifecycle),
+	}
 }

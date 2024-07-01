@@ -132,7 +132,7 @@ type (
 		Scope      scope    `json:"scope"`
 		Type       string   `json:"type"`
 		Matcher    matcher  `json:"matcher"`
-		Users      []string `json:"users"`
+		Users      []author `json:"users"`
 		Groups     []string `json:"groups"`
 		AccessKeys []string `json:"accessKeys"`
 	}

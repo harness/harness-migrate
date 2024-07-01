@@ -226,26 +226,32 @@ func convertBranchModelsMap(from branchModels) map[string]modelValue {
 	return m
 }
 
-func mapRuleDefinition(t string, bypassUsers []string) types.RuleDefinition {
-	var definition types.RuleDefinition
-	var lifecycle types.Lifecycle
+func mapRuleDefinition(t string, bypassUsers []author) types.RuleDefinition {
+	var users []string
+	for _, u := range bypassUsers {
+		users = append(users, u.EmailAddress)
+	}
 
+	lifecycle := types.Lifecycle{}
 	switch t {
 	case "read-only":
-		lifecycle.CreateForbidden = true
-		lifecycle.UpdateForbidden = true
-		lifecycle.DeleteForbidden = true
+		lifecycle = types.Lifecycle{
+			CreateForbidden: true,
+			UpdateForbidden: true,
+			DeleteForbidden: true,
+		}
 	case "no-deletes":
 		lifecycle.DeleteForbidden = true
-	case "pull-request-only":
-		lifecycle.UpdateForbidden = true
-	case "fast-forward-only":
+	case "pull-request-only", "fast-forward-only":
 		lifecycle.UpdateForbidden = true
 	}
 
-	definition.Lifecycle = lifecycle
-	definition.Bypass.UserIDs = bypassUsers
-	return definition
+	return types.RuleDefinition{
+		Lifecycle: lifecycle,
+		Bypass: types.Bypass{
+			UserIDs: users,
+		},
+	}
 }
 
 func convertIntoGlobstar(s string) string {

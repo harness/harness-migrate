@@ -206,7 +206,10 @@ func (e *Exporter) writeUsersJson(usersMap map[string]bool) error {
 	for user := range usersMap {
 		users = append(users, user)
 	}
-	usersJson, err := util.GetJson(users)
+	usersInput := externalTypes.CheckUsersInput{
+		Emails: users,
+	}
+	usersJson, err := util.GetJson(usersInput)
 	if err != nil {
 		log.Printf("cannot serialize into json: %v", err)
 	}
@@ -291,6 +294,7 @@ func extractUsers(repo *types.RepoData, users map[string]bool) {
 	}
 
 	for _, prData := range repo.PullRequestData {
+		users[prData.PullRequest.PullRequest.Author.Email] = true
 		for _, comment := range prData.Comments {
 			if comment.Author.Email != "" {
 				users[comment.Author.Email] = true
@@ -298,6 +302,12 @@ func extractUsers(repo *types.RepoData, users map[string]bool) {
 		}
 		if prData.PullRequest.Author.Email != "" {
 			users[prData.PullRequest.Author.Email] = true
+		}
+	}
+
+	for _, rule := range repo.BranchRules {
+		for _, user := range rule.BypassUsers {
+			users[user] = true
 		}
 	}
 }

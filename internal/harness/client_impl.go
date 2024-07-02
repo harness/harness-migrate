@@ -281,12 +281,9 @@ func (c *client) ImportPRs(repoRef string, in *types.PRsImportInput) (*types.Res
 	return out, nil
 }
 
-func (c *client) InviteUser(space string, in *types.UsersImportInput) (*types.Response, error) {
-	out := new(types.Response)
-	uri := fmt.Sprintf("%s/api/v1/spaces/%s/import/users",
-		c.address,
-		space,
-	)
+func (c *client) CheckUsers(in *types.CheckUsersInput) (*types.CheckUsersOutput, error) {
+	out := new(types.CheckUsersOutput)
+	uri := fmt.Sprintf("%s/api/v1/principals/check-emails?routingId=%s", c.address, c.account)
 
 	if err := c.post(uri, in, out); err != nil {
 		return nil, err

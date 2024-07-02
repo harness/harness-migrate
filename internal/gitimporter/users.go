@@ -14,7 +14,16 @@
 
 package gitimporter
 
-func (m *Importer) InviteUsers(users []string) error {
-	// todo: implement
-	return nil
+import (
+	"fmt"
+
+	"github.com/harness/harness-migrate/types"
+)
+
+func (m *Importer) CheckUsers(users []string) ([]string, error) {
+	unknownUsers, err := m.Harness.CheckUsers(&types.CheckUsersInput{Emails: users})
+	if err != nil {
+		return nil, fmt.Errorf("users cannot be checked in harness platform: %w", err)
+	}
+	return unknownUsers.UnknownEmails, nil
 }

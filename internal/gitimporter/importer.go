@@ -16,9 +16,10 @@ package gitimporter
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
-	"path/filepath"
+	filepath "path/filepath"
 	"strings"
 
 	"github.com/harness/harness-migrate/internal/harness"
@@ -77,9 +78,59 @@ func (m *Importer) Import(ctx context.Context) error {
 		return fmt.Errorf("cannot get repo folders in unzip: %w", err)
 	}
 
+	if len(folders) == 0 {
+		m.Tracer.Log("no folder found for importing in zip")
+		return nil
+	}
+
 	m.Tracer.Log("importing folders: %v", folders)
 
 	// call git importer and other importers after this.
+	err = m.checkUsers()
+	if err != nil {
+		return err
+	}
+
+	err = m.createRepoAndDoPush(ctx, folders)
+	if err != nil {
+		return fmt.Errorf("cannot do repo create or push: %w", err)
+	}
+
+	return nil
+}
+
+func (m *Importer) checkUsers() error {
+	if m.SkipUsers {
+		return nil
+	}
+
+	usersFile := filepath.Join(m.ZipFileLocation, types.UsersFileName)
+	if _, err := os.Stat(usersFile); os.IsNotExist(err) {
+		return nil
+	}
+	usersFileData, err := os.ReadFile(usersFile)
+	if err != nil {
+		return fmt.Errorf("error reading users file: %w", err)
+	}
+
+	in := types.CheckUsersInput{}
+	err = json.Unmarshal(usersFileData, &in)
+	if err != nil {
+		return fmt.Errorf("error unmarshalling: %w", err)
+	}
+
+	unknownUsers, err := m.CheckUsers(in.Emails)
+	if err != nil {
+		return fmt.Errorf("error checking users: %w", err)
+	}
+	if len(unknownUsers) == 0 {
+		return fmt.Errorf("users not present in system: %v", unknownUsers)
+	}
+
+	return nil
+}
+
+func (m *Importer) createRepoAndDoPush(ctx context.Context, folders []string) error {
 	var dupRepos []types.Repository
 	for _, f := range folders {
 		repo, err := m.ReadRepoInfo(f)
@@ -102,7 +153,6 @@ func (m *Importer) Import(ctx context.Context) error {
 			return fmt.Errorf("failed to push to repo: %w", err)
 		}
 	}
-
 	return nil
 }
 

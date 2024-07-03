@@ -145,7 +145,7 @@ func (e *Exporter) writePRs(repo *externalTypes.RepositoryData, pathRepo string)
 	}
 
 	prDataInSize := splitArray(repo.PullRequestData)
-	pathPR := filepath.Join(pathRepo, externalTypes.PRDir)
+	pathPR := filepath.Join(pathRepo, externalTypes.PullRequestDir)
 	err := util.CreateFolder(pathPR)
 	if err != nil {
 		return err
@@ -306,7 +306,7 @@ func extractUsers(repo *types.RepoData, users map[string]bool) {
 	}
 
 	for _, rule := range repo.BranchRules {
-		for _, user := range rule.BypassUsers {
+		for _, user := range rule.Bypass.UserIdentifiers {
 			users[user] = true
 		}
 	}

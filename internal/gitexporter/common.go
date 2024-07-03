@@ -51,8 +51,8 @@ func mapCodeComment(c *types.CodeComment) *externalTypes.CodeComment {
 		CodeSnippet:  externalTypes.Hunk(c.CodeSnippet),
 		Side:         c.Side,
 		HunkHeader:   c.HunkHeader,
-		SourceSha:    c.SourceSha,
-		MergeBaseSha: c.MergeBaseSha,
+		SourceSHA:    c.SourceSha,
+		MergeBaseSHA: c.MergeBaseSha,
 	}
 }
 
@@ -122,12 +122,12 @@ func mapVisibility(visibility scm.Visibility) externalTypes.Visibility {
 	}
 }
 
-func MapPR(request scm.PullRequest) externalTypes.PR {
-	return externalTypes.PR{
+func MapPR(request scm.PullRequest) externalTypes.PullRequest {
+	return externalTypes.PullRequest{
 		Number:  request.Number,
 		Title:   request.Title,
 		Body:    request.Body,
-		Sha:     request.Sha,
+		SHA:     request.Sha,
 		Ref:     request.Ref,
 		Source:  request.Source,
 		Target:  request.Target,
@@ -150,7 +150,7 @@ func mapReference(reference scm.Reference) externalTypes.Reference {
 	return externalTypes.Reference{
 		Name: reference.Name,
 		Path: reference.Path,
-		Sha:  reference.Sha,
+		SHA:  reference.Sha,
 	}
 }
 

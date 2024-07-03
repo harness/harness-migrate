@@ -21,7 +21,7 @@ import (
 const (
 	InfoFileName         = "info.json"
 	ExporterLogsFileName = "ExporterLogs.log"
-	PRDir                = "pr"
+	PullRequestDir       = "pr"
 	GitDir               = "git"
 	WebhookFileName      = "webhooks.json"
 	BranchRulesFileName  = "rules.json"
@@ -53,11 +53,11 @@ type (
 
 	Visibility int
 
-	PR struct {
+	PullRequest struct {
 		Number  int       `json:"number"`
 		Title   string    `json:"title"`
 		Body    string    `json:"body"`
-		Sha     string    `json:"sha"`
+		SHA     string    `json:"sha"`
 		Ref     string    `json:"ref"`
 		Source  string    `json:"source"`
 		Target  string    `json:"target"`
@@ -95,7 +95,7 @@ type (
 	Reference struct {
 		Name string `json:"name"`
 		Path string `json:"path"`
-		Sha  string `json:"sha"`
+		SHA  string `json:"sha"`
 	}
 
 	Hunk struct {
@@ -108,8 +108,8 @@ type (
 		CodeSnippet  Hunk   `json:"code_snippet"`
 		Side         string `json:"side"`
 		HunkHeader   string `json:"hunk_header"`
-		SourceSha    string `json:"source_sha"`
-		MergeBaseSha string `json:"merge_base_sha"`
+		SourceSHA    string `json:"source_sha"`
+		MergeBaseSHA string `json:"merge_base_sha"`
 	}
 
 	Comment struct {
@@ -139,8 +139,8 @@ type (
 	}
 
 	PullRequestData struct {
-		PullRequest PR        `json:"pull_request"`
-		Comments    []Comment `json:"comments"`
+		PullRequest PullRequest `json:"pull_request"`
+		Comments    []Comment   `json:"comments"`
 	}
 
 	WebhookData struct {

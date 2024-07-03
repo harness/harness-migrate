@@ -354,19 +354,17 @@ func mapPRData(pr types.PRResponse, comments []*types.PRComment) *types.PullRequ
 func mapRepoData(repoData *types.RepoData) *externalTypes.RepositoryData {
 	d := new(externalTypes.RepositoryData)
 	d.Repository.Slug = repoData.Repository.RepoSlug
-	d.Repository.Repository = repoData.Repository.Repository
+	d.Repository = MapRepository(repoData.Repository)
 	d.BranchRules = MapBranchRules(repoData.BranchRules)
 
 	d.PullRequestData = make([]*externalTypes.PullRequestData, len(repoData.PullRequestData))
 	for i, prData := range repoData.PullRequestData {
 		d.PullRequestData[i] = new(externalTypes.PullRequestData)
-		d.PullRequestData[i].PullRequest = externalTypes.PR{
-			PullRequest: prData.PullRequest.PullRequest,
-		}
+		d.PullRequestData[i].PullRequest = MapPR(prData.PullRequest.PullRequest)
 		d.PullRequestData[i].Comments = MapPRComment(prData.Comments)
 	}
 
-	d.Webhooks.Hooks = repoData.Webhooks.ConvertedHooks
+	d.Webhooks.Hooks = MapHooks(repoData.Webhooks.ConvertedHooks)
 
 	return d
 }

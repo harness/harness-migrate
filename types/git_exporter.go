@@ -123,16 +123,12 @@ type (
 	}
 
 	BranchRule struct {
-		ID               int      `json:"id"`
-		Name             string   `json:"name"`
-		Type             string   `json:"type"`
-		IncludeDefault   bool     `json:"include_default"`
-		Branches         []string `json:"branches"`
-		IncludedPatterns []string `json:"included_patterns"`
-		ExcludedPatterns []string `json:"excluded_patterns"`
-		BypassUsers      []string `json:"bypass_users"`
-		BypassGroups     []string `json:"bypass_groups"`
-		BypassKeys       []string `json:"bypass_keys"`
+		ID               int            `json:"id"`
+		Name             string         `json:"name"`
+		RuleDefinition   RuleDefinition `json:"definition"`
+		IncludeDefault   bool           `json:"includeDefault"`
+		IncludedPatterns []string       `json:"included_patterns"`
+		ExcludedPatterns []string       `json:"excluded_patterns"`
 	}
 
 	RepositoryData struct {
@@ -159,6 +155,51 @@ type (
 		Events     []string `json:"events"`
 		Active     bool     `json:"active"`
 		SkipVerify bool     `json:"skip_verify"`
+	}
+
+	Bypass struct {
+		UserIdentifiers []string `json:"user_ids,omitempty"`
+		RepoOwners      bool     `json:"repo_owners,omitempty"`
+	}
+
+	Approvals struct {
+		RequireCodeOwners      bool `json:"require_code_owners,omitempty"`
+		RequireMinimumCount    int  `json:"require_minimum_count,omitempty"`
+		RequireLatestCommit    bool `json:"require_latest_commit,omitempty"`
+		RequireNoChangeRequest bool `json:"require_no_change_request,omitempty"`
+	}
+
+	Comments struct {
+		RequireResolveAll bool `json:"require_resolve_all,omitempty"`
+	}
+
+	Merge struct {
+		StrategiesAllowed []string `json:"strategies_allowed,omitempty"`
+		DeleteBranch      bool     `json:"delete_branch,omitempty"`
+	}
+
+	StatusChecks struct {
+		RequireIdentifiers []string `json:"require_uids,omitempty"`
+	}
+
+	PullReq struct {
+		Approvals    Approvals    `json:"approvals,omitempty"`
+		Comments     Comments     `json:"comments,omitempty"`
+		Merge        Merge        `json:"merge,omitempty"`
+		StatusChecks StatusChecks `json:"status_checks,omitempty"`
+	}
+
+	// Lifecycle represents the lifecycle rules for branches.
+	Lifecycle struct {
+		CreateForbidden bool `json:"create_forbidden,omitempty"`
+		DeleteForbidden bool `json:"delete_forbidden,omitempty"`
+		UpdateForbidden bool `json:"update_forbidden,omitempty"`
+	}
+
+	RuleDefinition struct {
+		Bypass    Bypass    `json:"bypass,omitempty"`
+		PullReq   PullReq   `json:"pullreq,omitempty"`
+		Lifecycle Lifecycle `json:"lifecycle,omitempty"`
 	}
 )
 

@@ -126,7 +126,7 @@ func (e *Exporter) writeJsonForRepo(repo *externalTypes.RepositoryData, path str
 		return fmt.Errorf("unable to write webhook: %w", err)
 	}
 
-	err = e.writeBranchRules(repo, err, pathRepo)
+	err = e.writeBranchRules(repo, pathRepo)
 	if err != nil {
 		return fmt.Errorf("cannot write branch rules: %w", err)
 	}
@@ -167,7 +167,7 @@ func (e *Exporter) writePRs(repo *externalTypes.RepositoryData, pathRepo string)
 	return nil
 }
 
-func (e *Exporter) writeBranchRules(repo *externalTypes.RepositoryData, err error, pathRepo string) error {
+func (e *Exporter) writeBranchRules(repo *externalTypes.RepositoryData, pathRepo string) error {
 	if len(repo.BranchRules) == 0 {
 		return nil
 	}
@@ -254,12 +254,12 @@ func (e *Exporter) getData(ctx context.Context, path string) ([]*types.RepoData,
 			return repoData, nil
 		}
 		if err != nil {
-			log.Default().Printf("encountered error in getting webhooks: %w", err)
+			log.Default().Printf("encountered error in getting webhooks: %v", err)
 		}
 		repoData[i].Webhooks = webhooks
 
 		// 4. get all branch rules for each repo
-		branchRules, err := e.exporter.ListBranchRules(ctx, repo.RepoSlug, types.ListOptions{Page: 1})
+		branchRules, err := e.exporter.ListBranchRules(ctx, repo.RepoSlug, e, types.ListOptions{Page: 1})
 		if err != nil {
 			return nil, fmt.Errorf("encountered error in getting branch rules: %w", err)
 		}

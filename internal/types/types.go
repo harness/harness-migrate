@@ -118,15 +118,55 @@ type (
 	}
 
 	BranchRule struct {
-		ID               int
-		Name             string
-		Type             string
+		ID   int
+		Name string
+		RuleDefinition
 		IncludeDefault   bool
-		Branches         []string
 		IncludedPatterns []string
 		ExcludedPatterns []string
-		BypassUsers      []string
-		BypassGroups     []string
-		BypassKeys       []string
+	}
+
+	Bypass struct {
+		UserIdentifiers []string
+		RepoOwners      bool
+	}
+
+	Approvals struct {
+		RequireCodeOwners      bool
+		RequireMinimumCount    int
+		RequireLatestCommit    bool
+		RequireNoChangeRequest bool
+	}
+
+	Comments struct {
+		RequireResolveAll bool
+	}
+
+	Merge struct {
+		StrategiesAllowed []string
+		DeleteBranch      bool
+	}
+
+	StatusChecks struct {
+		RequireIdentifiers []string
+	}
+
+	PullReq struct {
+		Approvals
+		Comments
+		Merge
+		StatusChecks
+	}
+
+	Lifecycle struct {
+		CreateForbidden bool
+		DeleteForbidden bool
+		UpdateForbidden bool
+	}
+
+	RuleDefinition struct {
+		Bypass
+		PullReq
+		Lifecycle
 	}
 )

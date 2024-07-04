@@ -36,5 +36,5 @@ type Interface interface {
 
 	ListWebhooks(ctx context.Context, repoSlug string, logger Logger, opts types.WebhookListOptions) (types.WebhookData, error)
 
-	ListBranchRules(ctx context.Context, repoSlug string, opts types.ListOptions) ([]*types.BranchRule, error)
+	ListBranchRules(ctx context.Context, repoSlug string, logger Logger, opts types.ListOptions) ([]*types.BranchRule, error)
 }

@@ -9,7 +9,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/harness/harness-migrate/internal/gitexporter"
 	"github.com/harness/harness-migrate/internal/types"
+	"github.com/harness/harness-migrate/internal/types/enum"
 
 	"github.com/drone/go-scm/scm"
 )
@@ -180,22 +182,31 @@ func formatHunkHeader(source, sourceSpan, destination, destinationSpan int, sect
 	return sb.String()
 }
 
-func convertBranchRulesList(from []*branchPermission, m map[string]modelValue) []*types.BranchRule {
+func convertBranchRulesList(
+	from []*branchPermission,
+	m map[string]modelValue,
+	repoSlug string,
+	l gitexporter.Logger,
+) []*types.BranchRule {
 	rules := []*types.BranchRule{}
 	for _, p := range from {
-		rules = append(rules, convertBranchRule(p, m))
+		rules = append(rules, convertBranchRule(p, m, repoSlug, l))
 	}
 	return rules
 }
 
-func convertBranchRule(from *branchPermission, m map[string]modelValue) *types.BranchRule {
+func convertBranchRule(
+	from *branchPermission,
+	m map[string]modelValue,
+	repoSlug string,
+	l gitexporter.Logger,
+) *types.BranchRule {
 	includeDefault := false
-	branches := []string{}
 	includedPatterns := []string{}
 	switch from.Matcher.Type.ID {
 	case matcherTypeBranch:
 		// displayID will give just branch name main and ID will give refs/heads/main
-		branches = append(branches, from.Matcher.DisplayID)
+		includedPatterns = append(includedPatterns, from.Matcher.DisplayID)
 	case matcherTypePattern:
 		includedPatterns = append(includedPatterns, convertIntoGlobstar(from.Matcher.ID))
 	case matcherTypeModelBranch:
@@ -203,19 +214,40 @@ func convertBranchRule(from *branchPermission, m map[string]modelValue) *types.B
 		if v.UseDefault {
 			includeDefault = true
 		} else {
-			branches = append(branches, strings.TrimPrefix(v.RefID, "refs/heads/"))
+			includedPatterns = append(includedPatterns, strings.TrimPrefix(v.RefID, "refs/heads/"))
 		}
 	case matcherTypeModelCategory:
 		includedPatterns = append(includedPatterns, convertIntoGlobstar(m[from.Matcher.ID].Prefix))
 	}
+	var keys []string
+	for _, key := range from.AccessKeys {
+		keys = append(keys, key.Key.Label)
+	}
+	if len(from.Groups) != 0 {
+		warningMsg := fmt.Sprintf("[%s] Skipped adding user group(s) [%q] to %q branch rule's bypass list of repo %q \n",
+			enum.LogLevelWarning, strings.Join(from.Groups, ", "), from.Matcher.DisplayID, repoSlug)
+		if err := l.Log([]byte(warningMsg)); err != nil {
+			log.Default().Printf("failed to log the exemptions from bypass list of branch rules for repo %q: %v",
+				repoSlug, err)
+		}
+	}
+	if len(keys) != 0 {
+		warningMsg := fmt.Sprintf("[%s] Skipped adding access key(s) [%q] to %q branch rule's bypass list of repo %q \n",
+			enum.LogLevelWarning, strings.Join(keys, ", "), from.Matcher.DisplayID, repoSlug)
+		if err := l.Log([]byte(warningMsg)); err != nil {
+			log.Default().Printf("failed to log the exemptions from bypass list of branch rules for repo %q: %v",
+				repoSlug, err)
+		}
+	}
 	return &types.BranchRule{
-		ID:               from.ID,
-		Name:             from.Matcher.DisplayID,
-		Type:             from.Type,
+		ID: from.ID,
+		Name: strings.Join([]string{
+			from.Matcher.DisplayID,
+			strconv.Itoa(from.ID),
+		}, "-"),
+		RuleDefinition:   mapRuleDefinition(from.Type, from.Users),
 		IncludeDefault:   includeDefault,
-		Branches:         branches,
 		IncludedPatterns: includedPatterns,
-		BypassUsers:      from.Users,
 	}
 }
 
@@ -227,6 +259,34 @@ func convertBranchModelsMap(from branchModels) map[string]modelValue {
 		m[c.ID] = modelValue{Prefix: c.Prefix}
 	}
 	return m
+}
+
+func mapRuleDefinition(t string, bypassUsers []author) types.RuleDefinition {
+	var users []string
+	for _, u := range bypassUsers {
+		users = append(users, u.EmailAddress)
+	}
+
+	lifecycle := types.Lifecycle{}
+	switch t {
+	case "read-only":
+		lifecycle = types.Lifecycle{
+			CreateForbidden: true,
+			UpdateForbidden: true,
+			DeleteForbidden: true,
+		}
+	case "no-deletes":
+		lifecycle.DeleteForbidden = true
+	case "pull-request-only", "fast-forward-only":
+		lifecycle.UpdateForbidden = true
+	}
+
+	return types.RuleDefinition{
+		Lifecycle: lifecycle,
+		Bypass: types.Bypass{
+			UserIdentifiers: users,
+		},
+	}
 }
 
 func convertIntoGlobstar(s string) string {

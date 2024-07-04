@@ -79,8 +79,8 @@ type Client interface {
 	// ImportPRs imports PRs within a repository.
 	ImportPRs(repoRef string, in *types.PRsImportInput) (*types.Response, error)
 
-	// InviteUser provides all users emails which need to be invited.
-	InviteUser(space string, in *types.UsersImportInput) (*types.Response, error)
+	// CheckUsers provides all email id to harness code of users which needs to be checked for existence.
+	CheckUsers(in *types.CheckUsersInput) (*types.CheckUsersOutput, error)
 }
 
 // WaitHarnessSecretManager blocks until the harness

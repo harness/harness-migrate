@@ -126,7 +126,7 @@ func (e *Exporter) writeJsonForRepo(repo *externalTypes.RepositoryData, path str
 		return fmt.Errorf("unable to write webhook: %w", err)
 	}
 
-	err = e.writeBranchRules(repo, err, pathRepo)
+	err = e.writeBranchRules(repo, pathRepo)
 	if err != nil {
 		return fmt.Errorf("cannot write branch rules: %w", err)
 	}
@@ -167,7 +167,7 @@ func (e *Exporter) writePRs(repo *externalTypes.RepositoryData, pathRepo string)
 	return nil
 }
 
-func (e *Exporter) writeBranchRules(repo *externalTypes.RepositoryData, err error, pathRepo string) error {
+func (e *Exporter) writeBranchRules(repo *externalTypes.RepositoryData, pathRepo string) error {
 	if len(repo.BranchRules) == 0 {
 		return nil
 	}
@@ -206,7 +206,10 @@ func (e *Exporter) writeUsersJson(usersMap map[string]bool) error {
 	for user := range usersMap {
 		users = append(users, user)
 	}
-	usersJson, err := util.GetJson(users)
+	usersInput := externalTypes.CheckUsersInput{
+		Emails: users,
+	}
+	usersJson, err := util.GetJson(usersInput)
 	if err != nil {
 		log.Printf("cannot serialize into json: %v", err)
 	}
@@ -251,12 +254,12 @@ func (e *Exporter) getData(ctx context.Context, path string) ([]*types.RepoData,
 			return repoData, nil
 		}
 		if err != nil {
-			log.Default().Printf("encountered error in getting webhooks: %w", err)
+			log.Default().Printf("encountered error in getting webhooks: %v", err)
 		}
 		repoData[i].Webhooks = webhooks
 
 		// 4. get all branch rules for each repo
-		branchRules, err := e.exporter.ListBranchRules(ctx, repo.RepoSlug, types.ListOptions{Page: 1})
+		branchRules, err := e.exporter.ListBranchRules(ctx, repo.RepoSlug, e, types.ListOptions{Page: 1})
 		if err != nil {
 			return nil, fmt.Errorf("encountered error in getting branch rules: %w", err)
 		}
@@ -291,6 +294,7 @@ func extractUsers(repo *types.RepoData, users map[string]bool) {
 	}
 
 	for _, prData := range repo.PullRequestData {
+		users[prData.PullRequest.PullRequest.Author.Email] = true
 		for _, comment := range prData.Comments {
 			if comment.Author.Email != "" {
 				users[comment.Author.Email] = true
@@ -298,6 +302,12 @@ func extractUsers(repo *types.RepoData, users map[string]bool) {
 		}
 		if prData.PullRequest.Author.Email != "" {
 			users[prData.PullRequest.Author.Email] = true
+		}
+	}
+
+	for _, rule := range repo.BranchRules {
+		for _, user := range rule.BypassUsers {
+			users[user] = true
 		}
 	}
 }
@@ -344,19 +354,17 @@ func mapPRData(pr types.PRResponse, comments []*types.PRComment) *types.PullRequ
 func mapRepoData(repoData *types.RepoData) *externalTypes.RepositoryData {
 	d := new(externalTypes.RepositoryData)
 	d.Repository.Slug = repoData.Repository.RepoSlug
-	d.Repository.Repository = repoData.Repository.Repository
+	d.Repository = MapRepository(repoData.Repository)
 	d.BranchRules = MapBranchRules(repoData.BranchRules)
 
 	d.PullRequestData = make([]*externalTypes.PullRequestData, len(repoData.PullRequestData))
 	for i, prData := range repoData.PullRequestData {
 		d.PullRequestData[i] = new(externalTypes.PullRequestData)
-		d.PullRequestData[i].PullRequest = externalTypes.PR{
-			PullRequest: prData.PullRequest.PullRequest,
-		}
+		d.PullRequestData[i].PullRequest = MapPR(prData.PullRequest.PullRequest)
 		d.PullRequestData[i].Comments = MapPRComment(prData.Comments)
 	}
 
-	d.Webhooks.Hooks = repoData.Webhooks.ConvertedHooks
+	d.Webhooks.Hooks = MapHooks(repoData.Webhooks.ConvertedHooks)
 
 	return d
 }

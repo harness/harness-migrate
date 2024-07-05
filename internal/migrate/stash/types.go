@@ -126,7 +126,7 @@ type (
 		Type       string `json:"type"`
 		ResourceID int    `json:"resourceId"`
 	}
-
+	
 	branchPermission struct {
 		ID         int      `json:"id"`
 		Scope      scope    `json:"scope"`
@@ -134,7 +134,13 @@ type (
 		Matcher    matcher  `json:"matcher"`
 		Users      []author `json:"users"`
 		Groups     []string `json:"groups"`
-		AccessKeys []string `json:"accessKeys"`
+		AccessKeys []struct {
+			Key struct {
+				ID    int    `json:"id"`
+				Text  string `json:"text"`
+				Label string `json:"label"`
+			} `json:"key"`
+		} `json:"accessKeys"`
 	}
 
 	branchPermissions struct {

@@ -14,12 +14,14 @@
 
 package types
 
-import "github.com/drone/go-scm/scm"
+import (
+	"time"
+)
 
 const (
 	InfoFileName         = "info.json"
 	ExporterLogsFileName = "ExporterLogs.log"
-	PRDir                = "pr"
+	PullRequestDir       = "pr"
 	GitDir               = "git"
 	WebhookFileName      = "webhooks.json"
 	BranchRulesFileName  = "rules.json"
@@ -28,32 +30,96 @@ const (
 
 type (
 	Repository struct {
-		scm.Repository
-		Slug string
+		Slug       string     `json:"slug"`
+		ID         string     `json:"id"`
+		Namespace  string     `json:"namespace"`
+		Name       string     `json:"name"`
+		Branch     string     `json:"branch"`
+		Archived   bool       `json:"archived"`
+		Private    bool       `json:"private"`
+		Visibility Visibility `json:"visibility"`
+		Clone      string     `json:"clone"`
+		CloneSSH   string     `json:"clone_ssh"`
+		Link       string     `json:"link"`
+		Created    time.Time  `json:"created"`
+		Updated    time.Time  `json:"updated"`
 	}
 
-	PR struct {
-		scm.PullRequest
+	Perm struct {
+		Pull  bool `json:"pull"`
+		Push  bool `json:"push"`
+		Admin bool `json:"admin"`
+	}
+
+	Visibility int
+
+	PullRequest struct {
+		Number  int       `json:"number"`
+		Title   string    `json:"title"`
+		Body    string    `json:"body"`
+		SHA     string    `json:"sha"`
+		Ref     string    `json:"ref"`
+		Source  string    `json:"source"`
+		Target  string    `json:"target"`
+		Fork    string    `json:"fork"`
+		Link    string    `json:"link"`
+		Diff    string    `json:"diff"`
+		Closed  bool      `json:"closed"`
+		Merged  bool      `json:"merged"`
+		Merge   string    `json:"merge"`
+		Base    Reference `json:"base"`
+		Head    Reference `json:"head"`
+		Author  User      `json:"author"`
+		Created time.Time `json:"created"`
+		Updated time.Time `json:"updated"`
+		Labels  []Label   `json:"labels"`
+	}
+
+	Label struct {
+		Name  string `json:"name"`
+		Color string `json:"color"`
+	}
+
+	// User represents a user account.
+	User struct {
+		ID      string    `json:"id"`
+		Login   string    `json:"login"`
+		Name    string    `json:"name"`
+		Email   string    `json:"email"`
+		Avatar  string    `json:"avatar"`
+		Created time.Time `json:"created"`
+		Updated time.Time `json:"updated"`
+	}
+
+	// Reference represents a git reference.
+	Reference struct {
+		Name string `json:"name"`
+		Path string `json:"path"`
+		SHA  string `json:"sha"`
 	}
 
 	Hunk struct {
-		Header string
-		Lines  []string
+		Header string   `json:"header"`
+		Lines  []string `json:"lines"`
 	}
 
 	CodeComment struct {
-		Path         string
-		CodeSnippet  Hunk
-		Side         string
-		HunkHeader   string
-		SourceSha    string
-		MergeBaseSha string
+		Path         string `json:"path"`
+		CodeSnippet  Hunk   `json:"code_snippet"`
+		Side         string `json:"side"`
+		HunkHeader   string `json:"hunk_header"`
+		SourceSHA    string `json:"source_sha"`
+		MergeBaseSHA string `json:"merge_base_sha"`
 	}
 
 	Comment struct {
-		scm.Comment
-		ParentID    int
-		CodeComment *CodeComment
+		ID          int          `json:"id"`
+		Body        string       `json:"body"`
+		Author      User         `json:"author"`
+		Created     time.Time    `json:"created"`
+		Updated     time.Time    `json:"updated"`
+		ParentID    int          `json:"parent_id"`
+		CodeComment *CodeComment `json:"code_comment"`
 	}
 
 	BranchRule struct {
@@ -63,8 +129,6 @@ type (
 		IncludeDefault   bool           `json:"includeDefault"`
 		IncludedPatterns []string       `json:"included_patterns"`
 		ExcludedPatterns []string       `json:"excluded_patterns"`
-		BypassGroups     []string       `json:"bypass_groups"`
-		BypassKeys       []string       `json:"bypass_keys"`
 	}
 
 	RepositoryData struct {
@@ -75,17 +139,27 @@ type (
 	}
 
 	PullRequestData struct {
-		PullRequest PR        `json:"pull_request"`
-		Comments    []Comment `json:"comments"`
+		PullRequest PullRequest `json:"pull_request"`
+		Comments    []Comment   `json:"comments"`
 	}
 
 	WebhookData struct {
-		Hooks []*scm.Hook `json:"hooks"`
+		Hooks []*Hook `json:"hooks"`
+	}
+
+	// Hook represents a repository hook.
+	Hook struct {
+		ID         string   `json:"id"`
+		Name       string   `json:"name"`
+		Target     string   `json:"target"`
+		Events     []string `json:"events"`
+		Active     bool     `json:"active"`
+		SkipVerify bool     `json:"skip_verify"`
 	}
 
 	Bypass struct {
-		UserIDs    []string `json:"user_ids,omitempty"`
-		RepoOwners bool     `json:"repo_owners,omitempty"`
+		UserIdentifiers []string `json:"user_ids,omitempty"`
+		RepoOwners      bool     `json:"repo_owners,omitempty"`
 	}
 
 	Approvals struct {
@@ -105,7 +179,7 @@ type (
 	}
 
 	StatusChecks struct {
-		RequireUIDs []string `json:"require_uids,omitempty"`
+		RequireIdentifiers []string `json:"require_uids,omitempty"`
 	}
 
 	PullReq struct {
@@ -127,4 +201,12 @@ type (
 		PullReq   PullReq   `json:"pullreq,omitempty"`
 		Lifecycle Lifecycle `json:"lifecycle,omitempty"`
 	}
+)
+
+// Role values.
+const (
+	VisibilityUndefined Visibility = iota
+	VisibilityPublic
+	VisibilityInternal
+	VisibilityPrivate
 )

@@ -7,6 +7,7 @@ import (
 	"io"
 
 	"github.com/harness/harness-migrate/internal/checkpoint"
+	"github.com/harness/harness-migrate/internal/gitexporter"
 	"github.com/harness/harness-migrate/internal/tracer"
 	"github.com/harness/harness-migrate/internal/types"
 
@@ -68,6 +69,7 @@ func (c *wrapper) ListPRComments(
 func (c *wrapper) ListBranchRules(
 	ctx context.Context,
 	repoSlug string,
+	l gitexporter.Logger,
 	opts types.ListOptions,
 ) ([]*types.BranchRule, *scm.Response, error) {
 	namespace, name := scm.Split(repoSlug)
@@ -80,7 +82,7 @@ func (c *wrapper) ListBranchRules(
 		res.Page.First = 1
 		res.Page.Next = opts.Page + 1
 	}
-	return convertBranchRulesList(out.Values, branchModels), res, err
+	return convertBranchRulesList(out.Values, branchModels, repoSlug, l), res, err
 }
 
 func (c *wrapper) listBranchModels(

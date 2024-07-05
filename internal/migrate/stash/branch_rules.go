@@ -5,12 +5,14 @@ import (
 	"fmt"
 
 	"github.com/harness/harness-migrate/internal/common"
+	"github.com/harness/harness-migrate/internal/gitexporter"
 	"github.com/harness/harness-migrate/internal/types"
 )
 
 func (e *Export) ListBranchRules(
 	ctx context.Context,
 	repoSlug string,
+	logger gitexporter.Logger,
 	opts types.ListOptions,
 ) ([]*types.BranchRule, error) {
 	e.tracer.Start(common.MsgStartBranchRulesExport, repoSlug)
@@ -19,7 +21,7 @@ func (e *Export) ListBranchRules(
 		e.tracer.Stop(common.MsgCompleteBranchRulesExport, repoSlug, len(allRules))
 	}()
 	for {
-		rules, res, err := e.stash.ListBranchRules(ctx, repoSlug, opts)
+		rules, res, err := e.stash.ListBranchRules(ctx, repoSlug, logger, opts)
 		if err != nil {
 			e.tracer.LogError(common.ErrBranchRulesList, repoSlug, err)
 			return nil, fmt.Errorf(common.ErrBranchRulesList, repoSlug, err)

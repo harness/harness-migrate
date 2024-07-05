@@ -9,7 +9,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/harness/harness-migrate/internal/gitexporter"
 	"github.com/harness/harness-migrate/internal/types"
+	"github.com/harness/harness-migrate/internal/types/enum"
 
 	"github.com/drone/go-scm/scm"
 )
@@ -183,15 +185,25 @@ func formatHunkHeader(source, sourceSpan, destination, destinationSpan int, sect
 	return sb.String()
 }
 
-func convertBranchRulesList(from []*branchPermission, m map[string]modelValue) []*types.BranchRule {
+func convertBranchRulesList(
+	from []*branchPermission,
+	m map[string]modelValue,
+	repoSlug string,
+	l gitexporter.Logger,
+) []*types.BranchRule {
 	rules := []*types.BranchRule{}
 	for _, p := range from {
-		rules = append(rules, convertBranchRule(p, m))
+		rules = append(rules, convertBranchRule(p, m, repoSlug, l))
 	}
 	return rules
 }
 
-func convertBranchRule(from *branchPermission, m map[string]modelValue) *types.BranchRule {
+func convertBranchRule(
+	from *branchPermission,
+	m map[string]modelValue,
+	repoSlug string,
+	l gitexporter.Logger,
+) *types.BranchRule {
 	includeDefault := false
 	includedPatterns := []string{}
 	switch from.Matcher.Type.ID {
@@ -210,9 +222,32 @@ func convertBranchRule(from *branchPermission, m map[string]modelValue) *types.B
 	case matcherTypeModelCategory:
 		includedPatterns = append(includedPatterns, convertIntoGlobstar(m[from.Matcher.ID].Prefix))
 	}
+	var keys []string
+	for _, key := range from.AccessKeys {
+		keys = append(keys, key.Key.Label)
+	}
+	if len(from.Groups) != 0 {
+		warningMsg := fmt.Sprintf("[%s] Skipped adding user group(s) [%q] to %q branch rule's bypass list of repo %q \n",
+			enum.LogLevelWarning, strings.Join(from.Groups, ", "), from.Matcher.DisplayID, repoSlug)
+		if err := l.Log([]byte(warningMsg)); err != nil {
+			log.Default().Printf("failed to log the exemptions from bypass list of branch rules for repo %q: %v",
+				repoSlug, err)
+		}
+	}
+	if len(keys) != 0 {
+		warningMsg := fmt.Sprintf("[%s] Skipped adding access key(s) [%q] to %q branch rule's bypass list of repo %q \n",
+			enum.LogLevelWarning, strings.Join(keys, ", "), from.Matcher.DisplayID, repoSlug)
+		if err := l.Log([]byte(warningMsg)); err != nil {
+			log.Default().Printf("failed to log the exemptions from bypass list of branch rules for repo %q: %v",
+				repoSlug, err)
+		}
+	}
 	return &types.BranchRule{
-		ID:               from.ID,
-		Name:             from.Matcher.DisplayID,
+		ID: from.ID,
+		Name: strings.Join([]string{
+			from.Matcher.DisplayID,
+			strconv.Itoa(from.ID),
+		}, "-"),
 		RuleDefinition:   mapRuleDefinition(from.Type, from.Users),
 		IncludeDefault:   includeDefault,
 		IncludedPatterns: includedPatterns,
@@ -252,7 +287,7 @@ func mapRuleDefinition(t string, bypassUsers []author) types.RuleDefinition {
 	return types.RuleDefinition{
 		Lifecycle: lifecycle,
 		Bypass: types.Bypass{
-			UserIDs: users,
+			UserIdentifiers: users,
 		},
 	}
 }

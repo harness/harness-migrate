@@ -124,13 +124,11 @@ type (
 		IncludeDefault   bool
 		IncludedPatterns []string
 		ExcludedPatterns []string
-		BypassGroups     []string
-		BypassKeys       []string
 	}
 
 	Bypass struct {
-		UserIDs    []string
-		RepoOwners bool
+		UserIdentifiers []string
+		RepoOwners      bool
 	}
 
 	Approvals struct {
@@ -150,7 +148,7 @@ type (
 	}
 
 	StatusChecks struct {
-		RequireUIDs []string
+		RequireIdentifiers []string
 	}
 
 	PullReq struct {

@@ -3,7 +3,6 @@ package gitimporter
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 
@@ -22,7 +21,7 @@ func (m *Importer) ReadRepoInfo(dir string) (types.Repository, error) {
 		return types.Repository{}, fmt.Errorf("%s not found in '%s': %w", types.InfoFileName, dir, err)
 	}
 
-	data, err := ioutil.ReadFile(infoFile)
+	data, err := os.ReadFile(infoFile)
 	if err != nil {
 		return types.Repository{}, fmt.Errorf("failed to read %q content from %q: %w", types.InfoFileName, infoFile, err)
 	}

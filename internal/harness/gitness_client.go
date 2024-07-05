@@ -147,12 +147,9 @@ func (c *gitnessClient) ImportPRs(repoRef string, in *types.PRsImportInput) (*ty
 	return out, nil
 }
 
-func (c *gitnessClient) InviteUser(space string, in *types.UsersImportInput) (*types.Response, error) {
-	out := new(types.Response)
-	uri := fmt.Sprintf("%s/api/v1/spaces/%s/import/users",
-		c.address,
-		space,
-	)
+func (c *gitnessClient) CheckUsers(in *types.CheckUsersInput) (*types.CheckUsersOutput, error) {
+	out := new(types.CheckUsersOutput)
+	uri := fmt.Sprintf("%s/api/v1/principals/check-emails", c.address)
 
 	if err := c.post(uri, in, out); err != nil {
 		return nil, err

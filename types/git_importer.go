@@ -22,9 +22,14 @@ type (
 		ErrorMessage string `json:"error_message"`
 	}
 
-	// UsersImportInput is object for creating/rejecting user invite during repo(s) import.
-	UsersImportInput struct {
+	// CheckUsersInput is object for checking users existence during repo(s) import.
+	CheckUsersInput struct {
 		Emails []string `json:"emails"`
+	}
+
+	// CheckUsersOutput is output object for checking users existence.
+	CheckUsersOutput struct {
+		UnknownEmails []string `json:"unknown_emails"`
 	}
 
 	PRsImportInput struct {

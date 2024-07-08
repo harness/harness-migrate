@@ -51,8 +51,9 @@ func mapCodeComment(c *types.CodeComment) *externalTypes.CodeComment {
 		CodeSnippet:  externalTypes.Hunk(c.CodeSnippet),
 		Side:         c.Side,
 		HunkHeader:   c.HunkHeader,
-		SourceSHA:    c.SourceSha,
-		MergeBaseSHA: c.MergeBaseSha,
+		SourceSHA:    c.SourceSHA,
+		MergeBaseSHA: c.MergeBaseSHA,
+		Outdated:     c.Outdated,
 	}
 }
 

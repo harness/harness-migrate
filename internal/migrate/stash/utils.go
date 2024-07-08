@@ -90,8 +90,9 @@ func convertPullRequestComment(from pullRequestComment, parentID int, anchor com
 			CodeSnippet:  snippet,
 			Side:         commentSide,
 			HunkHeader:   hunkHeader,
-			SourceSha:    anchor.ToHash,
-			MergeBaseSha: anchor.FromHash,
+			SourceSHA:    anchor.ToHash,
+			MergeBaseSHA: anchor.FromHash,
+			Outdated:     anchor.Orphaned,
 		}
 	}
 	return &types.PRComment{Comment: scm.Comment{

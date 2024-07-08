@@ -110,6 +110,7 @@ type (
 		HunkHeader   string `json:"hunk_header"`
 		SourceSHA    string `json:"source_sha"`
 		MergeBaseSHA string `json:"merge_base_sha"`
+		Outdated     bool   `json:"outdated"`
 	}
 
 	Comment struct {

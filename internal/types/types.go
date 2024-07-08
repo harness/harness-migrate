@@ -102,8 +102,9 @@ type (
 		CodeSnippet  Hunk
 		Side         string
 		HunkHeader   string
-		SourceSha    string
-		MergeBaseSha string
+		SourceSHA    string
+		MergeBaseSHA string
+		Outdated     bool
 	}
 
 	PRComment struct {

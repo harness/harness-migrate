@@ -1,4 +1,4 @@
-package stash
+package github
 
 import (
 	"context"
@@ -18,7 +18,7 @@ func (e *Export) ListPullRequests(
 	_ types.PullRequestListOptions,
 ) ([]types.PRResponse, error) {
 	e.tracer.Start(common.MsgStartPrExport, repoSlug)
-	opts := scm.PullRequestListOptions{Page: 1, Open: true, Closed: true}
+	opts := scm.PullRequestListOptions{Page: 1, Size: 25, Open: true, Closed: true}
 	var allPrs []types.PRResponse
 	msgPrExport := common.MsgCompletePrExport
 	defer func() {
@@ -50,7 +50,7 @@ func (e *Export) ListPullRequests(
 	}
 
 	for {
-		prs, resp, err := e.stash.PullRequests.List(ctx, repoSlug, opts)
+		prs, resp, err := e.github.PullRequests.List(ctx, repoSlug, opts)
 		if err != nil {
 			e.tracer.LogError(common.ErrPrList, err)
 			return nil, fmt.Errorf("cannot list prs: %w", err)

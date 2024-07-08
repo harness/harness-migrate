@@ -1,4 +1,4 @@
-package stash
+package github
 
 import (
 	"context"
@@ -15,13 +15,13 @@ func (e *Export) ListRepositories(
 	ctx context.Context,
 	_ types.ListOptions,
 ) ([]types.RepoResponse, error) {
-	e.tracer.Start(common.MsgStartRepoList, "stash", e.project)
+	e.tracer.Start(common.MsgStartRepoList, "github", e.org)
 	opts := scm.ListOptions{Page: 1, Size: 25}
 	var allRepos []*scm.Repository
 
 	if e.repository != "" {
-		repoSlug := strings.Join([]string{e.project, e.repository}, "/")
-		repo, _, err := e.stash.Repositories.Find(ctx, repoSlug)
+		repoSlug := strings.Join([]string{e.org, e.repository}, "/")
+		repo, _, err := e.github.Repositories.Find(ctx, repoSlug)
 		if err != nil {
 			e.tracer.LogError(common.ErrRepoList, err)
 			return nil, fmt.Errorf("failed to get the repo %s: %w", repoSlug, err)
@@ -31,10 +31,10 @@ func (e *Export) ListRepositories(
 	}
 
 	for {
-		repos, resp, err := e.stash.Repositories.ListNamespace(ctx, e.project, opts)
+		repos, resp, err := e.github.Repositories.ListNamespace(ctx, e.org, opts)
 		if err != nil {
 			e.tracer.LogError(common.ErrRepoList, err)
-			return nil, fmt.Errorf("failed to get repos for project %s: %w", e.project, err)
+			return nil, fmt.Errorf("failed to get repos for org %s: %w", e.org, err)
 		}
 		allRepos = append(allRepos, repos...)
 

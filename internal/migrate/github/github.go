@@ -52,7 +52,7 @@ func (e *Export) PullRequestRefs() []config.RefSpec {
 }
 
 // ListBranchRules implements gitexporter.Interface.
-func (e *Export) ListBranchRules(ctx context.Context, repoSlug string, opts types.ListOptions) ([]*types.BranchRule, error) {
+func (e *Export) ListBranchRules(ctx context.Context, repoSlug string, logger gitexporter.Logger, opts types.ListOptions) ([]*types.BranchRule, error) {
 	// Mock implementation
 	fmt.Printf("Listing branch rules for repo: %s\n", repoSlug)
 	rules := []*types.BranchRule{}

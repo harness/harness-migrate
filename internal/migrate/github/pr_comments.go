@@ -1,9 +1,10 @@
-package stash
+package github
 
 import (
 	"context"
 	"fmt"
 
+	"github.com/drone/go-scm/scm"
 	"github.com/harness/harness-migrate/internal/checkpoint"
 	"github.com/harness/harness-migrate/internal/common"
 	"github.com/harness/harness-migrate/internal/types"
@@ -45,11 +46,40 @@ func (e *Export) ListPullRequestComments(
 		return allComments, nil
 	}
 
+	// for fetching PR comments
+	params := scm.ListOptions{Page: opts.Page, Size: opts.Size}
 	for {
-		comments, res, err := e.stash.ListPRComments(ctx, repoSlug, prNumber, opts)
+		comments, res, err := e.github.Issues.ListComments(ctx, repoSlug, prNumber, params)
 		if err != nil {
 			e.tracer.LogError(common.ErrCommentsList, repoSlug, prNumber, err)
 			return nil, fmt.Errorf(common.ErrCommentsList, repoSlug, prNumber, err)
+		}
+		if len(comments) == 0 {
+			break
+		}
+		allComments = append(allComments, common.MapPRComment(comments)...)
+
+		err = e.checkpointManager.SaveCheckpoint(checkpointDataKey, allComments)
+		if err != nil {
+			e.tracer.LogError(common.ErrCheckpointPrCommentsDataSave)
+		}
+		err = e.checkpointManager.SaveCheckpoint(checkpointPageKey, res.Page.Next)
+		if err != nil {
+			e.tracer.LogError(common.ErrCheckpointPrCommentsPageSave)
+		}
+
+		params.Page += 1
+	}
+
+	// for fetching PR review comments
+	for {
+		comments, res, err := e.github.ListPRComments(ctx, repoSlug, prNumber, opts)
+		if err != nil {
+			e.tracer.LogError(common.ErrCommentsList, repoSlug, prNumber, err)
+			return nil, fmt.Errorf(common.ErrCommentsList, repoSlug, prNumber, err)
+		}
+		if len(comments) == 0 {
+			break
 		}
 		allComments = append(allComments, comments...)
 
@@ -57,16 +87,12 @@ func (e *Export) ListPullRequestComments(
 		if err != nil {
 			e.tracer.LogError(common.ErrCheckpointPrCommentsDataSave)
 		}
-
 		err = e.checkpointManager.SaveCheckpoint(checkpointPageKey, res.Page.Next)
 		if err != nil {
 			e.tracer.LogError(common.ErrCheckpointPrCommentsPageSave)
 		}
 
-		if res.Page.Next == 0 {
-			break
-		}
-		opts.Page = res.Page.Next
+		opts.Page += 1
 	}
 
 	err = e.checkpointManager.SaveCheckpoint(checkpointPageKey, -1)

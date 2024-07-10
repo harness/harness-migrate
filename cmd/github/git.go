@@ -130,6 +130,10 @@ func registerGit(app *kingpin.CmdClause) {
 		Envar("github_SRC_REPOSITORY").
 		StringVar(&c.srcRepository)
 
+	cmd.Flag("username", "github username").
+		Envar("github_USERNAME").
+		StringVar(&c.user)
+
 	cmd.Flag("token", "github token").
 		Required().
 		Envar("github_TOKEN").

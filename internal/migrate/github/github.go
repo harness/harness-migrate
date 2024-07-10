@@ -28,24 +28,6 @@ import (
 	"github.com/go-git/go-git/v5/config"
 )
 
-type (
-	// wrapper wraps the Client to provide high level helper functions
-	// for making http requests and unmarshalling the response.
-	wrapper struct {
-		*scm.Client
-	}
-
-	Export struct {
-		github     *wrapper
-		org        string
-		repository string
-
-		checkpointManager *checkpoint.CheckpointManager
-
-		tracer tracer.Tracer
-	}
-)
-
 func New(
 	client *scm.Client,
 	org string,
@@ -75,14 +57,6 @@ func (e *Export) ListBranchRules(ctx context.Context, repoSlug string, logger gi
 	fmt.Printf("Listing branch rules for repo: %s\n", repoSlug)
 	rules := []*types.BranchRule{}
 	return rules, nil
-}
-
-// ListPullRequestComments implements gitexporter.Interface.
-func (e *Export) ListPullRequestComments(ctx context.Context, repoSlug string, prNumber int, opts types.ListOptions) ([]*types.PRComment, error) {
-	// Mock implementation
-	fmt.Printf("Listing comments for pull request #%d in repo: %s\n", prNumber, repoSlug)
-	comments := []*types.PRComment{}
-	return comments, nil
 }
 
 // ListWebhooks implements gitexporter.Interface.

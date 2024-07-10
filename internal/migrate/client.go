@@ -1,4 +1,4 @@
-package stash
+package migrate
 
 import (
 	"context"
@@ -9,7 +9,7 @@ import (
 	"github.com/drone/go-scm/scm"
 )
 
-type Client interface {
+type ClientInterface interface {
 	ListPRComments(ctx context.Context, repoSlug string, prNumber int, opts types.ListOptions) ([]*types.PRComment, *scm.Response, error)
 	ListBranchRules(ctx context.Context, repoSlug string, logger gitexporter.Logger, opts types.ListOptions) ([]*types.BranchRule, *scm.Response, error)
 }

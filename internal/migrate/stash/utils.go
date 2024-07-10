@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/harness/harness-migrate/internal/common"
 	"github.com/harness/harness-migrate/internal/gitexporter"
 	"github.com/harness/harness-migrate/internal/types"
 	"github.com/harness/harness-migrate/internal/types/enum"
@@ -73,22 +74,18 @@ func convertPullRequestCommentsList(from []any) []*types.PRComment {
 }
 
 func convertPullRequestComment(from pullRequestComment, parentID int, anchor commentAnchor, diff codeDiff) *types.PRComment {
-	var metadata types.CodeComment
+	var codeComment *types.CodeComment
 	if anchor.Path != "" {
-		commentSide := "NEW"
-		if anchor.FileType == "FROM" {
-			commentSide = "OLD"
-		}
 		var snippet types.Hunk
 		var hunkHeader string
 		if anchor.Line != 0 {
 			snippet = extractSnippetInfo(diff)
 			hunkHeader = extractHunkInfo(anchor, diff)
 		}
-		metadata = types.CodeComment{
+		codeComment = &types.CodeComment{
 			Path:         anchor.Path,
 			CodeSnippet:  snippet,
-			Side:         commentSide,
+			Side:         getCommentSide(anchor.FileType),
 			HunkHeader:   hunkHeader,
 			SourceSHA:    anchor.ToHash,
 			MergeBaseSHA: anchor.FromHash,
@@ -106,13 +103,20 @@ func convertPullRequestComment(from pullRequestComment, parentID int, anchor com
 			Email: from.Author.EmailAddress,
 		}},
 		ParentID:    parentID,
-		CodeComment: &metadata,
+		CodeComment: codeComment,
 	}
+}
+
+func getCommentSide(fileType string) string {
+	if fileType == "FROM" {
+		return "OLD"
+	}
+	return "NEW"
 }
 
 func extractSnippetInfo(diff codeDiff) types.Hunk {
 	hunk := diff.Hunks[0]
-	header := formatHunkHeader(hunk.SourceLine, hunk.SourceSpan, hunk.DestinationLine, hunk.DestinationSpan, "")
+	header := common.FormatHunkHeader(hunk.SourceLine, hunk.SourceSpan, hunk.DestinationLine, hunk.DestinationSpan, "")
 	lines := []string{}
 	for _, segment := range hunk.Segments {
 		l := ""
@@ -151,36 +155,10 @@ func extractHunkInfo(anchor commentAnchor, diff codeDiff) string {
 			if segment.Type == segmentRemoved {
 				destinationSpan = 0
 			}
-			return formatHunkHeader(line.Source, sourceSpan, line.Destination, destinationSpan, "")
+			return common.FormatHunkHeader(line.Source, sourceSpan, line.Destination, destinationSpan, "")
 		}
 	}
 	return ""
-}
-
-func formatHunkHeader(source, sourceSpan, destination, destinationSpan int, sectionHeading string) string {
-	sb := strings.Builder{}
-	sb.Grow(20 + len(sectionHeading))
-
-	sb.WriteString("@@ -")
-	sb.WriteString(strconv.Itoa(source))
-	if sourceSpan != 1 {
-		sb.WriteByte(',')
-		sb.WriteString(strconv.Itoa(sourceSpan))
-	}
-	sb.WriteString(" +")
-	sb.WriteString(strconv.Itoa(destination))
-	if destinationSpan != 1 {
-		sb.WriteByte(',')
-		sb.WriteString(strconv.Itoa(destinationSpan))
-	}
-	sb.WriteString(" @@")
-
-	if sectionHeading != "" {
-		sb.WriteByte(' ')
-		sb.WriteString(sectionHeading)
-	}
-
-	return sb.String()
 }
 
 func convertBranchRulesList(

@@ -25,7 +25,6 @@ import (
 	"github.com/harness/harness-migrate/internal/types"
 
 	"github.com/drone/go-scm/scm"
-	"github.com/go-git/go-git/v5/config"
 )
 
 func New(
@@ -42,13 +41,6 @@ func New(
 		checkpointManager: checkpointer,
 		tracer:            tracer,
 	}
-}
-
-// FetchPullRequestRefs implements gitexporter.Interface.
-func (e *Export) PullRequestRefs() []config.RefSpec {
-	// Mock implementation
-	fmt.Printf("Fetching pull request refs\n")
-	return nil
 }
 
 // ListBranchRules implements gitexporter.Interface.

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"path/filepath"
 
+	"github.com/harness/harness-migrate/internal/common"
 	"github.com/harness/harness-migrate/internal/harness"
 	"github.com/harness/harness-migrate/internal/tracer"
 	"github.com/harness/harness-migrate/types"
@@ -21,7 +22,7 @@ func (m *Importer) Push(
 	repo *harness.Repository,
 	tracer tracer.Tracer,
 ) error {
-	tracer.Start("start git push to %q", repo.GitURL)
+	tracer.Start(common.MsgStartImportGit, repo.GitURL)
 	gitPath := filepath.Join(repoPath, types.GitDir)
 
 	gitRepo, err := git.PlainOpen(gitPath)
@@ -48,18 +49,17 @@ func (m *Importer) Push(
 		RefSpecs: []config.RefSpec{
 			"refs/heads/*:refs/heads/*",
 			"refs/tags/*:refs/tags/*",
-			// "refs/pullreq/*/head:refs/pullreq/*/head", TODO: uncomment after proper bypass pre-receive hooks for importing pr refs
-			// "refs/pullreq/*/merge:refs/pullreq/*/merge",
+			"refs/pullreq/*/head:refs/pullreq/*/head",
 		},
 		RemoteURL:       repo.GitURL,
 		Force:           true,
 		InsecureSkipTLS: true,
 	})
 	if err != nil && !errors.Is(err, git.NoErrAlreadyUpToDate) {
-		tracer.Stop("failed to push to '%s'", repo.GitURL)
-		return fmt.Errorf("failed to push repo to '%s': %w", repo.GitURL, err)
+		tracer.Stop(common.ErrGitPush, repo.GitURL)
+		return fmt.Errorf(common.ErrGitPush, repo.GitURL, err)
 	}
 
-	tracer.Stop("finished git push to '%s'", repo.GitURL)
+	tracer.Stop(common.MsgCompleteImportGit, repo.GitURL)
 	return nil
 }

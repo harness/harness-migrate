@@ -15,6 +15,8 @@
 package types
 
 import (
+	"bytes"
+	"encoding/json"
 	"time"
 )
 
@@ -24,8 +26,9 @@ const (
 	PullRequestDir       = "pr"
 	GitDir               = "git"
 	WebhookFileName      = "webhooks.json"
-	BranchRulesFileName  = "rules.json"
+	BranchRulesFileName  = "branch_rules.json"
 	UsersFileName        = "users.json"
+	RuleTypeBranch       = "branch"
 )
 
 type (
@@ -123,19 +126,19 @@ type (
 		CodeComment *CodeComment `json:"code_comment"`
 	}
 
-	BranchRule struct {
-		ID               int            `json:"id"`
-		Name             string         `json:"name"`
-		RuleDefinition   RuleDefinition `json:"definition"`
-		IncludeDefault   bool           `json:"includeDefault"`
-		IncludedPatterns []string       `json:"included_patterns"`
-		ExcludedPatterns []string       `json:"excluded_patterns"`
+	Rule struct {
+		ID               int             `json:"id"`
+		Identifier       string          `json:"identifier"`
+		Definition       json.RawMessage `json:"definition"`
+		IncludeDefault   bool            `json:"includeDefault"`
+		IncludedPatterns []string        `json:"included_patterns"`
+		ExcludedPatterns []string        `json:"excluded_patterns"`
 	}
 
 	RepositoryData struct {
 		Repository      Repository         `json:"repository"`
 		PullRequestData []*PullRequestData `json:"pull_request_data"`
-		BranchRules     []BranchRule       `json:"branch_rules"`
+		BranchRules     []Rule             `json:"branch_rules"`
 		Webhooks        WebhookData        `json:"webhooks"`
 	}
 
@@ -159,7 +162,7 @@ type (
 	}
 
 	Bypass struct {
-		UserIdentifiers []string `json:"user_ids,omitempty"`
+		UserIdentifiers []string `json:"user_identifiers,omitempty"`
 		RepoOwners      bool     `json:"repo_owners,omitempty"`
 	}
 
@@ -211,3 +214,24 @@ const (
 	VisibilityInternal
 	VisibilityPrivate
 )
+
+func (d *RuleDefinition) JSON() json.RawMessage {
+	message, _ := ToJSON(d)
+	return message
+}
+
+// ToJSON is utility function that converts types to a JSON message.
+func ToJSON(v any) (json.RawMessage, error) {
+	buffer := bytes.NewBuffer(nil)
+
+	enc := json.NewEncoder(buffer)
+	enc.SetEscapeHTML(false)
+	if err := enc.Encode(v); err != nil {
+		return nil, err
+	}
+
+	data := buffer.Bytes()
+	data = bytes.TrimSpace(data)
+
+	return data, nil
+}

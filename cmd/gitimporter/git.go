@@ -34,7 +34,7 @@ type gitImport struct {
 	endpoint     string
 	harnessToken string
 	harnessSpace string
-	//harnessRepo     string
+	harnessRepo  string // single repo import
 
 	skipUsers bool
 	Gitness   bool
@@ -55,9 +55,10 @@ func (c *gitImport) run(*kingpin.ParseContext) error {
 	tracer_ := tracer.New()
 	defer tracer_.Close()
 
+	c.harnessRepo = strings.Trim(c.harnessRepo, " ")
 	importUuid := uuid.New().String()
 	c.endpoint, _ = strings.CutSuffix(c.endpoint, "/")
-	importer := gitimporter.NewImporter(c.endpoint, c.harnessSpace, c.harnessToken, c.filePath, importUuid, c.skipUsers, c.Gitness, c.trace, tracer_)
+	importer := gitimporter.NewImporter(c.endpoint, c.harnessSpace, c.harnessRepo, c.harnessToken, c.filePath, importUuid, c.skipUsers, c.Gitness, c.trace, tracer_)
 
 	tracer_.Log("starting operation with id: %s", importUuid)
 	return importer.Import(ctx)
@@ -92,9 +93,9 @@ func registerGitImporter(app *kingpin.CmdClause) {
 		Envar("harness_SKIP_USERS").
 		BoolVar(&c.skipUsers)
 
-	// cmd.Flag("repo", "Required in case of single repo import which already exists.").
-	//	Envar("HARNESS_REPO").
-	//	StringVar(&c.harnessRepo)
+	cmd.Flag("repo-path", "optional path of a single repo to import (e.g, Org/repo).").
+		Envar("HARNESS_REPO_PATH").
+		StringVar(&c.harnessRepo)
 
 	cmd.Flag("Gitness", "import into a Gitness instance").
 		Default("false").

@@ -70,6 +70,9 @@ func (e *Exporter) Export(ctx context.Context) error {
 	if err != nil {
 		panic(fmt.Sprintf(common.PanicCannotCreateFolder, err))
 	}
+
+	e.Tracer.Log(common.MsgStartExport)
+
 	data, err := e.getData(ctx, path)
 	if err != nil {
 		panic(fmt.Sprintf(common.PanicFetchingFileData, err))
@@ -98,6 +101,8 @@ func (e *Exporter) Export(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("zipping error: %v", err)
 	}
+
+	e.Tracer.Log(common.MsgCompleteExport, len(data))
 
 	err = deleteFolders(path)
 	if err != nil {
@@ -306,7 +311,7 @@ func extractUsers(repo *types.RepoData, users map[string]bool) {
 	}
 
 	for _, rule := range repo.BranchRules {
-		for _, user := range rule.Bypass.UserIdentifiers {
+		for _, user := range rule.RuleDefinition.Bypass.UserIdentifiers {
 			users[user] = true
 		}
 	}
@@ -354,17 +359,17 @@ func mapPRData(pr types.PRResponse, comments []*types.PRComment) *types.PullRequ
 func mapRepoData(repoData *types.RepoData) *externalTypes.RepositoryData {
 	d := new(externalTypes.RepositoryData)
 	d.Repository.Slug = repoData.Repository.RepoSlug
-	d.Repository = MapRepository(repoData.Repository)
-	d.BranchRules = MapBranchRules(repoData.BranchRules)
+	d.Repository = mapRepository(repoData.Repository)
+	d.BranchRules = mapBranchRules(repoData.BranchRules)
 
 	d.PullRequestData = make([]*externalTypes.PullRequestData, len(repoData.PullRequestData))
 	for i, prData := range repoData.PullRequestData {
 		d.PullRequestData[i] = new(externalTypes.PullRequestData)
-		d.PullRequestData[i].PullRequest = MapPR(prData.PullRequest.PullRequest)
-		d.PullRequestData[i].Comments = MapPRComment(prData.Comments)
+		d.PullRequestData[i].PullRequest = mapPR(prData.PullRequest.PullRequest)
+		d.PullRequestData[i].Comments = mapPRComment(prData.Comments)
 	}
 
-	d.Webhooks.Hooks = MapHooks(repoData.Webhooks.ConvertedHooks)
+	d.Webhooks.Hooks = mapHooks(repoData.Webhooks.ConvertedHooks)
 
 	return d
 }

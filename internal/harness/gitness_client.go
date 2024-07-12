@@ -17,6 +17,7 @@ package harness
 import (
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/harness/harness-migrate/types"
 )
@@ -118,11 +119,11 @@ func (c *gitnessClient) CreatePipeline(org, project string, pipeline []byte) err
 	return fmt.Errorf("not implemented")
 }
 
-func (c *gitnessClient) CreateRepository(parentRef string, repo *RepositoryCreateRequest) (*Repository, error) {
+func (c *gitnessClient) CreateRepository(parentRef string, repo *RepositoryCreateInput) (*Repository, error) {
 	out := new(Repository)
-	in := &GitnessRepositoryCreateRequest{
-		RepositoryCreateRequest: *repo,
-		ParentRef:               parentRef,
+	in := &GitnessRepositoryCreateInput{
+		RepositoryCreateInput: *repo,
+		ParentRef:             parentRef,
 	}
 	uri := fmt.Sprintf("%s/api/v1/repos",
 		c.address,
@@ -134,17 +135,71 @@ func (c *gitnessClient) CreateRepository(parentRef string, repo *RepositoryCreat
 	return out, nil
 }
 
-func (c *gitnessClient) ImportPRs(repoRef string, in *types.PRsImportInput) (*types.Response, error) {
-	out := new(types.Response)
-	uri := fmt.Sprintf("%s/api/v1/repos/%s/pullreq/import",
+func (c *gitnessClient) CreateRepositoryForMigration(parentRef string, repo *RepositoryCreateInput) (*Repository, error) {
+	out := new(Repository)
+	in := &GitnessRepositoryCreateInput{
+		RepositoryCreateInput: *repo,
+		ParentRef:             parentRef,
+	}
+	uri := fmt.Sprintf("%s/api/v1/migrate/repos",
 		c.address,
-		repoRef,
 	)
 
 	if err := c.post(uri, in, out); err != nil {
 		return nil, err
 	}
 	return out, nil
+}
+
+func (c *gitnessClient) UpdateRepositoryState(repoRef string, in *RepositoryUpdateStateInput) (*Repository, error) {
+	out := new(Repository)
+	repoRef = strings.ReplaceAll(repoRef, PathSeparator, EncodedPathSeparator)
+	uri := fmt.Sprintf("%s/api/v1/migrate/repos/%s/update-state",
+		c.address,
+		repoRef,
+	)
+
+	if err := c.patch(uri, in, out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *gitnessClient) ImportPRs(repoRef string, in *types.PRsImportInput) error {
+	repoRef = strings.ReplaceAll(repoRef, PathSeparator, EncodedPathSeparator)
+	uri := fmt.Sprintf("%s/api/v1/migrate/repos/%s/pullreqs",
+		c.address,
+		repoRef,
+	)
+
+	if err := c.post(uri, in, nil); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (c *gitnessClient) ImportWebhooks(repoRef string, in *types.WebhookInput) error {
+	repoRef = strings.ReplaceAll(repoRef, PathSeparator, EncodedPathSeparator)
+	uri := fmt.Sprintf("%s/api/v1/migrate/repos/%s/webhooks",
+		c.address,
+		repoRef,
+	)
+	if err := c.post(uri, in, nil); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (c *gitnessClient) ImportRules(repoRef string, in *types.RulesInput) error {
+	repoRef = strings.ReplaceAll(repoRef, PathSeparator, EncodedPathSeparator)
+	uri := fmt.Sprintf("%s/api/v1/migrate/repos/%s/rules",
+		c.address,
+		repoRef,
+	)
+	if err := c.post(uri, in, nil); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (c *gitnessClient) CheckUsers(in *types.CheckUsersInput) (*types.CheckUsersOutput, error) {

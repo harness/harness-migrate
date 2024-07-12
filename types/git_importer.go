@@ -33,6 +33,15 @@ type (
 	}
 
 	PRsImportInput struct {
-		PullRequestData
+		PullRequestData []*PullRequestData `json:"pull_request_data"`
+	}
+
+	WebhookInput struct {
+		WebhookData
+	}
+
+	RulesInput struct {
+		Rules []*Rule
+		Type  string `json:"type"`
 	}
 )

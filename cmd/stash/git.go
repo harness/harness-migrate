@@ -121,8 +121,8 @@ func registerGit(app *kingpin.CmdClause) {
 		Envar("stash_PROJECT").
 		StringVar(&c.project)
 
-	cmd.Flag("src_repository", "optional name of the source repository to export").
-		Envar("stash_SRC_REPOSITORY").
+	cmd.Flag("repository", "optional name of the repository to export").
+		Envar("stash_REPOSITORY").
 		StringVar(&c.srcRepository)
 
 	cmd.Flag("token", "stash token").

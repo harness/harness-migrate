@@ -19,11 +19,11 @@ func (e *Export) ListWebhooks(
 	logger gitexporter.Logger,
 	_ types.WebhookListOptions,
 ) (types.WebhookData, error) {
-	e.tracer.Start(common.MsgStartWebhookList, repoSlug)
+	e.tracer.Start(common.MsgStartExportWebhook, repoSlug)
 
 	var allWebhooks []*scm.Hook
 	defer func() {
-		e.tracer.Stop("fetched repo %q webhooks. Total: %d", repoSlug, len(allWebhooks))
+		e.tracer.Stop(common.MsgCompleteExportWebhooks, len(allWebhooks), repoSlug)
 	}()
 
 	opts := scm.ListOptions{Size: 25, Page: 1}

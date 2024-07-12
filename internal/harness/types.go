@@ -14,6 +14,13 @@
 
 package harness
 
+import "github.com/harness/harness-migrate/internal/types/enum"
+
+const (
+	PathSeparator        = "/"
+	EncodedPathSeparator = "%252F"
+)
+
 type (
 	// Pipeline defines a pipeline.
 	Pipeline struct {
@@ -50,7 +57,7 @@ type (
 
 	// Repository defines a resository.
 	Repository struct {
-		UID           string `json:"uid"`
+		Identifier    string `json:"identifier"`
 		ParentID      int64  `json:"parent_id"`
 		Description   string `json:"description"`
 		IsPublic      bool   `json:"is_public"`
@@ -241,17 +248,22 @@ type (
 		Secret *Secret `json:"secret"`
 	}
 
-	// RepositoryCreateRequest defines a repo creation request.
-	RepositoryCreateRequest struct {
-		UID           string `json:"uid"`
+	// RepositoryCreateInput defines a repo creation request input.
+	RepositoryCreateInput struct {
+		Identifier    string `json:"identifier"`
 		DefaultBranch string `json:"default_branch"`
 		Description   string `json:"description"`
 		IsPublic      bool   `json:"is_public"`
 	}
 
-	// GitnessRepositoryCreateRequest defines a repo creation request on Gitness.
-	GitnessRepositoryCreateRequest struct {
-		RepositoryCreateRequest
+	// RepositoryUpdateStateInput defines a repo update state request input.
+	RepositoryUpdateStateInput struct {
+		State enum.RepoState `json:"state"`
+	}
+
+	// GitnessRepositoryCreateInput defines a repo creation request input on Gitness.
+	GitnessRepositoryCreateInput struct {
+		RepositoryCreateInput
 		ParentRef string `json:"parent_ref"`
 	}
 

@@ -1,0 +1,73 @@
+// Copyright 2023 Harness, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package gitimporter
+
+import (
+	"encoding/json"
+	"fmt"
+	"io/ioutil"
+	"os"
+	"path/filepath"
+
+	"github.com/harness/harness-migrate/internal/common"
+	"github.com/harness/harness-migrate/internal/tracer"
+	"github.com/harness/harness-migrate/types"
+)
+
+func (m *Importer) ImportBranchRules(
+	repoRef string,
+	repoFolder string,
+	tracer tracer.Tracer,
+) error {
+	tracer.Start(common.MsgStartImportBranchRules, repoRef)
+	in, err := m.readBranchRules(repoFolder)
+	if err != nil {
+		tracer.Stop(common.ErrImportBranchRules, repoRef)
+		return fmt.Errorf("failed to read branch rules from %q: %w", repoFolder, err)
+	}
+
+	if in == nil {
+		m.Tracer.Stop(common.MsgCompleteImportBranchRules, 0, repoRef)
+		return nil
+	}
+
+	if err := m.Harness.ImportRules(repoRef, &types.RulesInput{Rules: in, Type: types.RuleTypeBranch}); err != nil {
+		tracer.Stop(common.ErrImportBranchRules, repoRef)
+		return fmt.Errorf("failed to import branch rules for repo '%s' : %w",
+			repoRef, err)
+	}
+	m.Tracer.Stop(common.MsgCompleteImportBranchRules, len(in), repoRef)
+
+	return nil
+}
+
+func (m *Importer) readBranchRules(repoFolder string) ([]*types.Rule, error) {
+	branchRulesFile := filepath.Join(repoFolder, types.BranchRulesFileName)
+	if _, err := os.Stat(branchRulesFile); os.IsNotExist(err) {
+		return nil, nil
+	}
+
+	data, err := ioutil.ReadFile(branchRulesFile)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read content from %q: %w", branchRulesFile, err)
+	}
+
+	var rules []*types.Rule
+	if err := json.Unmarshal(data, &rules); err != nil {
+		return nil, fmt.Errorf("error parsing repo rules json: %w", err)
+	}
+
+	return rules, nil
+}

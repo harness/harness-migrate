@@ -74,10 +74,22 @@ type Client interface {
 	CreatePipeline(org, project string, pipeline []byte) error
 
 	// CreateRepository creates a repository.
-	CreateRepository(parentRef string, repo *RepositoryCreateRequest) (*Repository, error)
+	CreateRepository(parentRef string, repo *RepositoryCreateInput) (*Repository, error)
 
-	// ImportPRs imports PRs within a repository.
-	ImportPRs(repoRef string, in *types.PRsImportInput) (*types.Response, error)
+	// CreateRepositoryForMigration creates an empty repository ready for migration.
+	CreateRepositoryForMigration(parentRef string, repo *RepositoryCreateInput) (*Repository, error)
+
+	// UpdateRepositoryState updates a repository state (for different steps of the migration).
+	UpdateRepositoryState(parentRef string, repo *RepositoryUpdateStateInput) (*Repository, error)
+
+	// ImportPRs imports pull requests of a repository.
+	ImportPRs(repoRef string, in *types.PRsImportInput) error
+
+	// ImportWebhooks imports webhooks of a repository
+	ImportWebhooks(repoRef string, in *types.WebhookInput) error
+
+	// ImportRules imports protection rules of a repository
+	ImportRules(repoRef string, in *types.RulesInput) error
 
 	// CheckUsers provides all email id to harness code of users which needs to be checked for existence.
 	CheckUsers(in *types.CheckUsersInput) (*types.CheckUsersOutput, error)

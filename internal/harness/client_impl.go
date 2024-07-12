@@ -239,7 +239,7 @@ func (c *client) CreatePipeline(org, project string, pipeline []byte) error {
 }
 
 // CreateRepository creates a repository for the parentRef, if none provide repo will be at the acc level
-func (c *client) CreateRepository(parentRef string, repo *RepositoryCreateRequest) (*Repository, error) {
+func (c *client) CreateRepository(parentRef string, repo *RepositoryCreateInput) (*Repository, error) {
 	out := new(Repository)
 	pathParts := strings.Split(parentRef, "/")
 	var org string
@@ -264,21 +264,23 @@ func (c *client) CreateRepository(parentRef string, repo *RepositoryCreateReques
 	return out, nil
 }
 
-func (c *client) ImportPRs(repoRef string, in *types.PRsImportInput) (*types.Response, error) {
-	out := new(types.Response)
-	if repoRef == "" {
-		return nil, fmt.Errorf("repo reference cannot be empty")
-	}
+func (c *client) UpdateRepositoryState(repoRef string, in *RepositoryUpdateStateInput) (*Repository, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+func (c *client) ImportPRs(repoRef string, in *types.PRsImportInput) error {
+	return fmt.Errorf("not implemented")
+}
 
-	uri := fmt.Sprintf("%s/api/v1/repos/%s/pullreq/import", // TODO update this with HC API
-		c.address,
-		repoRef,
-	)
+func (c *client) CreateRepositoryForMigration(parentRef string, repo *RepositoryCreateInput) (*Repository, error) {
+	return nil, fmt.Errorf("not implemented")
+}
 
-	if err := c.post(uri, in, out); err != nil {
-		return nil, err
-	}
-	return out, nil
+func (c *client) ImportWebhooks(repoRef string, in *types.WebhookInput) error {
+	return fmt.Errorf("not implemented")
+}
+
+func (c *client) ImportRules(repoRef string, in *types.RulesInput) error {
+	return fmt.Errorf("not implemented")
 }
 
 func (c *client) CheckUsers(in *types.CheckUsersInput) (*types.CheckUsersOutput, error) {

@@ -21,7 +21,7 @@ import (
 	"github.com/drone/go-scm/scm"
 )
 
-func MapPRComment(comments []*types.PRComment) []externalTypes.Comment {
+func mapPRComment(comments []*types.PRComment) []externalTypes.Comment {
 	r := make([]externalTypes.Comment, len(comments))
 	for i, c := range comments {
 		r[i] = externalTypes.Comment{
@@ -52,13 +52,14 @@ func mapCodeComment(c *types.CodeComment) *externalTypes.CodeComment {
 	}
 }
 
-func MapBranchRules(rules []*types.BranchRule) []externalTypes.BranchRule {
-	r := make([]externalTypes.BranchRule, len(rules))
+func mapBranchRules(rules []*types.BranchRule) []externalTypes.Rule {
+	r := make([]externalTypes.Rule, len(rules))
 	for i, b := range rules {
-		r[i] = externalTypes.BranchRule{
+		definition := mapBranchRuleDefinition(b.RuleDefinition)
+		r[i] = externalTypes.Rule{
 			ID:               b.ID,
-			Name:             b.Name,
-			RuleDefinition:   mapRuleDefinition(b.RuleDefinition),
+			Identifier:       b.Name,
+			Definition:       definition.JSON(),
 			IncludeDefault:   b.IncludeDefault,
 			IncludedPatterns: b.IncludedPatterns,
 			ExcludedPatterns: b.ExcludedPatterns,
@@ -67,7 +68,7 @@ func MapBranchRules(rules []*types.BranchRule) []externalTypes.BranchRule {
 	return r
 }
 
-func mapRuleDefinition(d types.RuleDefinition) externalTypes.RuleDefinition {
+func mapBranchRuleDefinition(d types.RuleDefinition) externalTypes.RuleDefinition {
 	return externalTypes.RuleDefinition{
 		Bypass: externalTypes.Bypass(d.Bypass),
 		PullReq: externalTypes.PullReq{
@@ -79,7 +80,8 @@ func mapRuleDefinition(d types.RuleDefinition) externalTypes.RuleDefinition {
 		Lifecycle: externalTypes.Lifecycle(d.Lifecycle),
 	}
 }
-func MapRepository(repository types.RepoResponse) externalTypes.Repository {
+
+func mapRepository(repository types.RepoResponse) externalTypes.Repository {
 	return externalTypes.Repository{
 		Slug:       repository.RepoSlug,
 		ID:         repository.ID,
@@ -118,7 +120,7 @@ func mapVisibility(visibility scm.Visibility) externalTypes.Visibility {
 	}
 }
 
-func MapPR(request scm.PullRequest) externalTypes.PullRequest {
+func mapPR(request scm.PullRequest) externalTypes.PullRequest {
 	return externalTypes.PullRequest{
 		Number:  request.Number,
 		Title:   request.Title,
@@ -173,7 +175,7 @@ func mapLabels(labels []scm.Label) []externalTypes.Label {
 	return l
 }
 
-func MapHooks(hooks []*scm.Hook) []*externalTypes.Hook {
+func mapHooks(hooks []*scm.Hook) []*externalTypes.Hook {
 	h := make([]*externalTypes.Hook, len(hooks))
 	for i, hook := range hooks {
 		h[i] = &externalTypes.Hook{

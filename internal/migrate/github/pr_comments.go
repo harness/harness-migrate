@@ -15,11 +15,11 @@ func (e *Export) ListPullRequestComments(
 	repoSlug string, prNumber int,
 	opts types.ListOptions,
 ) ([]*types.PRComment, error) {
-	e.tracer.Start(common.MsgStartPrCommentsExport, repoSlug, prNumber)
+	e.tracer.Start(common.MsgStartExportPrComments, repoSlug, prNumber)
 	allComments := []*types.PRComment{}
-	msgCommentsExport := common.MsgCompletePrCommentsExport
+	msgCommentsExport := common.MsgCompleteExportPrComments
 	defer func() {
-		e.tracer.Stop(msgCommentsExport, repoSlug, prNumber, len(allComments))
+		e.tracer.Stop(msgCommentsExport, len(allComments), repoSlug, prNumber)
 	}()
 
 	checkpointDataKey := fmt.Sprintf(common.PRCommentCheckpointData, repoSlug, prNumber)

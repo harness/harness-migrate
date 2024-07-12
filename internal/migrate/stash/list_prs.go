@@ -16,7 +16,7 @@ func (e *Export) ListPullRequests(
 	repoSlug string,
 	params types.PullRequestListOptions,
 ) ([]types.PRResponse, error) {
-	e.tracer.Start(common.MsgStartPrExport, repoSlug)
+	e.tracer.Start(common.MsgStartExportPRs, repoSlug)
 	opts := scm.PullRequestListOptions{
 		Page:   params.Page,
 		Size:   params.Size,
@@ -24,9 +24,9 @@ func (e *Export) ListPullRequests(
 		Closed: params.Closed,
 	}
 	var allPrs []types.PRResponse
-	msgPrExport := common.MsgCompletePrExport
+	msgPrExport := common.MsgCompleteExportPRs
 	defer func() {
-		e.tracer.Stop(msgPrExport, repoSlug, len(allPrs))
+		e.tracer.Stop(msgPrExport, len(allPrs), repoSlug)
 	}()
 
 	checkpointDataKey := fmt.Sprintf(common.PullRequestCheckpointData, repoSlug)

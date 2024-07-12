@@ -146,8 +146,8 @@ func (m *Importer) Import(ctx context.Context, data *types.Org) error {
 		m.Tracer.Start("create repository %s", project.Identifier)
 
 		// create the harness repository in harness
-		repoCreate := &harness.RepositoryCreateRequest{
-			UID:           project.Identifier,
+		repoCreate := &harness.RepositoryCreateInput{
+			Identifier:    project.Identifier,
 			Description:   srcProject.Desc,
 			DefaultBranch: srcProject.Branch,
 			IsPublic:      false, // TODO: Harness doesn't have private repos at the moment

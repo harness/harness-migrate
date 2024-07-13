@@ -30,12 +30,14 @@ import (
 	"github.com/harness/harness-migrate/internal/types"
 	"github.com/harness/harness-migrate/internal/util"
 	externalTypes "github.com/harness/harness-migrate/types"
+	"golang.org/x/sync/errgroup"
 )
 
 const (
-	maxChunkSize = 25 * 1024 * 1024 // 25 MB
-	prFileName   = "pr%d.json"
-	zipFileName  = "harness.zip"
+	maxChunkSize   = 25 * 1024 * 1024 // 25 MB
+	prFileName     = "pr%d.json"
+	zipFileName    = "harness.zip"
+	maxParallelism = 20 // TODO: make this configurable by the user
 )
 
 type Exporter struct {
@@ -271,7 +273,8 @@ func (e *Exporter) getData(ctx context.Context, path string) ([]*types.RepoData,
 		repoData[i].BranchRules = branchRules
 
 		// 5. get all data for each pr
-		prs, err := e.exporter.ListPullRequests(ctx, repo.RepoSlug, types.PullRequestListOptions{Page: 1, Size: 25, Open: true, Closed: true})
+		prs, err := e.exporter.ListPullRequests(ctx, repo.RepoSlug,
+			types.PullRequestListOptions{Page: 1, Size: 25, Open: true, Closed: true})
 		if errors.As(err, &notSupportedErr) {
 			return repoData, nil
 		}
@@ -279,18 +282,85 @@ func (e *Exporter) getData(ctx context.Context, path string) ([]*types.RepoData,
 			return nil, fmt.Errorf("encountered error in getting pr: %w", err)
 		}
 
-		prData := make([]*types.PullRequestData, len(prs))
-		for j, pr := range prs {
-			comments, err := e.exporter.ListPullRequestComments(ctx, repo.RepoSlug, pr.Number, types.ListOptions{Page: 1, Size: 25})
-			if err != nil {
-				return nil, fmt.Errorf("encountered error in getting comments: %w", err)
-			}
-			prData[j] = mapPRData(pr, comments)
+		prData, err := e.exportCommentsForPRs(ctx, prs, repo)
+		if err != nil {
+			return nil, fmt.Errorf("error getting comments for pr: %w", err)
 		}
 		repoData[i].PullRequestData = prData
 	}
 
 	return repoData, nil
+}
+
+func (e *Exporter) exportCommentsForPRs(
+	ctx context.Context,
+	prs []types.PRResponse,
+	repo types.RepoResponse,
+) ([]*types.PullRequestData, error) {
+	taskPool := util.NewTaskPool(ctx, maxParallelism)
+	err := taskPool.Start()
+
+	if err != nil {
+		return nil, fmt.Errorf("error starting thread pool: %w", err)
+	}
+
+	prData := make([]*types.PullRequestData, len(prs))
+	g := e.startResultChannel(ctx, taskPool, prData)
+
+	for j, pr := range prs {
+		task := e.createPRTask(j, pr, repo)
+		taskPool.Submit(task)
+	}
+
+	taskPool.Shutdown()
+	err = g.Wait()
+	if err != nil {
+		return nil, err
+	}
+
+	return prData, nil
+}
+
+func (e *Exporter) createPRTask(j int, pr types.PRResponse, repo types.RepoResponse) *util.Task {
+	return &util.Task{
+		ID: j,
+		Execute: func(ctx context.Context) (any, error) {
+			select {
+			case <-ctx.Done():
+				return nil, ctx.Err()
+			default:
+				comments, err := e.exporter.ListPullRequestComments(ctx, repo.RepoSlug, pr.Number,
+					types.ListOptions{Page: 1, Size: 25})
+				if err != nil {
+					return nil, fmt.Errorf("encountered error in getting comments for PR %d: %w",
+						pr.Number, err)
+				}
+				return mapPRData(pr, comments), nil
+			}
+		},
+	}
+}
+
+func (e *Exporter) startResultChannel(
+	ctx context.Context,
+	taskPool *util.TaskPool,
+	prData []*types.PullRequestData,
+) *errgroup.Group {
+	g, _ := errgroup.WithContext(ctx)
+	g.Go(func() error {
+		for result := range taskPool.ResultCh {
+			if result.Err != nil {
+				taskPool.Cancel()
+				return result.Err
+			}
+			if result.Data != nil {
+				prData[result.ID] = result.Data.(*types.PullRequestData)
+			}
+			taskPool.MarkResultRead()
+		}
+		return nil
+	})
+	return g
 }
 
 func extractUsers(repo *types.RepoData, users map[string]bool) {

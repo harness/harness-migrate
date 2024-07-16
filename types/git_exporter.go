@@ -162,8 +162,8 @@ type (
 	}
 
 	Bypass struct {
-		UserIdentifiers []string `json:"user_identifiers,omitempty"`
-		RepoOwners      bool     `json:"repo_owners,omitempty"`
+		UserEmails []string `json:"user_emails,omitempty"`
+		RepoOwners bool     `json:"repo_owners,omitempty"`
 	}
 
 	Approvals struct {

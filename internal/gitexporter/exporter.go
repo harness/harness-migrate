@@ -381,8 +381,8 @@ func extractUsers(repo *types.RepoData, users map[string]bool) {
 	}
 
 	for _, rule := range repo.BranchRules {
-		for _, user := range rule.RuleDefinition.Bypass.UserIdentifiers {
-			users[user] = true
+		for _, email := range rule.RuleDefinition.Bypass.UserEmails {
+			users[email] = true
 		}
 	}
 }

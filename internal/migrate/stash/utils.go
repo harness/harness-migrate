@@ -241,9 +241,9 @@ func convertBranchModelsMap(from branchModels) map[string]modelValue {
 }
 
 func mapRuleDefinition(t string, bypassUsers []author) types.RuleDefinition {
-	var users []string
+	var emails []string
 	for _, u := range bypassUsers {
-		users = append(users, u.EmailAddress)
+		emails = append(emails, u.EmailAddress)
 	}
 
 	lifecycle := types.Lifecycle{}
@@ -263,7 +263,7 @@ func mapRuleDefinition(t string, bypassUsers []author) types.RuleDefinition {
 	return types.RuleDefinition{
 		Lifecycle: lifecycle,
 		Bypass: types.Bypass{
-			UserIdentifiers: users,
+			UserEmails: emails,
 		},
 	}
 }

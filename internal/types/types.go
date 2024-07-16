@@ -128,8 +128,8 @@ type (
 	}
 
 	Bypass struct {
-		UserIdentifiers []string
-		RepoOwners      bool
+		UserEmails []string
+		RepoOwners bool
 	}
 
 	Approvals struct {

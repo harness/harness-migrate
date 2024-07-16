@@ -28,7 +28,8 @@ type (
 
 		checkpointManager *checkpoint.CheckpointManager
 
-		tracer tracer.Tracer
+		tracer     tracer.Tracer
+		fileLogger gitexporter.Logger
 	}
 )
 
@@ -37,6 +38,7 @@ func New(
 	project string,
 	repo string,
 	checkpointer *checkpoint.CheckpointManager,
+	logger *gitexporter.FileLogger,
 	tracer tracer.Tracer,
 ) *Export {
 	return &Export{
@@ -45,6 +47,7 @@ func New(
 		repository:        repo,
 		checkpointManager: checkpointer,
 		tracer:            tracer,
+		fileLogger:        logger,
 	}
 }
 

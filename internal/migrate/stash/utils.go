@@ -203,17 +203,17 @@ func convertBranchRule(
 		keys = append(keys, key.Key.Label)
 	}
 	if len(from.Groups) != 0 {
-		warningMsg := fmt.Sprintf("[%s] Skipped adding user group(s) [%q] to %q branch rule's bypass list of repo %q \n",
+		warningMsg := fmt.Sprintf("[%s] Skipped adding user group(s) [%q] to %q branch rule's bypass list of repo %q",
 			enum.LogLevelWarning, strings.Join(from.Groups, ", "), from.Matcher.DisplayID, repoSlug)
-		if err := l.Log([]byte(warningMsg)); err != nil {
+		if err := l.Log(warningMsg); err != nil {
 			log.Default().Printf("failed to log the exemptions from bypass list of branch rules for repo %q: %v",
 				repoSlug, err)
 		}
 	}
 	if len(keys) != 0 {
-		warningMsg := fmt.Sprintf("[%s] Skipped adding access key(s) [%q] to %q branch rule's bypass list of repo %q \n",
+		warningMsg := fmt.Sprintf("[%s] Skipped adding access key(s) [%q] to %q branch rule's bypass list of repo %q",
 			enum.LogLevelWarning, strings.Join(keys, ", "), from.Matcher.DisplayID, repoSlug)
-		if err := l.Log([]byte(warningMsg)); err != nil {
+		if err := l.Log(warningMsg); err != nil {
 			log.Default().Printf("failed to log the exemptions from bypass list of branch rules for repo %q: %v",
 				repoSlug, err)
 		}

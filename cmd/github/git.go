@@ -97,8 +97,8 @@ func (c *exportCommand) run(*kingpin.ParseContext) error {
 		repository = strings.Trim(c.srcRepository, " ")
 	}
 
-	// extract the data
-	e := github.New(client, c.org, repository, checkpointManager, tracer_)
+	fileLogger := &gitexporter.FileLogger{Location: c.file}
+	e := github.New(client, c.org, repository, checkpointManager, fileLogger, tracer_)
 
 	exporter := gitexporter.NewExporter(e, c.file, c.user, c.token, tracer_)
 	return exporter.Export(ctx)

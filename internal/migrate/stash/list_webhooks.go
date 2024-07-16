@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/harness/harness-migrate/internal/common"
-	"github.com/harness/harness-migrate/internal/gitexporter"
 	"github.com/harness/harness-migrate/internal/types"
 	"github.com/harness/harness-migrate/internal/types/enum"
 
@@ -16,7 +15,6 @@ import (
 func (e *Export) ListWebhooks(
 	ctx context.Context,
 	repoSlug string,
-	logger gitexporter.Logger,
 	_ types.WebhookListOptions,
 ) (types.WebhookData, error) {
 	e.tracer.Start(common.MsgStartExportWebhook, repoSlug)
@@ -52,7 +50,7 @@ func (e *Export) ListWebhooks(
 				enum.LogLevelWarning, repoSlug, hook.ID, hook.Name, hook.Target, hook.Events)
 			logs = append(logs, warningMsg)
 		}
-		if err := logger.Log([]byte(strings.Join(logs, ""))); err != nil {
+		if err := e.fileLogger.Log(strings.Join(logs, "")); err != nil {
 			return types.WebhookData{}, fmt.Errorf("failed to log the not supported webhooks for repo %q: %w",
 				repoSlug, err)
 		}

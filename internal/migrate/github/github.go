@@ -32,19 +32,30 @@ func New(
 	org string,
 	repo string,
 	checkpointer *checkpoint.CheckpointManager,
+	logger *gitexporter.FileLogger,
 	tracer tracer.Tracer,
 ) *Export {
+	ckpt := make(map[string]types.User)
+	c, ok, err := checkpoint.GetCheckpointData[map[string]types.User](checkpointer, CheckpointKeyUsers)
+	if err != nil {
+		tracer.LogError("cannot load checkpoint userdata: %v", err)
+	}
+	if ok {
+		ckpt = c
+	}
 	return &Export{
 		github:            &wrapper{client},
 		org:               org,
 		repository:        repo,
 		checkpointManager: checkpointer,
 		tracer:            tracer,
+		userMap:           ckpt,
+		fileLogger:        logger,
 	}
 }
 
 // ListBranchRules implements gitexporter.Interface.
-func (e *Export) ListBranchRules(ctx context.Context, repoSlug string, logger gitexporter.Logger, opts types.ListOptions) ([]*types.BranchRule, error) {
+func (e *Export) ListBranchRules(ctx context.Context, repoSlug string, opts types.ListOptions) ([]*types.BranchRule, error) {
 	// Mock implementation
 	fmt.Printf("Listing branch rules for repo: %s\n", repoSlug)
 	rules := []*types.BranchRule{}
@@ -52,7 +63,7 @@ func (e *Export) ListBranchRules(ctx context.Context, repoSlug string, logger gi
 }
 
 // ListWebhooks implements gitexporter.Interface.
-func (e *Export) ListWebhooks(ctx context.Context, repoSlug string, logger gitexporter.Logger, opts types.WebhookListOptions) (types.WebhookData, error) {
+func (e *Export) ListWebhooks(ctx context.Context, repoSlug string, opts types.WebhookListOptions) (types.WebhookData, error) {
 	// Mock implementation
 	fmt.Printf("Listing webhooks for repo: %s\n", repoSlug)
 	webhooks := types.WebhookData{}

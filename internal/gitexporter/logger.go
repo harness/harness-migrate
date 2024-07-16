@@ -1,21 +1,27 @@
 package gitexporter
 
 import (
+	"fmt"
 	"path/filepath"
 
 	"github.com/harness/harness-migrate/internal/util"
 	"github.com/harness/harness-migrate/types"
 )
 
+type FileLogger struct {
+	Location string
+}
+
 type Logger interface {
-	Log(data []byte) error
+	Log(format string, args ...any) error
 }
 
 // Log writes the exporters' logs at the top level
-func (e *Exporter) Log(data []byte) error {
-	err := util.AppendFile(filepath.Join(e.zipLocation, types.ExporterLogsFileName), data)
+func (f *FileLogger) Log(format string, args ...any) error {
+	data := []byte(fmt.Sprintf(format+"\n", args...))
+	err := util.AppendFile(filepath.Join(f.Location, types.ExporterLogsFileName), data)
 	if err != nil {
-		return err
+		return fmt.Errorf("error writing log: %w", err)
 	}
 	return nil
 }

@@ -81,7 +81,11 @@ func (e *Export) ListPullRequestComments(
 		if len(comments) == 0 {
 			break
 		}
-		allComments = append(allComments, comments...)
+		commentsWithAuthor, err := e.addEmailToAuthorInComments(ctx, comments)
+		if err != nil {
+			return nil, fmt.Errorf("error getting author email: %w", err)
+		}
+		allComments = append(allComments, commentsWithAuthor...)
 
 		err = e.checkpointManager.SaveCheckpoint(checkpointDataKey, allComments)
 		if err != nil {
@@ -101,4 +105,18 @@ func (e *Export) ListPullRequestComments(
 	}
 
 	return allComments, nil
+}
+
+func (e *Export) addEmailToAuthorInComments(ctx context.Context, comments []*types.PRComment) ([]*types.PRComment, error) {
+	commentsCopy := make([]*types.PRComment, len(comments))
+	for i, comment := range comments {
+		commentCopy := *comment
+		email, err := e.FindEmailByUsername(ctx, commentCopy.Author.Login)
+		if err != nil {
+			return nil, fmt.Errorf("cannnot find email for author %s: %w", commentCopy.Author.Login, err)
+		}
+		commentCopy.Author.Email = email
+		commentsCopy[i] = &commentCopy
+	}
+	return commentsCopy, nil
 }

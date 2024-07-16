@@ -60,7 +60,11 @@ func (e *Export) ListPullRequests(
 			return nil, fmt.Errorf("cannot list prs: %w", err)
 		}
 		mappedPrs := common.MapPullRequest(prs)
-		allPrs = append(allPrs, mappedPrs...)
+		mappedPrsWithAuthor, err := e.addEmailToPRAuthor(ctx, mappedPrs)
+		if err != nil {
+			return nil, fmt.Errorf("cannot add email to author: %w", err)
+		}
+		allPrs = append(allPrs, mappedPrsWithAuthor...)
 
 		err = e.checkpointManager.SaveCheckpoint(checkpointDataKey, allPrs)
 		if err != nil {
@@ -84,4 +88,16 @@ func (e *Export) ListPullRequests(
 	}
 
 	return allPrs, nil
+}
+
+func (e *Export) addEmailToPRAuthor(ctx context.Context, prs []types.PRResponse) ([]types.PRResponse, error) {
+	for i, pr := range prs {
+		email, err := e.FindEmailByUsername(ctx, pr.Author.Login)
+		if err != nil {
+			return nil, fmt.Errorf("cannnot find email for author %s: %w", pr.Author.Login, err)
+		}
+		pr.Author.Email = email
+		prs[i] = pr
+	}
+	return prs, nil
 }

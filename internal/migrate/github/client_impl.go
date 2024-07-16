@@ -9,6 +9,7 @@ import (
 	"strconv"
 
 	"github.com/harness/harness-migrate/internal/checkpoint"
+	"github.com/harness/harness-migrate/internal/gitexporter"
 	"github.com/harness/harness-migrate/internal/tracer"
 	"github.com/harness/harness-migrate/internal/types"
 
@@ -29,7 +30,10 @@ type (
 
 		checkpointManager *checkpoint.CheckpointManager
 
-		tracer tracer.Tracer
+		tracer     tracer.Tracer
+		fileLogger *gitexporter.FileLogger
+
+		userMap map[string]types.User
 	}
 )
 
@@ -43,6 +47,16 @@ func (c *wrapper) ListPRComments(
 	out := []*codeComment{}
 	res, err := c.do(ctx, "GET", path, nil, &out)
 	return convertPRCommentsList(out), res, err
+}
+
+func (c *wrapper) GetUserByUserName(
+	ctx context.Context,
+	userName string,
+) (*types.User, *scm.Response, error) {
+	path := fmt.Sprintf("users/%s", userName)
+	out := &types.User{}
+	res, err := c.do(ctx, "GET", path, nil, &out)
+	return out, res, err
 }
 
 func encodeListOptions(opts types.ListOptions) string {

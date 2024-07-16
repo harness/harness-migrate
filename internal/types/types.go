@@ -170,4 +170,9 @@ type (
 		PullReq
 		Lifecycle
 	}
+
+	User struct {
+		ID    int    `json:"id"`
+		Email string `json:"email"`
+	}
 )

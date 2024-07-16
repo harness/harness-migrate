@@ -256,7 +256,7 @@ func (e *Exporter) getData(ctx context.Context, path string) ([]*types.RepoData,
 		}
 
 		// 3. get all webhooks for each repo
-		webhooks, err := e.exporter.ListWebhooks(ctx, repo.RepoSlug, e, types.WebhookListOptions{})
+		webhooks, err := e.exporter.ListWebhooks(ctx, repo.RepoSlug, types.WebhookListOptions{})
 		if errors.As(err, &notSupportedErr) {
 			return repoData, nil
 		}
@@ -266,7 +266,7 @@ func (e *Exporter) getData(ctx context.Context, path string) ([]*types.RepoData,
 		repoData[i].Webhooks = webhooks
 
 		// 4. get all branch rules for each repo
-		branchRules, err := e.exporter.ListBranchRules(ctx, repo.RepoSlug, e, types.ListOptions{Page: 1})
+		branchRules, err := e.exporter.ListBranchRules(ctx, repo.RepoSlug, types.ListOptions{Page: 1})
 		if err != nil {
 			return nil, fmt.Errorf("encountered error in getting branch rules: %w", err)
 		}

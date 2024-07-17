@@ -125,7 +125,7 @@ func registerGit(app *kingpin.CmdClause) {
 		Envar("github_ORG").
 		StringVar(&c.org)
 
-	cmd.Flag("src_repository", "optional name of the source repository to export").
+	cmd.Flag("repository", "optional name of the source repository to export").
 		Envar("github_SRC_REPOSITORY").
 		StringVar(&c.srcRepository)
 

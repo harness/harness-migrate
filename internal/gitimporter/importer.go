@@ -91,7 +91,7 @@ func (m *Importer) Import(ctx context.Context) error {
 	m.Tracer.Log(common.MsgStartImportFromFolders, folders)
 
 	// call git importer and other importers after this.
-	err = m.checkUsers()
+	err = m.checkUsers(unzipLocation)
 	if err != nil {
 		return err
 	}
@@ -130,12 +130,12 @@ func (m *Importer) Import(ctx context.Context) error {
 	return nil
 }
 
-func (m *Importer) checkUsers() error {
+func (m *Importer) checkUsers(unzipLocation string) error {
 	if m.SkipUsers {
 		return nil
 	}
 
-	usersFile := filepath.Join(m.ZipFileLocation, types.UsersFileName)
+	usersFile := filepath.Join(unzipLocation, types.UsersFileName)
 	if _, err := os.Stat(usersFile); os.IsNotExist(err) {
 		return nil
 	}

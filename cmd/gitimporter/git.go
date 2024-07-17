@@ -89,7 +89,7 @@ func registerGitImporter(app *kingpin.CmdClause) {
 		StringVar(&c.harnessSpace)
 
 	cmd.Flag("skip-users", "skip unknown user and map to token uuid (Default:true)").
-		Default("true").
+		Default("false").
 		Envar("harness_SKIP_USERS").
 		BoolVar(&c.skipUsers)
 
@@ -97,7 +97,7 @@ func registerGitImporter(app *kingpin.CmdClause) {
 		Envar("HARNESS_REPO_PATH").
 		StringVar(&c.harnessRepo)
 
-	cmd.Flag("Gitness", "import into a Gitness instance").
+	cmd.Flag("gitness", "import into a Gitness instance").
 		Default("false").
 		Envar("Gitness").
 		BoolVar(&c.Gitness)

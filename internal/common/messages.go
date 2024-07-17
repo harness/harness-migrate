@@ -63,8 +63,8 @@ const (
 	ErrImportPRs                    = "cannot import pull requests and comments for repository %s"
 	ErrImportWebhooks               = "cannot import webhooks for repository %s"
 
-	PanicCheckpointSaveErr  = "error occurred in reading checkpoint data"
-	PanicCannotCreateFolder = "cannot create folder: %v"
-	PanicFetchingFileData   = "error fetching data for file: %v"
-	PanicWritingFileData    = "error writing data in file: %v"
+	PanicCheckpointSaveErr = "error occurred in reading checkpoint data"
+	ErrCannotCreateFolder  = "cannot create folder: %w"
+	ErrFetchingFileData    = "error fetching data for file: %w"
+	ErrWritingFileData     = "error writing data in file: %w"
 )

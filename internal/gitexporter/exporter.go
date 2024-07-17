@@ -70,21 +70,21 @@ func (e *Exporter) Export(ctx context.Context) error {
 	path := filepath.Join(".", e.zipLocation)
 	err := util.CreateFolder(path)
 	if err != nil {
-		panic(fmt.Sprintf(common.PanicCannotCreateFolder, err))
+		return fmt.Errorf(common.ErrCannotCreateFolder, err)
 	}
 
 	e.Tracer.Log(common.MsgStartExport)
 
 	data, err := e.getData(ctx, path)
 	if err != nil {
-		panic(fmt.Sprintf(common.PanicFetchingFileData, err))
+		return fmt.Errorf(common.ErrFetchingFileData, err)
 	}
 
 	users := make(map[string]bool)
 	for _, repo := range data {
 		err = e.writeJsonForRepo(mapRepoData(repo), path)
 		if err != nil {
-			panic(fmt.Sprintf(common.PanicWritingFileData, err))
+			return fmt.Errorf(common.ErrWritingFileData, err)
 		}
 		extractUsers(repo, users)
 	}
@@ -247,7 +247,7 @@ func (e *Exporter) getData(ctx context.Context, path string) ([]*types.RepoData,
 		repoPath := filepath.Join(path, repo.RepoSlug)
 		err := util.CreateFolder(repoPath)
 		if err != nil {
-			panic(fmt.Sprintf(common.PanicWritingFileData, err))
+			return nil, fmt.Errorf(common.ErrWritingFileData, err)
 		}
 
 		err = e.CloneRepository(ctx, repo.Repository, repoPath, repo.RepoSlug, e.exporter.PullRequestRefs(), e.Tracer)

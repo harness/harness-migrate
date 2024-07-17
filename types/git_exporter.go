@@ -21,14 +21,14 @@ import (
 )
 
 const (
-	InfoFileName         = "info.json"
-	ExporterLogsFileName = "ExporterLogs.log"
-	PullRequestDir       = "pr"
-	GitDir               = "git"
-	WebhookFileName      = "webhooks.json"
-	BranchRulesFileName  = "branch_rules.json"
-	UsersFileName        = "users.json"
-	RuleTypeBranch       = "branch"
+	InfoFileName                  = "info.json"
+	ExporterLogsFileName          = "ExporterLogs.log"
+	PullRequestDir                = "pr"
+	GitDir                        = "git"
+	WebhookFileName               = "webhooks.json"
+	BranchRulesFileName           = "branch_rules.json"
+	UsersFileName                 = "users.json"
+	RuleTypeBranch       RuleType = "branch"
 )
 
 type (
@@ -126,13 +126,19 @@ type (
 		CodeComment *CodeComment `json:"code_comment"`
 	}
 
+	RuleType string
+
 	Rule struct {
-		ID               int             `json:"id"`
-		Identifier       string          `json:"identifier"`
-		Definition       json.RawMessage `json:"definition"`
-		IncludeDefault   bool            `json:"includeDefault"`
-		IncludedPatterns []string        `json:"included_patterns"`
-		ExcludedPatterns []string        `json:"excluded_patterns"`
+		ID         int             `json:"id"`
+		Identifier string          `json:"identifier"`
+		Definition json.RawMessage `json:"definition"`
+		Pattern    json.RawMessage `json:"pattern"`
+	}
+
+	BranchPattern struct {
+		Default bool     `json:"default,omitempty"`
+		Include []string `json:"include,omitempty"`
+		Exclude []string `json:"exclude,omitempty"`
 	}
 
 	RepositoryData struct {
@@ -217,6 +223,11 @@ const (
 
 func (d *RuleDefinition) JSON() json.RawMessage {
 	message, _ := ToJSON(d)
+	return message
+}
+
+func (p *BranchPattern) JSON() json.RawMessage {
+	message, _ := ToJSON(p)
 	return message
 }
 

@@ -56,13 +56,16 @@ func mapBranchRules(rules []*types.BranchRule) []externalTypes.Rule {
 	r := make([]externalTypes.Rule, len(rules))
 	for i, b := range rules {
 		definition := mapBranchRuleDefinition(b.RuleDefinition)
+		pattern := externalTypes.BranchPattern{
+			Default: b.IncludeDefault,
+			Include: b.IncludedPatterns,
+			Exclude: b.ExcludedPatterns,
+		}
 		r[i] = externalTypes.Rule{
-			ID:               b.ID,
-			Identifier:       b.Name,
-			Definition:       definition.JSON(),
-			IncludeDefault:   b.IncludeDefault,
-			IncludedPatterns: b.IncludedPatterns,
-			ExcludedPatterns: b.ExcludedPatterns,
+			ID:         b.ID,
+			Identifier: b.Name,
+			Definition: definition.JSON(),
+			Pattern:    pattern.JSON(),
 		}
 	}
 	return r
@@ -96,14 +99,6 @@ func mapRepository(repository types.RepoResponse) externalTypes.Repository {
 		Link:       repository.Link,
 		Created:    repository.Created,
 		Updated:    repository.Updated,
-	}
-}
-
-func mapPerm(perm *scm.Perm) *externalTypes.Perm {
-	return &externalTypes.Perm{
-		Pull:  perm.Pull,
-		Push:  perm.Push,
-		Admin: perm.Admin,
 	}
 }
 

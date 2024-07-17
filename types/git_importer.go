@@ -42,6 +42,6 @@ type (
 
 	RulesInput struct {
 		Rules []*Rule
-		Type  string `json:"type"`
+		Type  RuleType `json:"type"`
 	}
 )

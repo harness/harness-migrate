@@ -52,8 +52,8 @@ func mapCodeComment(c *types.CodeComment) *externalTypes.CodeComment {
 	}
 }
 
-func mapBranchRules(rules []*types.BranchRule) []externalTypes.Rule {
-	r := make([]externalTypes.Rule, len(rules))
+func mapBranchRules(rules []*types.BranchRule) []*externalTypes.BranchRule {
+	r := make([]*externalTypes.BranchRule, len(rules))
 	for i, b := range rules {
 		definition := mapBranchRuleDefinition(b.RuleDefinition)
 		pattern := externalTypes.BranchPattern{
@@ -61,18 +61,18 @@ func mapBranchRules(rules []*types.BranchRule) []externalTypes.Rule {
 			Include: b.IncludedPatterns,
 			Exclude: b.ExcludedPatterns,
 		}
-		r[i] = externalTypes.Rule{
+		r[i] = &externalTypes.BranchRule{
 			ID:         b.ID,
 			Identifier: b.Name,
-			Definition: definition.JSON(),
-			Pattern:    pattern.JSON(),
+			Definition: definition,
+			Pattern:    pattern,
 		}
 	}
 	return r
 }
 
-func mapBranchRuleDefinition(d types.RuleDefinition) externalTypes.RuleDefinition {
-	return externalTypes.RuleDefinition{
+func mapBranchRuleDefinition(d types.RuleDefinition) externalTypes.Definition {
+	return externalTypes.Definition{
 		Bypass: externalTypes.Bypass(d.Bypass),
 		PullReq: externalTypes.PullReq{
 			Approvals:    externalTypes.Approvals(d.Approvals),

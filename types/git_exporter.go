@@ -128,11 +128,11 @@ type (
 
 	RuleType string
 
-	Rule struct {
-		ID         int             `json:"id"`
-		Identifier string          `json:"identifier"`
-		Definition json.RawMessage `json:"definition"`
-		Pattern    json.RawMessage `json:"pattern"`
+	BranchRule struct {
+		ID         int           `json:"id"`
+		Identifier string        `json:"identifier"`
+		Definition Definition    `json:"definition"`
+		Pattern    BranchPattern `json:"pattern"`
 	}
 
 	BranchPattern struct {
@@ -144,7 +144,7 @@ type (
 	RepositoryData struct {
 		Repository      Repository         `json:"repository"`
 		PullRequestData []*PullRequestData `json:"pull_request_data"`
-		BranchRules     []Rule             `json:"branch_rules"`
+		BranchRules     []*BranchRule      `json:"branch_rules"`
 		Webhooks        WebhookData        `json:"webhooks"`
 	}
 
@@ -206,7 +206,7 @@ type (
 		UpdateForbidden bool `json:"update_forbidden,omitempty"`
 	}
 
-	RuleDefinition struct {
+	Definition struct {
 		Bypass    Bypass    `json:"bypass,omitempty"`
 		PullReq   PullReq   `json:"pullreq,omitempty"`
 		Lifecycle Lifecycle `json:"lifecycle,omitempty"`
@@ -221,7 +221,7 @@ const (
 	VisibilityPrivate
 )
 
-func (d *RuleDefinition) JSON() json.RawMessage {
+func (d *Definition) JSON() json.RawMessage {
 	message, _ := ToJSON(d)
 	return message
 }

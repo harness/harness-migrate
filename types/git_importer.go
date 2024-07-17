@@ -16,6 +16,8 @@
 
 package types
 
+import "encoding/json"
+
 type (
 	Response struct {
 		Success      bool   `json:"success"`
@@ -40,8 +42,15 @@ type (
 		WebhookData
 	}
 
+	Rule struct {
+		ID         int             `json:"id"`
+		Identifier string          `json:"identifier"`
+		Definition json.RawMessage `json:"definition"`
+		Pattern    json.RawMessage `json:"pattern"`
+	}
+
 	RulesInput struct {
-		Rules []*Rule
 		Type  RuleType `json:"type"`
+		Rules []*Rule
 	}
 )

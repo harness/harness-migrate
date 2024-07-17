@@ -43,17 +43,24 @@ func (m *Importer) ImportBranchRules(
 		return nil
 	}
 
-	if err := m.Harness.ImportRules(repoRef, &types.RulesInput{Rules: in, Type: types.RuleTypeBranch}); err != nil {
+	rules, err := convertBranchRulesToRules(in)
+	if err != nil {
+		tracer.Stop(common.ErrImportBranchRules, repoRef)
+		return fmt.Errorf("failed to convert branch rules for import: %w", err)
+	}
+
+	err = m.Harness.ImportRules(repoRef, &types.RulesInput{Rules: rules, Type: types.RuleTypeBranch})
+	if err != nil {
 		tracer.Stop(common.ErrImportBranchRules, repoRef)
 		return fmt.Errorf("failed to import branch rules for repo '%s' : %w",
 			repoRef, err)
 	}
-	m.Tracer.Stop(common.MsgCompleteImportBranchRules, len(in), repoRef)
+	m.Tracer.Stop(common.MsgCompleteImportBranchRules, len(rules), repoRef)
 
 	return nil
 }
 
-func (m *Importer) readBranchRules(repoFolder string) ([]*types.Rule, error) {
+func (m *Importer) readBranchRules(repoFolder string) ([]*types.BranchRule, error) {
 	branchRulesFile := filepath.Join(repoFolder, types.BranchRulesFileName)
 	if _, err := os.Stat(branchRulesFile); os.IsNotExist(err) {
 		return nil, nil
@@ -64,9 +71,34 @@ func (m *Importer) readBranchRules(repoFolder string) ([]*types.Rule, error) {
 		return nil, fmt.Errorf("failed to read content from %q: %w", branchRulesFile, err)
 	}
 
-	var rules []*types.Rule
+	var rules []*types.BranchRule
 	if err := json.Unmarshal(data, &rules); err != nil {
 		return nil, fmt.Errorf("error parsing repo rules json: %w", err)
+	}
+
+	return rules, nil
+}
+
+func convertBranchRulesToRules(branchRules []*types.BranchRule) ([]*types.Rule, error) {
+	rules := make([]*types.Rule, len(branchRules))
+
+	for i, br := range branchRules {
+		definitionJSON, err := json.Marshal(br.Definition)
+		if err != nil {
+			return nil, fmt.Errorf("failed to marshal branch rule definition: %w", err)
+		}
+
+		patternJSON, err := json.Marshal(br.Pattern)
+		if err != nil {
+			return nil, fmt.Errorf("failed to marshal branch rule pattern: %w", err)
+		}
+
+		rules[i] = &types.Rule{
+			ID:         br.ID,
+			Identifier: br.Identifier,
+			Definition: definitionJSON,
+			Pattern:    patternJSON,
+		}
 	}
 
 	return rules, nil

@@ -132,7 +132,7 @@ func mapPR(request scm.PullRequest) externalTypes.PullRequest {
 		Merge:   request.Merge,
 		Base:    mapReference(request.Base),
 		Head:    mapReference(request.Head),
-		Author:  externalTypes.User{},
+		Author:  mapUser(request.Author),
 		Created: request.Created,
 		Updated: request.Updated,
 		Labels:  mapLabels(request.Labels),

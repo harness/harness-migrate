@@ -119,10 +119,10 @@ func (c *gitnessClient) CreatePipeline(org, project string, pipeline []byte) err
 	return fmt.Errorf("not implemented")
 }
 
-func (c *gitnessClient) CreateRepository(parentRef string, repo *RepositoryCreateInput) (*Repository, error) {
+func (c *gitnessClient) CreateRepository(parentRef string, repo *CreateRepositoryInput) (*Repository, error) {
 	out := new(Repository)
-	in := &GitnessRepositoryCreateInput{
-		RepositoryCreateInput: *repo,
+	in := &CreateGitnessRepositoryInput{
+		CreateRepositoryInput: *repo,
 		ParentRef:             parentRef,
 	}
 	uri := fmt.Sprintf("%s/api/v1/repos",
@@ -135,12 +135,8 @@ func (c *gitnessClient) CreateRepository(parentRef string, repo *RepositoryCreat
 	return out, nil
 }
 
-func (c *gitnessClient) CreateRepositoryForMigration(parentRef string, repo *RepositoryCreateInput) (*Repository, error) {
+func (c *gitnessClient) CreateRepositoryForMigration(in *CreateRepositoryForMigrateInput) (*Repository, error) {
 	out := new(Repository)
-	in := &GitnessRepositoryCreateInput{
-		RepositoryCreateInput: *repo,
-		ParentRef:             parentRef,
-	}
 	uri := fmt.Sprintf("%s/api/v1/migrate/repos",
 		c.address,
 	)
@@ -151,7 +147,7 @@ func (c *gitnessClient) CreateRepositoryForMigration(parentRef string, repo *Rep
 	return out, nil
 }
 
-func (c *gitnessClient) UpdateRepositoryState(repoRef string, in *RepositoryUpdateStateInput) (*Repository, error) {
+func (c *gitnessClient) UpdateRepositoryState(repoRef string, in *UpdateRepositoryStateInput) (*Repository, error) {
 	out := new(Repository)
 	repoRef = strings.ReplaceAll(repoRef, PathSeparator, EncodedPathSeparator)
 	uri := fmt.Sprintf("%s/api/v1/migrate/repos/%s/update-state",

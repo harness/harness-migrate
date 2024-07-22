@@ -248,23 +248,30 @@ type (
 		Secret *Secret `json:"secret"`
 	}
 
-	// RepositoryCreateInput defines a repo creation request input.
-	RepositoryCreateInput struct {
+	// CreateRepositoryInput defines a repo creation request input.
+	CreateRepositoryInput struct {
 		Identifier    string `json:"identifier"`
 		DefaultBranch string `json:"default_branch"`
-		Description   string `json:"description"`
 		IsPublic      bool   `json:"is_public"`
 	}
 
-	// RepositoryUpdateStateInput defines a repo update state request input.
-	RepositoryUpdateStateInput struct {
-		State enum.RepoState `json:"state"`
+	// CreateGitnessRepositoryInput defines a repo creation request input for gitness.
+	CreateGitnessRepositoryInput struct {
+		CreateRepositoryInput
+		ParentRef string `json:"parent_ref"`
 	}
 
-	// GitnessRepositoryCreateInput defines a repo creation request input on Gitness.
-	GitnessRepositoryCreateInput struct {
-		RepositoryCreateInput
-		ParentRef string `json:"parent_ref"`
+	// CreateRepositoryForMigrateInput defines a repo creation request input for migration.
+	CreateRepositoryForMigrateInput struct {
+		Identifier    string `json:"identifier"`
+		DefaultBranch string `json:"default_branch"`
+		IsPublic      bool   `json:"is_public"`
+		ParentRef     string `json:"parent_ref"`
+	}
+
+	// UpdateRepositoryStateInput defines a repo update state request input.
+	UpdateRepositoryStateInput struct {
+		State enum.RepoState `json:"state"`
 	}
 
 	UpdateDefaultBranchInput struct {

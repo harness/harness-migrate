@@ -74,13 +74,13 @@ type Client interface {
 	CreatePipeline(org, project string, pipeline []byte) error
 
 	// CreateRepository creates a repository.
-	CreateRepository(parentRef string, repo *RepositoryCreateInput) (*Repository, error)
+	CreateRepository(parentRef string, repo *CreateRepositoryInput) (*Repository, error)
 
 	// CreateRepositoryForMigration creates an empty repository ready for migration.
-	CreateRepositoryForMigration(parentRef string, repo *RepositoryCreateInput) (*Repository, error)
+	CreateRepositoryForMigration(in *CreateRepositoryForMigrateInput) (*Repository, error)
 
 	// UpdateRepositoryState updates a repository state (for different steps of the migration).
-	UpdateRepositoryState(parentRef string, repo *RepositoryUpdateStateInput) (*Repository, error)
+	UpdateRepositoryState(parentRef string, in *UpdateRepositoryStateInput) (*Repository, error)
 
 	// ImportPRs imports pull requests of a repository.
 	ImportPRs(repoRef string, in *types.PRsImportInput) error

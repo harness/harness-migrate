@@ -160,7 +160,7 @@ type (
 	// Hook represents a repository hook.
 	Hook struct {
 		ID         string   `json:"id"`
-		Name       string   `json:"name"`
+		Identifier string   `json:"identifier"`
 		Target     string   `json:"target"`
 		Events     []string `json:"events"`
 		Active     bool     `json:"active"`

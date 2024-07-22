@@ -239,7 +239,7 @@ func (c *client) CreatePipeline(org, project string, pipeline []byte) error {
 }
 
 // CreateRepository creates a repository for the parentRef, if none provide repo will be at the acc level
-func (c *client) CreateRepository(parentRef string, repo *RepositoryCreateInput) (*Repository, error) {
+func (c *client) CreateRepository(parentRef string, repo *CreateRepositoryInput) (*Repository, error) {
 	out := new(Repository)
 	pathParts := strings.Split(parentRef, "/")
 	var org string
@@ -264,14 +264,14 @@ func (c *client) CreateRepository(parentRef string, repo *RepositoryCreateInput)
 	return out, nil
 }
 
-func (c *client) UpdateRepositoryState(repoRef string, in *RepositoryUpdateStateInput) (*Repository, error) {
+func (c *client) UpdateRepositoryState(repoRef string, in *UpdateRepositoryStateInput) (*Repository, error) {
 	return nil, fmt.Errorf("not implemented")
 }
 func (c *client) ImportPRs(repoRef string, in *types.PRsImportInput) error {
 	return fmt.Errorf("not implemented")
 }
 
-func (c *client) CreateRepositoryForMigration(parentRef string, repo *RepositoryCreateInput) (*Repository, error) {
+func (c *client) CreateRepositoryForMigration(repo *CreateRepositoryForMigrateInput) (*Repository, error) {
 	return nil, fmt.Errorf("not implemented")
 }
 

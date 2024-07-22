@@ -51,6 +51,6 @@ type (
 
 	RulesInput struct {
 		Type  RuleType `json:"type"`
-		Rules []*Rule
+		Rules []*Rule  `json:"rules"`
 	}
 )

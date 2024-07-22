@@ -175,7 +175,7 @@ func mapHooks(hooks []*scm.Hook) []*externalTypes.Hook {
 	for i, hook := range hooks {
 		h[i] = &externalTypes.Hook{
 			ID:         hook.ID,
-			Name:       hook.Name,
+			Identifier: hook.Name,
 			Target:     hook.Target,
 			Events:     hook.Events,
 			Active:     hook.Active,

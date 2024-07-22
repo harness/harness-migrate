@@ -106,7 +106,7 @@ func (m *Importer) Import(ctx context.Context) error {
 		// update the repo state to migrate data import
 		_, err = m.Harness.UpdateRepositoryState(
 			repoRef,
-			&harness.RepositoryUpdateStateInput{State: enum.RepoStateMigrateDataImport},
+			&harness.UpdateRepositoryStateInput{State: enum.RepoStateMigrateDataImport},
 		)
 		if err != nil {
 			return fmt.Errorf("failed to update the repo state to %s: %w", enum.RepoStateMigrateDataImport, err)
@@ -119,7 +119,7 @@ func (m *Importer) Import(ctx context.Context) error {
 		// update the repo state to active
 		_, err = m.Harness.UpdateRepositoryState(
 			repoRef,
-			&harness.RepositoryUpdateStateInput{State: enum.RepoStateActive},
+			&harness.UpdateRepositoryStateInput{State: enum.RepoStateActive},
 		)
 		if err != nil {
 			return fmt.Errorf("failed to update the repo state to %s: %w", enum.RepoStateActive, err)

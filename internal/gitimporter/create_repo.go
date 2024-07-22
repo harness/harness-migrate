@@ -17,14 +17,14 @@ func (m *Importer) CreateRepo(
 ) (*harness.Repository, error) {
 	// TODO: check license for size limit
 	tracer.Start(common.MsgStartImportCreateRepo, repo.Name)
-	repoCreate := &harness.RepositoryCreateInput{
+	in := &harness.CreateRepositoryForMigrateInput{
 		Identifier:    repo.Name,
 		DefaultBranch: repo.Branch,
-		Description:   "Imported by the migrator", //TODO: get the original repo description
 		IsPublic:      !repo.Private,
+		ParentRef:     targetSpace,
 	}
 
-	repoOut, err := m.Harness.CreateRepositoryForMigration(targetSpace, repoCreate)
+	repoOut, err := m.Harness.CreateRepositoryForMigration(in)
 	if err != nil {
 		tracer.Stop("failed to create repository %q", repo.Name)
 		return nil, fmt.Errorf("failed to create a repo '%s' at %s: %w",

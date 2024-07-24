@@ -19,6 +19,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"path"
 	"strings"
 
 	"github.com/harness/harness-migrate/types"
@@ -264,23 +265,93 @@ func (c *client) CreateRepository(parentRef string, repo *CreateRepositoryInput)
 	return out, nil
 }
 
-func (c *client) UpdateRepositoryState(repoRef string, in *UpdateRepositoryStateInput) (*Repository, error) {
-	return nil, fmt.Errorf("not implemented")
-}
-func (c *client) ImportPRs(repoRef string, in *types.PRsImportInput) error {
-	return fmt.Errorf("not implemented")
+func (c *client) CreateRepositoryForMigration(in *CreateRepositoryForMigrateInput) (*Repository, error) {
+	out := new(Repository)
+	queryParams, err := getQueryParamsFromRepoRef(path.Join(in.ParentRef, in.Identifier))
+	if err != nil {
+		return nil, err
+	}
+
+	uri := fmt.Sprintf("%s/api/v1/migrate/repos?%s", c.address, queryParams)
+	if err := c.post(uri, in, out); err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
-func (c *client) CreateRepositoryForMigration(repo *CreateRepositoryForMigrateInput) (*Repository, error) {
-	return nil, fmt.Errorf("not implemented")
+func (c *client) UpdateRepositoryState(repoRef string, in *UpdateRepositoryStateInput) (*Repository, error) {
+	out := new(Repository)
+	queryParams, err := getQueryParamsFromRepoRef(repoRef)
+	if err != nil {
+		return nil, err
+	}
+
+	repoRef = strings.ReplaceAll(repoRef, pathSeparator, encodedPathSeparator)
+	uri := fmt.Sprintf("%s/api/v1/migrate/repos/%s/update-state?%s",
+		c.address,
+		repoRef,
+		queryParams,
+	)
+
+	if err := c.patch(uri, in, out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *client) ImportPRs(repoRef string, in *types.PRsImportInput) error {
+	queryParams, err := getQueryParamsFromRepoRef(repoRef)
+	if err != nil {
+		return err
+	}
+
+	repoRef = strings.ReplaceAll(repoRef, pathSeparator, encodedPathSeparator)
+	uri := fmt.Sprintf("%s/api/v1/migrate/repos/%s/pullreqs?%s",
+		c.address,
+		repoRef,
+		queryParams,
+	)
+
+	if err := c.post(uri, in, nil); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (c *client) ImportWebhooks(repoRef string, in *types.WebhookInput) error {
-	return fmt.Errorf("not implemented")
+	queryParams, err := getQueryParamsFromRepoRef(repoRef)
+	if err != nil {
+		return err
+	}
+
+	repoRef = strings.ReplaceAll(repoRef, pathSeparator, encodedPathSeparator)
+	uri := fmt.Sprintf("%s/api/v1/migrate/repos/%s/webhooks?%s",
+		c.address,
+		repoRef,
+		queryParams,
+	)
+	if err := c.post(uri, in, nil); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (c *client) ImportRules(repoRef string, in *types.RulesInput) error {
-	return fmt.Errorf("not implemented")
+	queryParams, err := getQueryParamsFromRepoRef(repoRef)
+	if err != nil {
+		return err
+	}
+
+	repoRef = strings.ReplaceAll(repoRef, pathSeparator, encodedPathSeparator)
+	uri := fmt.Sprintf("%s/api/v1/migrate/repos/%s/rules?%s",
+		c.address,
+		repoRef,
+		queryParams,
+	)
+	if err := c.post(uri, in, nil); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (c *client) CheckUsers(in *types.CheckUsersInput) (*types.CheckUsersOutput, error) {

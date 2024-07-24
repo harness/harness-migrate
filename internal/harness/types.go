@@ -16,11 +16,6 @@ package harness
 
 import "github.com/harness/harness-migrate/internal/types/enum"
 
-const (
-	PathSeparator        = "/"
-	EncodedPathSeparator = "%252F"
-)
-
 type (
 	// Pipeline defines a pipeline.
 	Pipeline struct {

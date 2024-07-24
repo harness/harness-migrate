@@ -149,7 +149,7 @@ func (c *gitnessClient) CreateRepositoryForMigration(in *CreateRepositoryForMigr
 
 func (c *gitnessClient) UpdateRepositoryState(repoRef string, in *UpdateRepositoryStateInput) (*Repository, error) {
 	out := new(Repository)
-	repoRef = strings.ReplaceAll(repoRef, PathSeparator, EncodedPathSeparator)
+	repoRef = strings.ReplaceAll(repoRef, pathSeparator, encodedPathSeparator)
 	uri := fmt.Sprintf("%s/api/v1/migrate/repos/%s/update-state",
 		c.address,
 		repoRef,
@@ -162,7 +162,7 @@ func (c *gitnessClient) UpdateRepositoryState(repoRef string, in *UpdateReposito
 }
 
 func (c *gitnessClient) ImportPRs(repoRef string, in *types.PRsImportInput) error {
-	repoRef = strings.ReplaceAll(repoRef, PathSeparator, EncodedPathSeparator)
+	repoRef = strings.ReplaceAll(repoRef, pathSeparator, encodedPathSeparator)
 	uri := fmt.Sprintf("%s/api/v1/migrate/repos/%s/pullreqs",
 		c.address,
 		repoRef,
@@ -175,7 +175,7 @@ func (c *gitnessClient) ImportPRs(repoRef string, in *types.PRsImportInput) erro
 }
 
 func (c *gitnessClient) ImportWebhooks(repoRef string, in *types.WebhookInput) error {
-	repoRef = strings.ReplaceAll(repoRef, PathSeparator, EncodedPathSeparator)
+	repoRef = strings.ReplaceAll(repoRef, pathSeparator, encodedPathSeparator)
 	uri := fmt.Sprintf("%s/api/v1/migrate/repos/%s/webhooks",
 		c.address,
 		repoRef,
@@ -187,7 +187,7 @@ func (c *gitnessClient) ImportWebhooks(repoRef string, in *types.WebhookInput) e
 }
 
 func (c *gitnessClient) ImportRules(repoRef string, in *types.RulesInput) error {
-	repoRef = strings.ReplaceAll(repoRef, PathSeparator, EncodedPathSeparator)
+	repoRef = strings.ReplaceAll(repoRef, pathSeparator, encodedPathSeparator)
 	uri := fmt.Sprintf("%s/api/v1/migrate/repos/%s/rules",
 		c.address,
 		repoRef,

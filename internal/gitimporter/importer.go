@@ -49,9 +49,9 @@ type Importer struct {
 }
 
 func NewImporter(baseURL, space, repo, token, location, requestId string, skipUsers, gitness, trace bool, tracer tracer.Tracer) *Importer {
-	spaceSplit := strings.Split(space, "/")
-
-	client := harness.New(spaceSplit[0], token, harness.WithAddress(baseURL), harness.WithTracing(trace))
+	spaceParts := strings.Split(space, "/")
+	
+	client := harness.New(spaceParts[0], token, harness.WithAddress(baseURL), harness.WithTracing(trace))
 
 	if gitness {
 		client = harness.NewGitness(token, baseURL, harness.WithTracing(trace))

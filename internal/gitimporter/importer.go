@@ -154,7 +154,7 @@ func (m *Importer) checkUsers(unzipLocation string) error {
 	if err != nil {
 		return fmt.Errorf("error checking users: %w", err)
 	}
-	if len(unknownUsers) == 0 {
+	if len(unknownUsers) != 0 {
 		return fmt.Errorf("users not present in system: %v", unknownUsers)
 	}
 

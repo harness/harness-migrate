@@ -1,34 +1,29 @@
-package stash
+package github
 
 import (
 	"context"
 	"fmt"
 	"strings"
 
+	"github.com/drone/go-scm/scm"
 	"github.com/harness/harness-migrate/internal/common"
 	"github.com/harness/harness-migrate/internal/migrate"
 	"github.com/harness/harness-migrate/internal/types"
 	"github.com/harness/harness-migrate/internal/types/enum"
-
-	"github.com/drone/go-scm/scm"
 )
 
+// ListWebhooks implements gitexporter.Interface.
 func (e *Export) ListWebhooks(
 	ctx context.Context,
 	repoSlug string,
 	_ types.WebhookListOptions,
 ) (types.WebhookData, error) {
 	e.tracer.Start(common.MsgStartExportWebhook, repoSlug)
-
 	var allWebhooks []*scm.Hook
-	defer func() {
-		e.tracer.Stop(common.MsgCompleteExportWebhooks, len(allWebhooks), repoSlug)
-	}()
-
 	opts := scm.ListOptions{Size: 25, Page: 1}
-
+	
 	for {
-		webhooks, resp, err := e.stash.Repositories.ListHooks(ctx, repoSlug, opts)
+		webhooks, resp, err := e.github.Repositories.ListHooks(ctx, repoSlug, opts)
 		if err != nil {
 			e.tracer.LogError(common.ErrWebhookList, repoSlug, err)
 			return types.WebhookData{}, err
@@ -57,6 +52,7 @@ func (e *Export) ListWebhooks(
 		}
 	}
 
+	e.tracer.Stop(common.MsgCompleteExportWebhooks, len(allWebhooks), repoSlug)
 	return types.WebhookData{
 		ConvertedHooks: convertedHooks,
 	}, nil

@@ -18,7 +18,6 @@ import (
 )
 
 const (
-	defaultLimit             = 25
 	segmentAdded             = "ADDED"
 	segmentRemoved           = "REMOVED"
 	segmentContext           = "CONTEXT"
@@ -182,6 +181,7 @@ func convertBranchRule(
 ) *types.BranchRule {
 	includeDefault := false
 	includedPatterns := []string{}
+
 	switch from.Matcher.Type.ID {
 	case matcherTypeBranch:
 		// displayID will give just branch name main and ID will give refs/heads/main
@@ -198,35 +198,40 @@ func convertBranchRule(
 	case matcherTypeModelCategory:
 		includedPatterns = append(includedPatterns, convertIntoGlobstar(m[from.Matcher.ID].Prefix))
 	}
+
+	var warningMsg string
+	var logs []string
 	var keys []string
 	for _, key := range from.AccessKeys {
 		keys = append(keys, key.Key.Label)
 	}
 	if len(from.Groups) != 0 {
-		warningMsg := fmt.Sprintf("[%s] Skipped adding user group(s) [%q] to %q branch rule's bypass list of repo %q",
+		warningMsg = fmt.Sprintf("[%s] Skipped adding user group(s) [%q] to %q branch rule's bypass list of repo %q \n",
 			enum.LogLevelWarning, strings.Join(from.Groups, ", "), from.Matcher.DisplayID, repoSlug)
-		if err := l.Log(warningMsg); err != nil {
-			log.Default().Printf("failed to log the exemptions from bypass list of branch rules for repo %q: %v",
-				repoSlug, err)
-		}
+		logs = append(logs, warningMsg)
 	}
 	if len(keys) != 0 {
-		warningMsg := fmt.Sprintf("[%s] Skipped adding access key(s) [%q] to %q branch rule's bypass list of repo %q",
+		warningMsg = fmt.Sprintf("[%s] Skipped adding access key(s) [%q] to %q branch rule's bypass list of repo %q \n",
 			enum.LogLevelWarning, strings.Join(keys, ", "), from.Matcher.DisplayID, repoSlug)
-		if err := l.Log(warningMsg); err != nil {
-			log.Default().Printf("failed to log the exemptions from bypass list of branch rules for repo %q: %v",
-				repoSlug, err)
-		}
+		logs = append(logs, warningMsg)
 	}
+	if err := l.Log(strings.Join(logs, "")); err != nil {
+		log.Default().Printf("failed to log the exemptions from bypass list of branch rules for repo %q: %v",
+			repoSlug, err)
+	}
+
 	return &types.BranchRule{
 		ID: from.ID,
 		Name: strings.Join([]string{
 			from.Matcher.DisplayID,
 			strconv.Itoa(from.ID),
 		}, "-"),
-		RuleDefinition:   mapRuleDefinition(from.Type, from.Users),
-		IncludeDefault:   includeDefault,
-		IncludedPatterns: includedPatterns,
+		State:      enum.RuleStateActive,
+		Definition: mapRuleDefinition(from.Type, from.Users),
+		Pattern: types.Pattern{
+			IncludeDefault:   includeDefault,
+			IncludedPatterns: includedPatterns,
+		},
 	}
 }
 
@@ -240,7 +245,7 @@ func convertBranchModelsMap(from branchModels) map[string]modelValue {
 	return m
 }
 
-func mapRuleDefinition(t string, bypassUsers []author) types.RuleDefinition {
+func mapRuleDefinition(t string, bypassUsers []author) types.Definition {
 	var emails []string
 	for _, u := range bypassUsers {
 		emails = append(emails, u.EmailAddress)
@@ -260,7 +265,7 @@ func mapRuleDefinition(t string, bypassUsers []author) types.RuleDefinition {
 		lifecycle.UpdateForbidden = true
 	}
 
-	return types.RuleDefinition{
+	return types.Definition{
 		Lifecycle: lifecycle,
 		Bypass: types.Bypass{
 			UserEmails: emails,
@@ -287,7 +292,7 @@ func (e *Error) Error() string {
 
 func encodeListOptions(opts types.ListOptions) string {
 	params := url.Values{}
-	limit := defaultLimit
+	limit := common.DefaultLimit
 	if opts.Size != 0 {
 		limit = opts.Size
 	}

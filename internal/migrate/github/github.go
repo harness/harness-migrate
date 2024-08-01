@@ -54,14 +54,6 @@ func New(
 	}
 }
 
-// ListBranchRules implements gitexporter.Interface.
-func (e *Export) ListBranchRules(ctx context.Context, repoSlug string, opts types.ListOptions) ([]*types.BranchRule, error) {
-	// Mock implementation
-	fmt.Printf("Listing branch rules for repo: %s\n", repoSlug)
-	rules := []*types.BranchRule{}
-	return rules, nil
-}
-
 // ListWebhooks implements gitexporter.Interface.
 func (e *Export) ListWebhooks(ctx context.Context, repoSlug string, opts types.WebhookListOptions) (types.WebhookData, error) {
 	// Mock implementation

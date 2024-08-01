@@ -16,7 +16,12 @@
 
 package types
 
-import "github.com/drone/go-scm/scm"
+import (
+	"time"
+
+	"github.com/drone/go-scm/scm"
+	"github.com/harness/harness-migrate/internal/types/enum"
+)
 
 // Org defines an organization.
 type (
@@ -119,9 +124,22 @@ type (
 	}
 
 	BranchRule struct {
-		ID   int
-		Name string
-		RuleDefinition
+		ID    int
+		Name  string
+		State enum.RuleState
+		Definition
+		Pattern
+		Created time.Time
+		Updated time.Time
+	}
+
+	Definition struct {
+		Bypass
+		PullReq
+		Lifecycle
+	}
+
+	Pattern struct {
 		IncludeDefault   bool
 		IncludedPatterns []string
 		ExcludedPatterns []string
@@ -163,12 +181,6 @@ type (
 		CreateForbidden bool
 		DeleteForbidden bool
 		UpdateForbidden bool
-	}
-
-	RuleDefinition struct {
-		Bypass
-		PullReq
-		Lifecycle
 	}
 
 	User struct {

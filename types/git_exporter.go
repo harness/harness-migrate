@@ -131,14 +131,23 @@ type (
 	BranchRule struct {
 		ID         int           `json:"id"`
 		Identifier string        `json:"identifier"`
+		State      string        `json:"state"`
 		Definition Definition    `json:"definition"`
 		Pattern    BranchPattern `json:"pattern"`
+		Created    time.Time     `json:"created"`
+		Updated    time.Time     `json:"updated"`
 	}
 
 	BranchPattern struct {
 		Default bool     `json:"default,omitempty"`
 		Include []string `json:"include,omitempty"`
 		Exclude []string `json:"exclude,omitempty"`
+	}
+
+	Definition struct {
+		Bypass    Bypass    `json:"bypass,omitempty"`
+		PullReq   PullReq   `json:"pullreq,omitempty"`
+		Lifecycle Lifecycle `json:"lifecycle,omitempty"`
 	}
 
 	RepositoryData struct {
@@ -204,12 +213,6 @@ type (
 		CreateForbidden bool `json:"create_forbidden,omitempty"`
 		DeleteForbidden bool `json:"delete_forbidden,omitempty"`
 		UpdateForbidden bool `json:"update_forbidden,omitempty"`
-	}
-
-	Definition struct {
-		Bypass    Bypass    `json:"bypass,omitempty"`
-		PullReq   PullReq   `json:"pullreq,omitempty"`
-		Lifecycle Lifecycle `json:"lifecycle,omitempty"`
 	}
 )
 

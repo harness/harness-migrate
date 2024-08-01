@@ -29,7 +29,7 @@ func mapPRComment(comments []*types.PRComment) []externalTypes.Comment {
 			Body:        c.Body,
 			Created:     c.Created,
 			Updated:     c.Updated,
-			Author:      mapUser(c.Author),
+			Author:      externalTypes.User(c.Author),
 			ParentID:    c.ParentID,
 			CodeComment: mapCodeComment(c.CodeComment),
 		}
@@ -55,23 +55,25 @@ func mapCodeComment(c *types.CodeComment) *externalTypes.CodeComment {
 func mapBranchRules(rules []*types.BranchRule) []*externalTypes.BranchRule {
 	r := make([]*externalTypes.BranchRule, len(rules))
 	for i, b := range rules {
-		definition := mapBranchRuleDefinition(b.RuleDefinition)
-		pattern := externalTypes.BranchPattern{
-			Default: b.IncludeDefault,
-			Include: b.IncludedPatterns,
-			Exclude: b.ExcludedPatterns,
-		}
+		definition := mapBranchRuleDefinition(b.Definition)
 		r[i] = &externalTypes.BranchRule{
 			ID:         b.ID,
 			Identifier: b.Name,
+			State:      string(b.State),
 			Definition: definition,
-			Pattern:    pattern,
+			Pattern: externalTypes.BranchPattern{
+				Default: b.Pattern.IncludeDefault,
+				Include: b.Pattern.IncludedPatterns,
+				Exclude: b.Pattern.ExcludedPatterns,
+			},
+			Created: b.Created,
+			Updated: b.Updated,
 		}
 	}
 	return r
 }
 
-func mapBranchRuleDefinition(d types.RuleDefinition) externalTypes.Definition {
+func mapBranchRuleDefinition(d types.Definition) externalTypes.Definition {
 	return externalTypes.Definition{
 		Bypass: externalTypes.Bypass(d.Bypass),
 		PullReq: externalTypes.PullReq{
@@ -132,7 +134,7 @@ func mapPR(request scm.PullRequest) externalTypes.PullRequest {
 		Merge:   request.Merge,
 		Base:    mapReference(request.Base),
 		Head:    mapReference(request.Head),
-		Author:  mapUser(request.Author),
+		Author:  externalTypes.User(request.Author),
 		Created: request.Created,
 		Updated: request.Updated,
 		Labels:  mapLabels(request.Labels),
@@ -144,18 +146,6 @@ func mapReference(reference scm.Reference) externalTypes.Reference {
 		Name: reference.Name,
 		Path: reference.Path,
 		SHA:  reference.Sha,
-	}
-}
-
-func mapUser(user scm.User) externalTypes.User {
-	return externalTypes.User{
-		ID:      user.ID,
-		Login:   user.Login,
-		Name:    user.Name,
-		Email:   user.Email,
-		Avatar:  user.Avatar,
-		Created: user.Created,
-		Updated: user.Updated,
 	}
 }
 

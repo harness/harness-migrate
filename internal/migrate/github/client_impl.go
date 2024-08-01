@@ -5,16 +5,18 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"net/url"
 	"strconv"
 
 	"github.com/harness/harness-migrate/internal/checkpoint"
+	"github.com/harness/harness-migrate/internal/common"
 	"github.com/harness/harness-migrate/internal/gitexporter"
 	"github.com/harness/harness-migrate/internal/tracer"
 	"github.com/harness/harness-migrate/internal/types"
 
 	"github.com/drone/go-scm/scm"
 )
+
+const graphqlUrl = "https://api.github.com/graphql"
 
 type (
 	// wrapper wraps the Client to provide high level helper functions
@@ -34,6 +36,10 @@ type (
 		fileLogger *gitexporter.FileLogger
 
 		userMap map[string]types.User
+	}
+
+	graphQLRequest struct {
+		Query string `json:"query"`
 	}
 )
 
@@ -59,15 +65,123 @@ func (c *wrapper) GetUserByUserName(
 	return out, res, err
 }
 
-func encodeListOptions(opts types.ListOptions) string {
-	params := url.Values{}
-	if opts.Page != 0 {
-		params.Set("page", strconv.Itoa(opts.Page))
+func (c *wrapper) ListBranchRules(
+	ctx context.Context,
+	repoSlug string,
+	logger gitexporter.Logger,
+	opts types.ListOptions,
+) ([]*types.BranchRule, *scm.Response, error) {
+	owner, name := scm.Split(repoSlug)
+	queryTemplate := `
+		{
+			repository(owner: "%s", name: "%s") {
+				branchProtectionRules(first: %d%s) {
+					edges {
+						node {
+							allowsDeletions
+							allowsForcePushes
+							blocksCreations
+							bypassForcePushAllowances {
+								totalCount
+							}
+							bypassPullRequestAllowances(first: 100) {
+								totalCount
+								edges {
+									node {
+										actor {
+											... on User {
+												login
+												email
+											}
+										}
+									}
+								}
+							}
+							dismissesStaleReviews
+							id
+							isAdminEnforced
+							lockAllowsFetchAndMerge
+							lockBranch
+							pattern
+							pushAllowances(first: 100) {
+								totalCount
+								edges {
+									node {
+										actor {
+											... on User {
+												login
+												email
+											}
+										}
+									}
+								}
+							}
+							requireLastPushApproval
+							requiredApprovingReviewCount
+							requiredDeploymentEnvironments
+							requiresApprovingReviews
+							requiresCodeOwnerReviews
+							requiresCommitSignatures
+							requiresConversationResolution
+							requiresDeployments
+							requiresLinearHistory
+							requiresStatusChecks
+							requiresStrictStatusChecks
+							restrictsPushes
+							restrictsReviewDismissals
+							reviewDismissalAllowances {
+								totalCount
+							}
+						}
+					}
+					pageInfo {
+						endCursor
+						hasNextPage
+					}
+				}
+			}
+		}
+	`
+	var pagination string
+	if opts.Size == 0 {
+		opts.Size = common.DefaultLimit
 	}
-	if opts.Size != 0 {
-		params.Set("per_page", strconv.Itoa(opts.Size))
+	if opts.URL != "" {
+		pagination = fmt.Sprintf(`, after: "%s"`, opts.URL)
 	}
-	return params.Encode()
+	query := fmt.Sprintf(queryTemplate, owner, name, opts.Size, pagination)
+	body := graphQLRequest{
+		Query: query,
+	}
+	out := new(branchProtectionRulesResponse)
+	res, err := c.do(ctx, "POST", graphqlUrl, body, &out)
+	if out.Data.Repository.BranchProtectionRules.PageInfo.HasNextPage {
+		res.Page.NextURL = out.Data.Repository.BranchProtectionRules.PageInfo.EndCursor
+	}
+	return convertBranchRulesList(out, repoSlug, logger), res, err
+}
+
+func (c *wrapper) ListBranchRulesets(
+	ctx context.Context,
+	repoSlug string,
+	opts types.ListOptions,
+) ([]*types.BranchRule, *scm.Response, error) {
+	path := fmt.Sprintf("repos/%s/rulesets?%s", repoSlug, encodeListOptions(opts))
+	out := []*ruleSet{}
+	res, err := c.do(ctx, "GET", path, nil, &out)
+	return convertBranchRulesetsList(out), res, err
+}
+
+func (c *wrapper) FindBranchRuleset(
+	ctx context.Context,
+	repoSlug string,
+	logger gitexporter.Logger,
+	ruleID int,
+) (*types.BranchRule, *scm.Response, error) {
+	path := fmt.Sprintf("repos/%s/rulesets/%d", repoSlug, ruleID)
+	out := new(detailedRuleSet)
+	res, err := c.do(ctx, "GET", path, nil, &out)
+	return convertBranchRuleset(out, repoSlug, logger), res, err
 }
 
 func (c *wrapper) do(ctx context.Context, method, path string, in, out interface{}) (*scm.Response, error) {

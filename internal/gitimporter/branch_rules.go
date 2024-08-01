@@ -96,8 +96,11 @@ func convertBranchRulesToRules(branchRules []*types.BranchRule) ([]*types.Rule, 
 		rules[i] = &types.Rule{
 			ID:         br.ID,
 			Identifier: br.Identifier,
+			State:      br.State,
 			Definition: definitionJSON,
 			Pattern:    patternJSON,
+			Created:    br.Created,
+			Updated:    br.Updated,
 		}
 	}
 

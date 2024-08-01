@@ -21,7 +21,7 @@ func (e *Export) ListWebhooks(
 	e.tracer.Start(common.MsgStartExportWebhook, repoSlug)
 	var allWebhooks []*scm.Hook
 	opts := scm.ListOptions{Size: 25, Page: 1}
-	
+
 	for {
 		webhooks, resp, err := e.github.Repositories.ListHooks(ctx, repoSlug, opts)
 		if err != nil {
@@ -64,18 +64,18 @@ func mapEvents(triggers []string) ([]enum.WebhookTrigger, []string) {
 
 	for _, v := range triggers {
 		switch v {
-		case "repo:refs_changed":
-			events = append(events, enum.WebhookTriggerBranchCreated, enum.WebhookTriggerBranchDeleted, enum.WebhookTriggerBranchUpdated, enum.WebhookTriggerTagCreated, enum.WebhookTriggerTagDeleted, enum.WebhookTriggerTagUpdated)
-		case "pr:opened":
-			events = append(events, enum.WebhookTriggerPullReqCreated, enum.WebhookTriggerPullReqReopened)
-		case "pr:merged":
-			events = append(events, enum.WebhookTriggerPullReqMerged)
-		case "pr:declined":
-			events = append(events, enum.WebhookTriggerPullReqClosed)
-		case "pr:from_ref_updated":
-			events = append(events, enum.WebhookTriggerPullReqBranchUpdated)
-		case "pr:comment:added":
+		case "create":
+			events = append(events, enum.WebhookTriggerBranchCreated, enum.WebhookTriggerTagCreated)
+		case "delete":
+			events = append(events, enum.WebhookTriggerBranchDeleted, enum.WebhookTriggerTagDeleted)
+		case "pull_request":
+			events = append(events, enum.WebhookTriggerPullReqCreated, enum.WebhookTriggerPullReqReopened,
+				enum.WebhookTriggerPullReqClosed, enum.WebhookTriggerPullReqUpdated, enum.WebhookTriggerPullReqMerged)
+		case "pull_request_review_comment", "commit_comment":
 			events = append(events, enum.WebhookTriggerPullReqCommentCreated)
+		case "push":
+			events = append(events, enum.WebhookTriggerPullReqBranchUpdated, enum.WebhookTriggerBranchUpdated,
+				enum.WebhookTriggerTagUpdated)
 		default:
 			notSupportedEvents = append(notSupportedEvents, v)
 		}

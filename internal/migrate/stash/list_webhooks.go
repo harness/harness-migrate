@@ -74,6 +74,8 @@ func mapEvents(triggers []string) ([]enum.WebhookTrigger, []string) {
 			events = append(events, enum.WebhookTriggerPullReqCreated, enum.WebhookTriggerPullReqReopened)
 		case "pr:merged":
 			events = append(events, enum.WebhookTriggerPullReqMerged)
+		case "pr:modified":
+			events = append(events, enum.WebhookTriggerPullReqUpdated)
 		case "pr:declined":
 			events = append(events, enum.WebhookTriggerPullReqClosed)
 		case "pr:from_ref_updated":

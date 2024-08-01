@@ -25,7 +25,7 @@ func TestExtractHunkInfo(t *testing.T) {
 	}
 
 	for i, c := range c {
-		res := extractHunkInfo(c)
+		res, _ := extractHunkInfo(c)
 		if res != want[i] {
 			t.Errorf("got = %v, want %v", res, want[i])
 		}

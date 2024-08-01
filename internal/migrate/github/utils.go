@@ -25,28 +25,35 @@ const (
 
 var regExpHunkHeader = regexp.MustCompile(`^@@ -([0-9]+)(,([0-9]+))? \+([0-9]+)(,([0-9]+))? @@( (.+))?$`)
 
-func convertPRCommentsList(from []*codeComment) []*types.PRComment {
+func convertPRCommentsList(from []*codeComment, repo string, pr int) []*types.PRComment {
 	to := []*types.PRComment{}
 	for _, v := range from {
-		to = append(to, convertPRComment(v))
+		to = append(to, convertPRComment(v, repo, pr))
 	}
 	return to
 }
 
-func convertPRComment(from *codeComment) *types.PRComment {
+func convertPRComment(from *codeComment, repo string, pr int) *types.PRComment {
 	var parentID int
 	var metadata *types.CodeComment
+	// If the comment is a reply, we don't need the metadata
+	// If the comment is on a file, diff_hunk will not be present
 	if from.InReplyToID != 0 {
 		parentID = from.InReplyToID
-	} else {
-		metadata = &types.CodeComment{
-			Path:         from.Path,
-			CodeSnippet:  extractSnippetInfo(from.DiffHunk),
-			Side:         getCommentSide(from.Side),
-			HunkHeader:   extractHunkInfo(from),
-			SourceSHA:    from.OriginalCommitID,
-			MergeBaseSHA: from.CommitID,
-			Outdated:     from.Line == nil,
+	} else if from.OriginalLine != nil && from.SubjectType != "file" {
+		hunkHeader, err := extractHunkInfo(from)
+		if err != nil {
+			log.Default().Printf("Importing code comment %d on PR %d of repo %s as a PR comment: %v", from.ID, pr, repo, err)
+		} else {
+			metadata = &types.CodeComment{
+				Path:         from.Path,
+				CodeSnippet:  extractSnippetInfo(from.DiffHunk),
+				Side:         getCommentSide(from.Side),
+				HunkHeader:   hunkHeader,
+				SourceSHA:    from.OriginalCommitID,
+				MergeBaseSHA: from.CommitID,
+				Outdated:     from.Line == nil,
+			}
 		}
 	}
 	return &types.PRComment{Comment: scm.Comment{
@@ -81,7 +88,7 @@ func extractSnippetInfo(diffHunk string) types.Hunk {
 // TODO: Revisit this method to try getting the correct hunk header
 // in some cases like rebase where the otherLine and otherSpan are
 // not correct because of rebase offset.
-func extractHunkInfo(comment *codeComment) string {
+func extractHunkInfo(comment *codeComment) (string, error) {
 	var (
 		oldLine   int
 		oldSpan   int
@@ -92,7 +99,7 @@ func extractHunkInfo(comment *codeComment) string {
 		err       error
 	)
 
-	multiline := comment.StartLine != nil || comment.OriginalStartLine != nil
+	multiline := comment.OriginalStartLine != nil
 	if comment.StartLine == nil {
 		comment.StartLine = comment.OriginalStartLine
 	}
@@ -104,7 +111,7 @@ func extractHunkInfo(comment *codeComment) string {
 		span := *comment.Line - *comment.StartLine + 1
 		otherLine, otherSpan, err = getOtherSideLineAndSpan(comment.DiffHunk, comment.Side == "RIGHT", *comment.OriginalStartLine, span)
 		if err != nil {
-			log.Default().Printf("hunk information wrong: %v", err)
+			return "", fmt.Errorf("diff hunk information wrong: %v", err)
 		}
 
 		if comment.Side == "RIGHT" {
@@ -121,7 +128,7 @@ func extractHunkInfo(comment *codeComment) string {
 	} else {
 		otherLine, otherSpan, err = getOtherSideLineAndSpan(comment.DiffHunk, comment.Side == "RIGHT", *comment.OriginalLine, 1)
 		if err != nil {
-			log.Default().Printf("hunk information missing: %v", err)
+			return "", fmt.Errorf("diff hunk information wrong: %v", err)
 		}
 
 		if comment.Side == "RIGHT" {
@@ -136,7 +143,7 @@ func extractHunkInfo(comment *codeComment) string {
 			newSpan = otherSpan
 		}
 	}
-	return common.FormatHunkHeader(int(oldLine), int(oldSpan), int(newLine), int(newSpan), "")
+	return common.FormatHunkHeader(int(oldLine), int(oldSpan), int(newLine), int(newSpan), ""), nil
 }
 
 func getOtherSideLineAndSpan(rawHunk string, newSide bool, line, span int) (int, int, error) {

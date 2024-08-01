@@ -46,7 +46,7 @@ func (c *wrapper) ListPRComments(
 	path := fmt.Sprintf("repos/%s/pulls/%d/comments?%s", repoSlug, prNumber, encodeListOptions(opts))
 	out := []*codeComment{}
 	res, err := c.do(ctx, "GET", path, nil, &out)
-	return convertPRCommentsList(out), res, err
+	return convertPRCommentsList(out, repoSlug, prNumber), res, err
 }
 
 func (c *wrapper) GetUserByUserName(

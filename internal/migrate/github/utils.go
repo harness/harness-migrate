@@ -2,15 +2,20 @@ package github
 
 import (
 	"bufio"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
+	"net/url"
 	"regexp"
 	"strconv"
 	"strings"
 
 	"github.com/harness/harness-migrate/internal/common"
+	"github.com/harness/harness-migrate/internal/gitexporter"
+	"github.com/harness/harness-migrate/internal/migrate"
 	"github.com/harness/harness-migrate/internal/types"
+	"github.com/harness/harness-migrate/internal/types/enum"
 
 	"github.com/drone/go-scm/scm"
 )
@@ -18,9 +23,10 @@ import (
 type changeType byte
 
 const (
-	added     changeType = '+'
-	removed   changeType = '-'
-	unchanged changeType = ' '
+	added      changeType = '+'
+	removed    changeType = '-'
+	unchanged  changeType = ' '
+	logMessage            = "[%s] Skipped mapping %q branch rule for pattern %q of repo %q as we do not support it as of now. \n"
 )
 
 var regExpHunkHeader = regexp.MustCompile(`^@@ -([0-9]+)(,([0-9]+))? \+([0-9]+)(,([0-9]+))? @@( (.+))?$`)
@@ -252,4 +258,271 @@ func parseDiffHunkHeader(line string) (HunkHeader, bool) {
 		NewSpan: newSpan,
 		Text:    groups[8],
 	}, true
+}
+
+func convertBranchRulesList(from *branchProtectionRulesResponse, repo string, l gitexporter.Logger) []*types.BranchRule {
+	to := []*types.BranchRule{}
+	for _, edge := range from.Data.Repository.BranchProtectionRules.Edges {
+		to = append(to, convertBranchRule(edge.Node, repo, l)...)
+	}
+	return to
+}
+
+func convertBranchRulesetsList(from []*ruleSet) []*types.BranchRule {
+	to := []*types.BranchRule{}
+	for _, rule := range from {
+		to = append(to, &types.BranchRule{ID: rule.ID})
+	}
+	return to
+}
+
+func convertBranchRule(from branchProtectionRule, repo string, l gitexporter.Logger) []*types.BranchRule {
+	var logs []string
+	var warningMsg string
+	rules := []*types.BranchRule{}
+	ruleName := migrate.DisplayNameToIdentifier(from.Pattern, "rule", from.ID)
+	rule := &types.BranchRule{
+		ID:    from.DatabaseID,
+		Name:  ruleName,
+		State: enum.RuleStateActive,
+		Pattern: types.Pattern{
+			IncludedPatterns: []string{from.Pattern},
+		},
+	}
+
+	if !from.AllowsDeletions {
+		rule.DeleteForbidden = true
+	}
+	if from.AllowsForcePushes {
+		warningMsg = fmt.Sprintf(logMessage, enum.LogLevelWarning, "force push allowances", from.Pattern, repo)
+		logs = append(logs, warningMsg)
+	}
+	if from.BlocksCreations {
+		rule.Lifecycle.CreateForbidden = true
+	}
+	if from.BypassPullRequestAllowances.TotalCount > 0 {
+		actorNotUser := false
+		for _, actor := range from.BypassPullRequestAllowances.Edges {
+			if actor.Node.Actor.Email != "" {
+				rule.Bypass.UserEmails = append(rule.Bypass.UserEmails, actor.Node.Actor.Email)
+			} else {
+				actorNotUser = true
+			}
+		}
+		if actorNotUser {
+			warningMsg = fmt.Sprintf("[%s] Skipped adding teams and apps to bypass list for pattern %q of repo %q as we do not support it as of now. \n",
+				enum.LogLevelWarning, from.Pattern, repo)
+			logs = append(logs, warningMsg)
+		}
+	}
+	if from.DismissesStaleReviews {
+		rule.UpdateForbidden = true
+		rule.RequireLatestCommit = true
+	}
+	if !from.IsAdminEnforced {
+		rule.Definition.Bypass.RepoOwners = true
+	}
+	if from.LockBranch {
+		rule.Lifecycle.UpdateForbidden = true
+		rule.Lifecycle.DeleteForbidden = true
+	}
+	if from.RequireLastPushApproval {
+		rule.UpdateForbidden = true
+		rule.RequireLatestCommit = true
+	}
+	if from.RequiresApprovingReviews {
+		rule.UpdateForbidden = true
+		rule.RequireMinimumCount = from.RequiredApprovingReviewCount
+	}
+	if from.RequiresCodeOwnerReviews {
+		rule.UpdateForbidden = true
+		rule.RequireCodeOwners = true
+	}
+	if from.RequiresCommitSignatures {
+		warningMsg = fmt.Sprintf(logMessage, enum.LogLevelWarning, "required commit signatures", from.Pattern, repo)
+		logs = append(logs, warningMsg)
+	}
+	if from.RequiresConversationResolution {
+		rule.UpdateForbidden = true
+		rule.RequireResolveAll = true
+	}
+	if from.RequiresDeployments {
+		warningMsg = fmt.Sprintf(logMessage, enum.LogLevelWarning, "required deployments", from.Pattern, repo)
+		logs = append(logs, warningMsg)
+	}
+	if from.RequiresLinearHistory {
+		warningMsg = fmt.Sprintf(logMessage, enum.LogLevelWarning, "required linear history", from.Pattern, repo)
+		logs = append(logs, warningMsg)
+	}
+	if from.RequiresStatusChecks {
+		warningMsg = fmt.Sprintf("[%s] Skipped adding status checks. Create the status checks' pipelines as in branch rule %q for repo %q and reconfigure the branch rule. \n",
+			enum.LogLevelWarning, from.Pattern, repo)
+		logs = append(logs, warningMsg)
+	}
+	if from.RestrictsPushes {
+		r := &types.BranchRule{
+			ID:    from.DatabaseID,
+			Name:  ruleName + "_restricts_pushes",
+			State: enum.RuleStateActive,
+			Pattern: types.Pattern{
+				IncludedPatterns: []string{from.Pattern},
+			},
+		}
+		r.UpdateForbidden = true
+		if !from.IsAdminEnforced {
+			r.Definition.Bypass.RepoOwners = true
+		}
+		actorNotUser := false
+		for _, actor := range from.PushAllowances.Edges {
+			if actor.Node.Actor.Email != "" {
+				rule.Bypass.UserEmails = append(rule.Bypass.UserEmails, actor.Node.Actor.Email)
+			} else {
+				actorNotUser = true
+			}
+		}
+		if actorNotUser {
+			warningMsg = fmt.Sprintf("[%s] Skipped adding teams and apps to bypass list for branch rule with pattern %q of repo %q as we do not support it as of now. \n",
+				enum.LogLevelWarning, from.Pattern, repo)
+			logs = append(logs, warningMsg)
+		}
+		rules = append(rules, r)
+	}
+	if from.RestrictsReviewDismissals {
+		warningMsg = fmt.Sprintf(logMessage, enum.LogLevelWarning, "restricts review dismissals", from.Pattern, repo)
+		logs = append(logs, warningMsg)
+	}
+
+	rules = append(rules, rule)
+	if err := l.Log(strings.Join(logs, "")); err != nil {
+		log.Default().Printf("failed to log the not supported branch rules for repo %q: %v", repo, err)
+		return rules
+	}
+	return rules
+}
+
+func convertBranchRuleset(from *detailedRuleSet, repo string, l gitexporter.Logger) *types.BranchRule {
+	includedPatterns, includeDefault := mapPatterns(from.Conditions.RefName.Include)
+	excludedPatterns, _ := mapPatterns(from.Conditions.RefName.Exclude)
+	return &types.BranchRule{
+		ID:         from.ID,
+		Name:       migrate.DisplayNameToIdentifier(from.Name, "ruleset", strconv.Itoa(from.ID)),
+		State:      mapRuleEnforcement(from.Enforcement),
+		Definition: mapRuleDefinition(from, repo, l),
+		Pattern: types.Pattern{
+			IncludeDefault:   includeDefault,
+			IncludedPatterns: includedPatterns,
+			ExcludedPatterns: excludedPatterns,
+		},
+		Created: from.CreatedAt,
+		Updated: from.UpdatedAt,
+	}
+}
+
+func mapRuleEnforcement(enforcement string) enum.RuleState {
+	switch enforcement {
+	case "active":
+		return enum.RuleStateActive
+	case "evaluate":
+		return enum.RuleStateMonitor
+	case "disabled":
+		return enum.RuleStateDisabled
+	default:
+		return enum.RuleStateDisabled
+	}
+}
+
+func mapPatterns(branches []string) ([]string, bool) {
+	includeDefault := false
+	res := []string{}
+	for _, b := range branches {
+		switch b {
+		case "~DEFAULT_BRANCH":
+			includeDefault = true
+		// This will include all the branches in the repo
+		case "~ALL":
+			res = append(res, "**")
+		default:
+			res = append(res, strings.TrimPrefix(b, "refs/heads/"))
+		}
+	}
+	return res, includeDefault
+}
+
+func mapRuleDefinition(from *detailedRuleSet, repo string, l gitexporter.Logger) types.Definition {
+	definition := types.Definition{}
+	var logs []string
+	var warningMsg string
+
+	for _, r := range from.Rules {
+		switch r.Type {
+		case "creation":
+			definition.CreateForbidden = true
+		case "update":
+			definition.UpdateForbidden = true
+		case "deletion":
+			definition.DeleteForbidden = true
+		case "required_linear_history":
+			definition.UpdateForbidden = true
+		case "pull_request":
+			definition.UpdateForbidden = true
+			parameters := extractPullRequestParameters(r.Parameters)
+			if parameters.RequiredApprovingReviewCount > 0 {
+				definition.RequireMinimumCount = parameters.RequiredApprovingReviewCount
+			}
+			definition.RequireCodeOwners = parameters.RequireCodeOwnerReview
+			definition.RequireLatestCommit = parameters.RequireLastPushApproval
+			definition.RequireResolveAll = parameters.RequiredReviewThreadResolution
+			definition.RequireLatestCommit = parameters.DismissStaleReviewsOnPush
+		case "required_status_checks":
+			warningMsg = fmt.Sprintf("[%s] Skipped adding status checks. Create the status checks' pipelines as in branch rule %q for repo %q and reconfigure the branch rule. \n",
+				enum.LogLevelWarning, from.Name, repo)
+			logs = append(logs, warningMsg)
+		case "non_fast_forward":
+			definition.UpdateForbidden = true
+		default:
+			warningMsg = fmt.Sprintf("[%s] Skipped mapping rule type %q for branch rule %q of repo %q as we do not support it as of now. \n",
+				enum.LogLevelWarning, r.Type, from.Name, repo)
+			logs = append(logs, warningMsg)
+		}
+	}
+	if len(from.BypassActors) != 0 {
+		msg := fmt.Sprintf("[%s] Couldn't map bypass list for branch rule %q of repo %q. Need to reconfigure the bypass list for the branch rule. \n",
+			enum.LogLevelWarning, from.Name, repo)
+		logs = append(logs, msg)
+	}
+
+	if err := l.Log(strings.Join(logs, "")); err != nil {
+		log.Default().Printf("failed to log the not supported branch rules for repo %q: %v", repo, err)
+		return definition
+	}
+	return definition
+}
+
+func extractPullRequestParameters(params map[string]interface{}) pullRequestParameters {
+	jsonData, err := json.Marshal(params)
+	if err != nil {
+		log.Default().Printf("failed to marshal branch rule pull request parameters: %v", err)
+		return pullRequestParameters{}
+	}
+
+	var parameters pullRequestParameters
+	if err := json.Unmarshal(jsonData, &parameters); err != nil {
+		log.Default().Printf("failed to unmarshal branch rul pull request parameters: %v", err)
+		return pullRequestParameters{}
+	}
+
+	return parameters
+}
+
+func encodeListOptions(opts types.ListOptions) string {
+	params := url.Values{}
+	limit := common.DefaultLimit
+	if opts.Size != 0 {
+		limit = opts.Size
+	}
+	if opts.Page != 0 {
+		params.Set("page", strconv.Itoa(opts.Page))
+	}
+	params.Set("per_page", strconv.Itoa(limit))
+	return params.Encode()
 }

@@ -94,7 +94,7 @@ func (e *Export) addEmailToPRAuthor(ctx context.Context, prs []types.PRResponse)
 	for i, pr := range prs {
 		email, err := e.FindEmailByUsername(ctx, pr.Author.Login)
 		if err != nil {
-			return nil, fmt.Errorf("cannnot find email for author %s: %w", pr.Author.Login, err)
+			return nil, fmt.Errorf("cannot find email for author %s: %w", pr.Author.Login, err)
 		}
 		pr.Author.Email = email
 		prs[i] = pr

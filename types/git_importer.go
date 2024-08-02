@@ -16,7 +16,10 @@
 
 package types
 
-import "encoding/json"
+import (
+	"encoding/json"
+	"time"
+)
 
 type (
 	Response struct {
@@ -45,8 +48,11 @@ type (
 	Rule struct {
 		ID         int             `json:"id"`
 		Identifier string          `json:"identifier"`
+		State      string          `json:"state"`
 		Definition json.RawMessage `json:"definition"`
 		Pattern    json.RawMessage `json:"pattern"`
+		Created    time.Time       `json:"created"`
+		Updated    time.Time       `json:"updated"`
 	}
 
 	RulesInput struct {

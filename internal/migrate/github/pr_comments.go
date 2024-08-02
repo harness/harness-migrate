@@ -113,7 +113,7 @@ func (e *Export) addEmailToAuthorInComments(ctx context.Context, comments []*typ
 		commentCopy := *comment
 		email, err := e.FindEmailByUsername(ctx, commentCopy.Author.Login)
 		if err != nil {
-			return nil, fmt.Errorf("cannnot find email for author %s: %w", commentCopy.Author.Login, err)
+			return nil, fmt.Errorf("cannot find email for author %s: %w", commentCopy.Author.Login, err)
 		}
 		commentCopy.Author.Email = email
 		commentsCopy[i] = &commentCopy

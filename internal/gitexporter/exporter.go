@@ -266,7 +266,7 @@ func (e *Exporter) getData(ctx context.Context, path string) ([]*types.RepoData,
 		repoData[i].Webhooks = webhooks
 
 		// 4. get all branch rules for each repo
-		branchRules, err := e.exporter.ListBranchRules(ctx, repo.RepoSlug, types.ListOptions{Page: 1})
+		branchRules, err := e.exporter.ListBranchRules(ctx, repo.RepoSlug, types.ListOptions{Page: 1, Size: 25})
 		if err != nil {
 			return nil, fmt.Errorf("encountered error in getting branch rules: %w", err)
 		}
@@ -381,7 +381,7 @@ func extractUsers(repo *types.RepoData, users map[string]bool) {
 	}
 
 	for _, rule := range repo.BranchRules {
-		for _, email := range rule.RuleDefinition.Bypass.UserEmails {
+		for _, email := range rule.Definition.Bypass.UserEmails {
 			users[email] = true
 		}
 	}

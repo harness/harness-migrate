@@ -15,9 +15,14 @@
 package migrate
 
 import (
+	"fmt"
+	"strings"
+
 	"github.com/drone/go-scm/scm"
 	"github.com/harness/harness-migrate/internal/types/enum"
 )
+
+const maxIdentifierLength = 100
 
 func MapWebhooks(
 	hooks []*scm.Hook,
@@ -48,10 +53,11 @@ func mapWebhook(
 	var convertedHook *scm.Hook
 	var notSupportedHook *scm.Hook
 
+	identifier := DisplayNameToIdentifier(hook.Name, "webhook", hook.ID)
 	if len(events) != 0 {
 		convertedHook = &scm.Hook{
 			ID:     hook.ID,
-			Name:   hook.Name,
+			Name:   identifier,
 			Target: hook.Target,
 			Active: hook.Active,
 			Events: enum.ToStringSlice(events),
@@ -68,4 +74,74 @@ func mapWebhook(
 		}
 	}
 	return convertedHook, notSupportedHook
+}
+
+// DisplayNameToIdentifier converts display name to a unique identifier.
+func DisplayNameToIdentifier(displayName, prefix, suffix string) string {
+	const placeholder = '_'
+	const specialChars = ".-_"
+	// remove / replace any illegal characters
+	// Identifier Regex: ^[a-zA-Z0-9-_.]*$
+	identifier := strings.Map(func(r rune) rune {
+		switch {
+		// drop any control characters or empty characters
+		case r < 32 || r == 127:
+			return -1
+
+		// keep all allowed character
+		case ('a' <= r && r <= 'z') ||
+			('A' <= r && r <= 'Z') ||
+			('0' <= r && r <= '9') ||
+			strings.ContainsRune(specialChars, r):
+			return r
+
+		// everything else is replaced with the placeholder
+		default:
+			return placeholder
+		}
+	}, displayName)
+
+	// remove any leading/trailing special characters
+	identifier = strings.Trim(identifier, specialChars)
+
+	// ensure string doesn't start with numbers (leading '_' is valid)
+	if len(identifier) > 0 && identifier[0] >= '0' && identifier[0] <= '9' {
+		identifier = string(placeholder) + identifier
+	}
+
+	// remove consecutive special characters
+	identifier = sanitizeConsecutiveChars(identifier, specialChars)
+
+	// ensure length restrictions
+	if len(identifier) > maxIdentifierLength {
+		identifier = identifier[0:maxIdentifierLength]
+	}
+
+	if len(identifier) == 0 {
+		return fmt.Sprintf("%s%c%s", prefix, placeholder, suffix)
+	}
+
+	// adding suffix to make sure the identifier would be unique
+	return fmt.Sprintf("%s%c%s", identifier, placeholder, suffix)
+}
+
+func sanitizeConsecutiveChars(in string, charSet string) string {
+	if len(in) == 0 {
+		return ""
+	}
+
+	inSet := func(b byte) bool {
+		return strings.ContainsRune(charSet, rune(b))
+	}
+
+	out := strings.Builder{}
+	out.WriteByte(in[0])
+	for i := 1; i < len(in); i++ {
+		if inSet(in[i]) && inSet(in[i-1]) {
+			continue
+		}
+		out.WriteByte(in[i])
+	}
+
+	return out.String()
 }

@@ -26,6 +26,7 @@ func (e *Export) ListWebhooks(
 		webhooks, resp, err := e.github.Repositories.ListHooks(ctx, repoSlug, opts)
 		if err != nil {
 			e.tracer.LogError(common.ErrWebhookList, repoSlug, err)
+			e.tracer.Stop(common.ErrListWebhooks, repoSlug, err)
 			return types.WebhookData{}, err
 		}
 		allWebhooks = append(allWebhooks, webhooks...)
@@ -47,6 +48,7 @@ func (e *Export) ListWebhooks(
 			logs = append(logs, warningMsg)
 		}
 		if err := e.fileLogger.Log(strings.Join(logs, "")); err != nil {
+			e.tracer.Stop(common.ErrListWebhooks, repoSlug, err)
 			return types.WebhookData{}, fmt.Errorf("failed to log the not supported webhooks for repo %q: %w",
 				repoSlug, err)
 		}

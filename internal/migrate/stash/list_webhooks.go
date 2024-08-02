@@ -19,18 +19,14 @@ func (e *Export) ListWebhooks(
 	_ types.WebhookListOptions,
 ) (types.WebhookData, error) {
 	e.tracer.Start(common.MsgStartExportWebhook, repoSlug)
-
 	var allWebhooks []*scm.Hook
-	defer func() {
-		e.tracer.Stop(common.MsgCompleteExportWebhooks, len(allWebhooks), repoSlug)
-	}()
-
 	opts := scm.ListOptions{Size: 25, Page: 1}
 
 	for {
 		webhooks, resp, err := e.stash.Repositories.ListHooks(ctx, repoSlug, opts)
 		if err != nil {
 			e.tracer.LogError(common.ErrWebhookList, repoSlug, err)
+			e.tracer.Stop(common.ErrListWebhooks, repoSlug, err)
 			return types.WebhookData{}, err
 		}
 		allWebhooks = append(allWebhooks, webhooks...)
@@ -52,11 +48,13 @@ func (e *Export) ListWebhooks(
 			logs = append(logs, warningMsg)
 		}
 		if err := e.fileLogger.Log(strings.Join(logs, "")); err != nil {
+			e.tracer.Stop(common.ErrListWebhooks, repoSlug, err)
 			return types.WebhookData{}, fmt.Errorf("failed to log the not supported webhooks for repo %q: %w",
 				repoSlug, err)
 		}
 	}
 
+	e.tracer.Stop(common.MsgCompleteExportWebhooks, len(allWebhooks), repoSlug)
 	return types.WebhookData{
 		ConvertedHooks: convertedHooks,
 	}, nil

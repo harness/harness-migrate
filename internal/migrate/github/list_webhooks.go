@@ -43,8 +43,8 @@ func (e *Export) ListWebhooks(
 		var logs []string
 		var warningMsg string
 		for _, hook := range notSupportedHooks {
-			warningMsg = fmt.Sprintf("[%s] Skipped repo %q's webhook with ID %q Name %q for Target URL %q on events %v \n",
-				enum.LogLevelWarning, repoSlug, hook.ID, hook.Name, hook.Target, hook.Events)
+			warningMsg = fmt.Sprintf("[%s] Skipped exporting some webhook events for repo %q with hook ID %q, Name %q, on events %v \n",
+				enum.LogLevelWarning, repoSlug, hook.ID, hook.Name, hook.Events)
 			logs = append(logs, warningMsg)
 		}
 		if err := e.fileLogger.Log(strings.Join(logs, "")); err != nil {

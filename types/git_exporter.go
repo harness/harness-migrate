@@ -67,6 +67,7 @@ type (
 		Fork    string    `json:"fork"`
 		Link    string    `json:"link"`
 		Diff    string    `json:"diff"`
+		Draft   bool      `json:"draft"`
 		Closed  bool      `json:"closed"`
 		Merged  bool      `json:"merged"`
 		Merge   string    `json:"merge"`

@@ -129,6 +129,7 @@ func mapPR(request scm.PullRequest) externalTypes.PullRequest {
 		Fork:    request.Fork,
 		Link:    request.Link,
 		Diff:    request.Diff,
+		Draft:   request.Draft,
 		Closed:  request.Closed,
 		Merged:  request.Merged,
 		Merge:   request.Merge,

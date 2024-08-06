@@ -273,7 +273,9 @@ func convertBranchRulesList(from *branchProtectionRulesResponse, repo string, l 
 func convertBranchRulesetsList(from []*ruleSet) []*types.BranchRule {
 	to := []*types.BranchRule{}
 	for _, rule := range from {
-		to = append(to, &types.BranchRule{ID: rule.ID})
+		if rule.Target == "branch" {
+			to = append(to, &types.BranchRule{ID: rule.ID})
+		}
 	}
 	return to
 }

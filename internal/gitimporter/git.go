@@ -56,7 +56,7 @@ func (m *Importer) Push(
 		InsecureSkipTLS: true,
 	})
 	if err != nil && !errors.Is(err, git.NoErrAlreadyUpToDate) {
-		tracer.Stop(common.ErrGitPush, repo.GitURL)
+		tracer.Stop(common.ErrGitPush, repo.GitURL, err)
 		return fmt.Errorf(common.ErrGitPush, repo.GitURL, err)
 	}
 

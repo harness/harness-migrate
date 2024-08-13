@@ -1,11 +1,25 @@
+// Copyright 2023 Harness, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package stash
 
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/harness/harness-migrate/internal/common"
+	"github.com/harness/harness-migrate/internal/gitexporter"
 	"github.com/harness/harness-migrate/internal/types"
 	"github.com/harness/harness-migrate/internal/types/enum"
 
@@ -43,17 +57,18 @@ func (e *Export) ListWebhooks(
 	convertedHooks, notSupportedHooks := mapWebhooks(allWebhooks)
 	// logs the not supported hooks
 	if len(notSupportedHooks) != 0 {
-		var logs []string
 		var warningMsg string
 		for _, hook := range notSupportedHooks {
-			warningMsg = fmt.Sprintf("[%s] Skipped repo %q's webhook with ID %q Name %q for Target URL %q on events %v \n",
+			warningMsg = fmt.Sprintf("[%s] Skipped repo %q's webhook with ID %q Name %q for Target URL %q on events %v",
 				enum.LogLevelWarning, repoSlug, hook.ID, hook.Name, hook.Target, hook.Events)
-			logs = append(logs, warningMsg)
+			if err := e.fileLogger.Log(warningMsg); err != nil {
+				return types.WebhookData{}, fmt.Errorf("failed to log the not supported webhooks for repo %q: %w",
+					repoSlug, err)
+			}
+
+			e.report[repoSlug].ReportError(gitexporter.ReportTypeWebhooks, hook.ID, warningMsg)
 		}
-		if err := e.fileLogger.Log(strings.Join(logs, "")); err != nil {
-			return types.WebhookData{}, fmt.Errorf("failed to log the not supported webhooks for repo %q: %w",
-				repoSlug, err)
-		}
+
 	}
 
 	return types.WebhookData{

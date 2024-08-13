@@ -16,7 +16,7 @@ func (e *Export) ListPullRequestComments(
 	opts types.ListOptions,
 ) ([]*types.PRComment, error) {
 	e.tracer.Start(common.MsgStartExportPrComments, repoSlug, prNumber)
-	allComments := []*types.PRComment{}
+	var allComments []*types.PRComment
 	msgCommentsExport := common.MsgCompleteExportPrComments
 	defer func() {
 		e.tracer.Stop(msgCommentsExport, len(allComments), repoSlug, prNumber)
@@ -73,7 +73,7 @@ func (e *Export) ListPullRequestComments(
 
 	// for fetching PR review comments
 	for {
-		comments, res, err := e.github.ListPRComments(ctx, repoSlug, prNumber, opts)
+		comments, res, err := e.ListPRComments(ctx, repoSlug, prNumber, opts)
 		if err != nil {
 			e.tracer.LogError(common.ErrCommentsList, repoSlug, prNumber, err)
 			return nil, fmt.Errorf(common.ErrCommentsList, repoSlug, prNumber, err)

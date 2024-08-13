@@ -1,13 +1,24 @@
+// Copyright 2023 Harness, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package github
 
 import (
-	"bufio"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"log"
 	"net/url"
-	"regexp"
 	"strconv"
 	"strings"
 
@@ -15,263 +26,19 @@ import (
 	"github.com/harness/harness-migrate/internal/gitexporter"
 	"github.com/harness/harness-migrate/internal/types"
 	"github.com/harness/harness-migrate/internal/types/enum"
-
-	"github.com/drone/go-scm/scm"
 	gonanoid "github.com/matoous/go-nanoid"
 )
 
-type changeType byte
-
-const (
-	added               changeType = '+'
-	removed             changeType = '-'
-	unchanged           changeType = ' '
-	maxIdentifierLength            = 100
-)
-
-const logMessage = "[%s] Skipped mapping %q branch rule for pattern %q of repo %q as we do not support it as of now. \n"
-
-var regExpHunkHeader = regexp.MustCompile(`^@@ -([0-9]+)(,([0-9]+))? \+([0-9]+)(,([0-9]+))? @@( (.+))?$`)
-
-func convertPRCommentsList(from []*codeComment, repo string, pr int) []*types.PRComment {
-	to := []*types.PRComment{}
-	for _, v := range from {
-		to = append(to, convertPRComment(v, repo, pr))
-	}
-	return to
-}
-
-func convertPRComment(from *codeComment, repo string, pr int) *types.PRComment {
-	var parentID int
-	var metadata *types.CodeComment
-	// If the comment is a reply, we don't need the metadata
-	// If the comment is on a file, diff_hunk will not be present
-	if from.InReplyToID != 0 {
-		parentID = from.InReplyToID
-	} else if from.OriginalLine != nil && from.SubjectType != "file" {
-		hunkHeader, err := extractHunkInfo(from)
-		if err != nil {
-			log.Default().Printf("Importing code comment %d on PR %d of repo %s as a PR comment: %v", from.ID, pr, repo, err)
-		} else {
-			metadata = &types.CodeComment{
-				Path:         from.Path,
-				CodeSnippet:  extractSnippetInfo(from.DiffHunk),
-				Side:         getCommentSide(from.Side),
-				HunkHeader:   hunkHeader,
-				SourceSHA:    from.OriginalCommitID,
-				MergeBaseSHA: from.CommitID,
-				Outdated:     from.Line == nil,
-			}
-		}
-	}
-	return &types.PRComment{Comment: scm.Comment{
-		ID:      from.ID,
-		Body:    from.Body,
-		Created: from.CreatedAt,
-		Updated: from.UpdatedAt,
-		Author: scm.User{
-			Login:  from.User.Login,
-			Avatar: from.User.AvatarURL,
-		}},
-		ParentID:    parentID,
-		CodeComment: metadata,
-	}
-}
-
-func getCommentSide(side string) string {
-	if side == "LEFT" {
-		return "OLD"
-	}
-	return "NEW"
-}
-
-func extractSnippetInfo(diffHunk string) types.Hunk {
-	lines := strings.Split(diffHunk, "\n")
-	return types.Hunk{
-		Header: lines[0],
-		Lines:  lines[1:],
-	}
-}
-
-// TODO: Revisit this method to try getting the correct hunk header
-// in some cases like rebase where the otherLine and otherSpan are
-// not correct because of rebase offset.
-func extractHunkInfo(comment *codeComment) (string, error) {
-	var (
-		oldLine   int
-		oldSpan   int
-		newLine   int
-		newSpan   int
-		otherLine int
-		otherSpan int
-		err       error
-	)
-
-	multiline := comment.OriginalStartLine != nil
-	if comment.StartLine == nil {
-		comment.StartLine = comment.OriginalStartLine
-	}
-	if comment.Line == nil {
-		comment.Line = comment.OriginalLine
-	}
-
-	if multiline {
-		span := *comment.Line - *comment.StartLine + 1
-		otherLine, otherSpan, err = getOtherSideLineAndSpan(comment.DiffHunk, comment.Side == "RIGHT", *comment.OriginalStartLine, span)
-		if err != nil {
-			return "", fmt.Errorf("diff hunk information wrong: %v", err)
-		}
-
-		if comment.Side == "RIGHT" {
-			oldLine = otherLine // missing rebase offset
-			oldSpan = otherSpan
-			newLine = *comment.StartLine
-			newSpan = int(span)
-		} else {
-			oldLine = *comment.StartLine
-			oldSpan = span
-			newLine = otherLine // missing rebase offset
-			newSpan = otherSpan
-		}
-	} else {
-		otherLine, otherSpan, err = getOtherSideLineAndSpan(comment.DiffHunk, comment.Side == "RIGHT", *comment.OriginalLine, 1)
-		if err != nil {
-			return "", fmt.Errorf("diff hunk information wrong: %v", err)
-		}
-
-		if comment.Side == "RIGHT" {
-			oldLine = otherLine
-			oldSpan = otherSpan
-			newLine = *comment.Line // missing rebase offset
-			newSpan = 1
-		} else {
-			oldLine = *comment.Line
-			oldSpan = 1
-			newLine = otherLine // missing rebase offset
-			newSpan = otherSpan
-		}
-	}
-	return common.FormatHunkHeader(int(oldLine), int(oldSpan), int(newLine), int(newSpan), ""), nil
-}
-
-func getOtherSideLineAndSpan(rawHunk string, newSide bool, line, span int) (int, int, error) {
-	var otherLine, otherSpan int
-	var haveOtherLine bool
-
-	err := processHunk(rawHunk, func(oldLine, newLine int, change changeType) {
-		inSelected :=
-			newSide && newLine >= line && newLine < line+span ||
-				!newSide && oldLine >= line && oldLine < line+span
-		otherSide := change == unchanged || change == removed && newSide || change == added && !newSide
-
-		if inSelected {
-			// set the default value for the other side's line number (will be used if the other side's span is 0)
-			if otherLine == 0 {
-				if newSide {
-					otherLine = oldLine
-				} else {
-					otherLine = newLine
-				}
-			}
-			// if the current line belongs to the other side
-			if otherSide {
-				otherSpan++
-				if !haveOtherLine {
-					haveOtherLine = true
-					// set the value for the other side's line number
-					if newSide {
-						otherLine = oldLine
-					} else {
-						otherLine = newLine
-					}
-				}
-			}
-		}
-	})
-	if err != nil {
-		return 0, 0, err
-	}
-
-	return otherLine, otherSpan, nil
-}
-
-func processHunk(rawHunk string, fnLine func(oldLine, newLine int, change changeType)) error {
-	scan := bufio.NewScanner(strings.NewReader(rawHunk))
-	if !scan.Scan() {
-		return errors.New("hunk header missing")
-	}
-	hunkHeader := scan.Text()
-	hunk, ok := parseDiffHunkHeader(hunkHeader)
-	if !ok {
-		return fmt.Errorf("invalid diff hunk header: %s", hunkHeader)
-	}
-
-	oldLine, newLine := hunk.OldLine, hunk.NewLine
-
-	for scan.Scan() {
-		text := scan.Text()
-		if text == "" {
-			return errors.New("empty line in hunk body")
-		}
-
-		change := changeType(text[0])
-		if change != added && change != removed && change != unchanged {
-			return fmt.Errorf("invalid line in hunk body: %s", text)
-		}
-
-		fnLine(oldLine, newLine, change)
-
-		switch change {
-		case added:
-			newLine++
-		case removed:
-			oldLine++
-		case unchanged:
-			oldLine++
-			newLine++
-		}
-	}
-
-	return nil
-}
-
-func parseDiffHunkHeader(line string) (HunkHeader, bool) {
-	groups := regExpHunkHeader.FindStringSubmatch(line)
-	if groups == nil {
-		return HunkHeader{}, false
-	}
-
-	oldLine, _ := strconv.Atoi(groups[1])
-	oldSpan := 1
-	if groups[3] != "" {
-		oldSpan, _ = strconv.Atoi(groups[3])
-	}
-
-	newLine, _ := strconv.Atoi(groups[4])
-	newSpan := 1
-	if groups[6] != "" {
-		newSpan, _ = strconv.Atoi(groups[6])
-	}
-
-	return HunkHeader{
-		OldLine: oldLine,
-		OldSpan: oldSpan,
-		NewLine: newLine,
-		NewSpan: newSpan,
-		Text:    groups[8],
-	}, true
-}
-
-func convertBranchRulesList(from *branchProtectionRulesResponse, repo string, l gitexporter.Logger) []*types.BranchRule {
-	to := []*types.BranchRule{}
+func (e *Export) convertBranchRulesList(from *branchProtectionRulesResponse, repo string) []*types.BranchRule {
+	var to []*types.BranchRule
 	for _, edge := range from.Data.Repository.BranchProtectionRules.Edges {
-		to = append(to, convertBranchRule(edge.Node, repo, l)...)
+		to = append(to, e.convertBranchRule(edge.Node, repo)...)
 	}
 	return to
 }
 
-func convertBranchRulesetsList(from []*ruleSet) []*types.BranchRule {
-	to := []*types.BranchRule{}
+func (e *Export) convertBranchRuleSetsList(from []*ruleSet) []*types.BranchRule {
+	var to []*types.BranchRule
 	for _, rule := range from {
 		if rule.Target == "branch" {
 			to = append(to, &types.BranchRule{ID: rule.ID})
@@ -280,10 +47,10 @@ func convertBranchRulesetsList(from []*ruleSet) []*types.BranchRule {
 	return to
 }
 
-func convertBranchRule(from branchProtectionRule, repo string, l gitexporter.Logger) []*types.BranchRule {
+func (e *Export) convertBranchRule(from branchProtectionRule, repo string) []*types.BranchRule {
 	var logs []string
 	var warningMsg string
-	rules := []*types.BranchRule{}
+	var rules []*types.BranchRule
 	// randomize is set as true as rulesets might have same pattern
 	ruleName, err := patternNameToIdentifier(from.Pattern, true)
 	if err != nil {
@@ -318,7 +85,7 @@ func convertBranchRule(from branchProtectionRule, repo string, l gitexporter.Log
 			}
 		}
 		if actorNotUser {
-			warningMsg = fmt.Sprintf("[%s] Skipped adding teams and apps to bypass list for pattern %q of repo %q as we do not support it as of now. \n",
+			warningMsg = fmt.Sprintf("[%s] Skipped adding teams and apps to bypass list for pattern %q of repo %q as we do not support it as of now.",
 				enum.LogLevelWarning, from.Pattern, repo)
 			logs = append(logs, warningMsg)
 		}
@@ -363,7 +130,7 @@ func convertBranchRule(from branchProtectionRule, repo string, l gitexporter.Log
 		logs = append(logs, warningMsg)
 	}
 	if from.RequiresStatusChecks {
-		warningMsg = fmt.Sprintf("[%s] Skipped adding status checks. Create the status checks' pipelines as in branch rule %q for repo %q and reconfigure the branch rule. \n",
+		warningMsg = fmt.Sprintf("[%s] Skipped adding status checks. Create the status checks' pipelines as in branch rule %q for repo %q and reconfigure the branch rule.",
 			enum.LogLevelWarning, from.Pattern, repo)
 		logs = append(logs, warningMsg)
 	}
@@ -389,8 +156,8 @@ func convertBranchRule(from branchProtectionRule, repo string, l gitexporter.Log
 			}
 		}
 		if actorNotUser {
-			warningMsg = fmt.Sprintf("[%s] Skipped adding teams and apps to bypass list for branch rule with pattern %q of repo %q as we do not support it as of now. \n",
-				enum.LogLevelWarning, from.Pattern, repo)
+			warningMsg = fmt.Sprintf("[%s] Skipped adding teams and apps to bypass list for branch rule with"+
+				" pattern %q of repo %q as we do not support it as of now.", enum.LogLevelWarning, from.Pattern, repo)
 			logs = append(logs, warningMsg)
 		}
 		rules = append(rules, r)
@@ -401,21 +168,25 @@ func convertBranchRule(from branchProtectionRule, repo string, l gitexporter.Log
 	}
 
 	rules = append(rules, rule)
-	if err := l.Log(strings.Join(logs, "")); err != nil {
-		log.Default().Printf("failed to log the not supported branch rules for repo %q: %v", repo, err)
-		return rules
+	for _, l := range logs {
+		if err := e.fileLogger.Log(l); err != nil {
+			log.Default().Printf("failed to log the not supported branch rules for repo %q: %v", repo, err)
+			return rules
+		}
 	}
+	e.report[repo].ReportErrors(gitexporter.ReportTypeBranchRules, from.ID, logs)
+
 	return rules
 }
 
-func convertBranchRuleset(from *detailedRuleSet, repo string, l gitexporter.Logger) *types.BranchRule {
+func (e *Export) convertBranchRuleset(from *detailedRuleSet, repo string) *types.BranchRule {
 	includedPatterns, includeDefault := mapPatterns(from.Conditions.RefName.Include)
 	excludedPatterns, _ := mapPatterns(from.Conditions.RefName.Exclude)
 	return &types.BranchRule{
 		ID:         from.ID,
 		Name:       from.Name,
 		State:      mapRuleEnforcement(from.Enforcement),
-		Definition: mapRuleDefinition(from, repo, l),
+		Definition: e.mapRuleDefinition(from, repo),
 		Pattern: types.Pattern{
 			IncludeDefault:   includeDefault,
 			IncludedPatterns: includedPatterns,
@@ -441,7 +212,7 @@ func mapRuleEnforcement(enforcement string) enum.RuleState {
 
 func mapPatterns(branches []string) ([]string, bool) {
 	includeDefault := false
-	res := []string{}
+	var res []string
 	for _, b := range branches {
 		switch b {
 		case "~DEFAULT_BRANCH":
@@ -456,7 +227,7 @@ func mapPatterns(branches []string) ([]string, bool) {
 	return res, includeDefault
 }
 
-func mapRuleDefinition(from *detailedRuleSet, repo string, l gitexporter.Logger) types.Definition {
+func (e *Export) mapRuleDefinition(from *detailedRuleSet, repo string) types.Definition {
 	definition := types.Definition{}
 	var logs []string
 	var warningMsg string
@@ -482,27 +253,33 @@ func mapRuleDefinition(from *detailedRuleSet, repo string, l gitexporter.Logger)
 			definition.RequireResolveAll = parameters.RequiredReviewThreadResolution
 			definition.RequireLatestCommit = parameters.DismissStaleReviewsOnPush
 		case "required_status_checks":
-			warningMsg = fmt.Sprintf("[%s] Skipped adding status checks. Create the status checks' pipelines as in branch rule %q for repo %q and reconfigure the branch rule. \n",
+			warningMsg = fmt.Sprintf("[%s] Skipped adding status checks. Create the status checks' "+
+				"pipelines as in branch rule %q for repo %q and reconfigure the branch rule.",
 				enum.LogLevelWarning, from.Name, repo)
 			logs = append(logs, warningMsg)
+
 		case "non_fast_forward":
 			definition.UpdateForbidden = true
 		default:
-			warningMsg = fmt.Sprintf("[%s] Skipped mapping rule type %q for branch rule %q of repo %q as we do not support it as of now. \n",
-				enum.LogLevelWarning, r.Type, from.Name, repo)
+			warningMsg = fmt.Sprintf("[%s] Skipped mapping rule type %q for branch rule %q of repo %q as we "+
+				"do not support it as of now.", enum.LogLevelWarning, r.Type, from.Name, repo)
 			logs = append(logs, warningMsg)
 		}
 	}
 	if len(from.BypassActors) != 0 {
-		msg := fmt.Sprintf("[%s] Couldn't map bypass list for branch rule %q of repo %q. Need to reconfigure the bypass list for the branch rule. \n",
-			enum.LogLevelWarning, from.Name, repo)
-		logs = append(logs, msg)
+		warningMsg = fmt.Sprintf("[%s] Couldn't map bypass list for branch rule %q of repo %q. Need to reconfigure "+
+			"the bypass list for the branch rule.", enum.LogLevelWarning, from.Name, repo)
+		logs = append(logs, warningMsg)
 	}
 
-	if err := l.Log(strings.Join(logs, "")); err != nil {
-		log.Default().Printf("failed to log the not supported branch rules for repo %q: %v", repo, err)
-		return definition
+	for _, l := range logs {
+		if err := e.fileLogger.Log(l); err != nil {
+			log.Default().Printf("failed to log the bypass actors for repo %q: %v", repo, err)
+			return definition
+		}
 	}
+	e.report[repo].ReportErrors(gitexporter.ReportTypeBranchRules, from.Name, logs)
+
 	return definition
 }
 
@@ -515,7 +292,7 @@ func extractPullRequestParameters(params map[string]interface{}) pullRequestPara
 
 	var parameters pullRequestParameters
 	if err := json.Unmarshal(jsonData, &parameters); err != nil {
-		log.Default().Printf("failed to unmarshal branch rul pull request parameters: %v", err)
+		log.Default().Printf("failed to unmarshal branch rule pull request parameters: %v", err)
 		return pullRequestParameters{}
 	}
 

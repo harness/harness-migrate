@@ -46,7 +46,7 @@ func (e *Export) ListPullRequestComments(
 	}
 
 	for {
-		comments, res, err := e.stash.ListPRComments(ctx, repoSlug, prNumber, opts)
+		comments, res, err := e.ListPRComments(ctx, repoSlug, prNumber, opts)
 		if err != nil {
 			e.tracer.LogError(common.ErrCommentsList, repoSlug, prNumber, err)
 			return nil, fmt.Errorf(common.ErrCommentsList, repoSlug, prNumber, err)

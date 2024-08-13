@@ -14,10 +14,10 @@ func (e *Export) ListBranchRules(
 	opts types.ListOptions,
 ) ([]*types.BranchRule, error) {
 	e.tracer.Start(common.MsgStartExportBranchRules, repoSlug)
-	allRules := []*types.BranchRule{}
+	var allRules []*types.BranchRule
 
 	for {
-		rules, res, err := e.stash.ListBranchRules(ctx, repoSlug, e.fileLogger, opts)
+		rules, res, err := e.ListBranchRulesInternal(ctx, repoSlug, opts)
 		if err != nil {
 			e.tracer.LogError(common.ErrListBranchRules, repoSlug, err)
 			e.tracer.Stop(common.MsgFailedExportBranchRules, repoSlug)

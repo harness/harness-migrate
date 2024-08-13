@@ -8,6 +8,7 @@ import (
 
 	"github.com/harness/harness-migrate/internal/checkpoint"
 	"github.com/harness/harness-migrate/internal/gitexporter"
+	"github.com/harness/harness-migrate/internal/report"
 	"github.com/harness/harness-migrate/internal/tracer"
 	"github.com/harness/harness-migrate/internal/types"
 
@@ -15,14 +16,8 @@ import (
 )
 
 type (
-	// wrapper wraps the Client to provide high level helper functions
-	// for making http requests and unmarshalling the response.
-	wrapper struct {
-		*scm.Client
-	}
-
 	Export struct {
-		stash      *wrapper
+		stash      *scm.Client
 		project    string
 		repository string
 
@@ -30,6 +25,7 @@ type (
 
 		tracer     tracer.Tracer
 		fileLogger gitexporter.Logger
+		report     map[string]*report.Report
 	}
 )
 
@@ -40,18 +36,20 @@ func New(
 	checkpointer *checkpoint.CheckpointManager,
 	logger *gitexporter.FileLogger,
 	tracer tracer.Tracer,
+	reporter map[string]*report.Report,
 ) *Export {
 	return &Export{
-		stash:             &wrapper{client},
+		stash:             client,
 		project:           project,
 		repository:        repo,
 		checkpointManager: checkpointer,
 		tracer:            tracer,
 		fileLogger:        logger,
+		report:            reporter,
 	}
 }
 
-func (c *wrapper) ListPRComments(
+func (e *Export) ListPRComments(
 	ctx context.Context,
 	repoSlug string,
 	prNumber int,
@@ -61,7 +59,7 @@ func (c *wrapper) ListPRComments(
 	path := fmt.Sprintf("rest/api/1.0/projects/%s/repos/%s/pull-requests/%d/activities?%s",
 		namespace, name, prNumber, encodeListOptions(opts))
 	out := new(activities)
-	res, err := c.do(ctx, "GET", path, out)
+	res, err := e.do(ctx, "GET", path, out)
 	if !out.pagination.LastPage {
 		res.Page.First = 1
 		res.Page.Next = opts.Page + 1
@@ -69,37 +67,36 @@ func (c *wrapper) ListPRComments(
 	return convertPullRequestCommentsList(out.Values), res, err
 }
 
-func (c *wrapper) ListBranchRules(
+func (e *Export) ListBranchRulesInternal(
 	ctx context.Context,
 	repoSlug string,
-	l gitexporter.Logger,
 	opts types.ListOptions,
 ) ([]*types.BranchRule, *scm.Response, error) {
 	namespace, name := scm.Split(repoSlug)
-	branchModels, _, _ := c.listBranchModels(ctx, namespace, name)
+	branchModels, _, _ := e.listBranchModels(ctx, namespace, name)
 	path := fmt.Sprintf("rest/branch-permissions/2.0/projects/%s/repos/%s/restrictions?%s",
 		namespace, name, encodeListOptions(opts))
 	out := new(branchPermissions)
-	res, err := c.do(ctx, "GET", path, out)
+	res, err := e.do(ctx, "GET", path, out)
 	if !out.pagination.LastPage {
 		res.Page.First = 1
 		res.Page.Next = opts.Page + 1
 	}
-	return convertBranchRulesList(out.Values, branchModels, repoSlug, l), res, err
+	return e.convertBranchRulesList(out.Values, branchModels, repoSlug), res, err
 }
 
-func (c *wrapper) listBranchModels(
+func (e *Export) listBranchModels(
 	ctx context.Context,
 	namespace string,
 	repoName string,
 ) (map[string]modelValue, *scm.Response, error) {
 	path := fmt.Sprintf("rest/branch-utils/1.0/projects/%s/repos/%s/branchmodel/configuration", namespace, repoName)
 	out := new(branchModels)
-	res, err := c.do(ctx, "GET", path, out)
+	res, err := e.do(ctx, "GET", path, out)
 	return convertBranchModelsMap(*out), res, err
 }
 
-func (c *wrapper) do(ctx context.Context, method, path string, out any) (*scm.Response, error) {
+func (e *Export) do(ctx context.Context, method, path string, out any) (*scm.Response, error) {
 	req := &scm.Request{
 		Method: method,
 		Path:   path,
@@ -110,7 +107,7 @@ func (c *wrapper) do(ctx context.Context, method, path string, out any) (*scm.Re
 	}
 
 	// execute the http request
-	res, err := c.Client.Do(ctx, req)
+	res, err := e.stash.Do(ctx, req)
 	if err != nil {
 		return nil, err
 	}

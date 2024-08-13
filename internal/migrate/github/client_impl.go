@@ -1,3 +1,17 @@
+// Copyright 2023 Harness, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package github
 
 import (
@@ -10,6 +24,7 @@ import (
 	"github.com/harness/harness-migrate/internal/checkpoint"
 	"github.com/harness/harness-migrate/internal/common"
 	"github.com/harness/harness-migrate/internal/gitexporter"
+	"github.com/harness/harness-migrate/internal/report"
 	"github.com/harness/harness-migrate/internal/tracer"
 	"github.com/harness/harness-migrate/internal/types"
 
@@ -19,14 +34,8 @@ import (
 const graphqlUrl = "https://api.github.com/graphql"
 
 type (
-	// wrapper wraps the Client to provide high level helper functions
-	// for making http requests and unmarshalling the response.
-	wrapper struct {
-		*scm.Client
-	}
-
 	Export struct {
-		github     *wrapper
+		github     *scm.Client
 		org        string
 		repository string
 
@@ -34,6 +43,7 @@ type (
 
 		tracer     tracer.Tracer
 		fileLogger *gitexporter.FileLogger
+		report     map[string]*report.Report
 
 		userMap map[string]types.User
 	}
@@ -43,32 +53,31 @@ type (
 	}
 )
 
-func (c *wrapper) ListPRComments(
+func (e *Export) ListPRComments(
 	ctx context.Context,
 	repoSlug string,
 	prNumber int,
 	opts types.ListOptions,
 ) ([]*types.PRComment, *scm.Response, error) {
 	path := fmt.Sprintf("repos/%s/pulls/%d/comments?%s", repoSlug, prNumber, encodeListOptions(opts))
-	out := []*codeComment{}
-	res, err := c.do(ctx, "GET", path, nil, &out)
+	var out []*codeComment
+	res, err := e.do(ctx, "GET", path, nil, &out)
 	return convertPRCommentsList(out, repoSlug, prNumber), res, err
 }
 
-func (c *wrapper) GetUserByUserName(
+func (e *Export) GetUserByUserName(
 	ctx context.Context,
 	userName string,
 ) (*types.User, *scm.Response, error) {
 	path := fmt.Sprintf("users/%s", userName)
 	out := &types.User{}
-	res, err := c.do(ctx, "GET", path, nil, &out)
+	res, err := e.do(ctx, "GET", path, nil, &out)
 	return out, res, err
 }
 
-func (c *wrapper) ListBranchRules(
+func (e *Export) ListBranchRulesInternal(
 	ctx context.Context,
 	repoSlug string,
-	logger gitexporter.Logger,
 	opts types.ListOptions,
 ) ([]*types.BranchRule, *scm.Response, error) {
 	owner, name := scm.Split(repoSlug)
@@ -154,37 +163,36 @@ func (c *wrapper) ListBranchRules(
 		Query: query,
 	}
 	out := new(branchProtectionRulesResponse)
-	res, err := c.do(ctx, "POST", graphqlUrl, body, &out)
+	res, err := e.do(ctx, "POST", graphqlUrl, body, &out)
 	if out.Data.Repository.BranchProtectionRules.PageInfo.HasNextPage {
 		res.Page.NextURL = out.Data.Repository.BranchProtectionRules.PageInfo.EndCursor
 	}
-	return convertBranchRulesList(out, repoSlug, logger), res, err
+	return e.convertBranchRulesList(out, repoSlug), res, err
 }
 
-func (c *wrapper) ListBranchRulesets(
+func (e *Export) ListBranchRuleSets(
 	ctx context.Context,
 	repoSlug string,
 	opts types.ListOptions,
 ) ([]*types.BranchRule, *scm.Response, error) {
 	path := fmt.Sprintf("repos/%s/rulesets?%s", repoSlug, encodeListOptions(opts))
-	out := []*ruleSet{}
-	res, err := c.do(ctx, "GET", path, nil, &out)
-	return convertBranchRulesetsList(out), res, err
+	var out []*ruleSet
+	res, err := e.do(ctx, "GET", path, nil, &out)
+	return e.convertBranchRuleSetsList(out), res, err
 }
 
-func (c *wrapper) FindBranchRuleset(
+func (e *Export) FindBranchRuleset(
 	ctx context.Context,
 	repoSlug string,
-	logger gitexporter.Logger,
 	ruleID int,
 ) (*types.BranchRule, *scm.Response, error) {
 	path := fmt.Sprintf("repos/%s/rulesets/%d", repoSlug, ruleID)
 	out := new(detailedRuleSet)
-	res, err := c.do(ctx, "GET", path, nil, &out)
-	return convertBranchRuleset(out, repoSlug, logger), res, err
+	res, err := e.do(ctx, "GET", path, nil, &out)
+	return e.convertBranchRuleset(out, repoSlug), res, err
 }
 
-func (c *wrapper) do(ctx context.Context, method, path string, in, out interface{}) (*scm.Response, error) {
+func (e *Export) do(ctx context.Context, method, path string, in, out interface{}) (*scm.Response, error) {
 	req := &scm.Request{
 		Method: method,
 		Path:   path,
@@ -201,7 +209,7 @@ func (c *wrapper) do(ctx context.Context, method, path string, in, out interface
 	}
 
 	// execute the http request
-	res, err := c.Client.Do(ctx, req)
+	res, err := e.github.Do(ctx, req)
 	if err != nil {
 		return nil, err
 	}
@@ -222,7 +230,7 @@ func (c *wrapper) do(ctx context.Context, method, path string, in, out interface
 	)
 
 	// snapshot the request rate limit
-	c.Client.SetRate(res.Rate)
+	e.github.SetRate(res.Rate)
 
 	// if an error is encountered, unmarshal and return the
 	// error response.

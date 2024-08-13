@@ -24,6 +24,7 @@ import (
 	"github.com/harness/harness-migrate/internal/checkpoint"
 	"github.com/harness/harness-migrate/internal/gitexporter"
 	"github.com/harness/harness-migrate/internal/migrate/stash"
+	"github.com/harness/harness-migrate/internal/report"
 	"github.com/harness/harness-migrate/internal/tracer"
 
 	"github.com/alecthomas/kingpin/v2"
@@ -93,10 +94,11 @@ func (c *exportCommand) run(*kingpin.ParseContext) error {
 	}
 
 	fileLogger := &gitexporter.FileLogger{Location: c.file}
+	reporter := make(map[string]*report.Report)
 	// extract the data
-	e := stash.New(client, c.project, repository, checkpointManager, fileLogger, tracer_)
+	e := stash.New(client, c.project, repository, checkpointManager, fileLogger, tracer_, reporter)
 
-	exporter := gitexporter.NewExporter(e, c.file, c.user, c.token, tracer_)
+	exporter := gitexporter.NewExporter(e, c.file, c.user, c.token, tracer_, reporter)
 	return exporter.Export(ctx)
 }
 

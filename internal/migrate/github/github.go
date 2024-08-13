@@ -21,6 +21,7 @@ import (
 
 	"github.com/harness/harness-migrate/internal/checkpoint"
 	"github.com/harness/harness-migrate/internal/gitexporter"
+	"github.com/harness/harness-migrate/internal/report"
 	"github.com/harness/harness-migrate/internal/tracer"
 	"github.com/harness/harness-migrate/internal/types"
 
@@ -34,6 +35,7 @@ func New(
 	checkpointer *checkpoint.CheckpointManager,
 	logger *gitexporter.FileLogger,
 	tracer tracer.Tracer,
+	report map[string]*report.Report,
 ) *Export {
 	ckpt := make(map[string]types.User)
 	c, ok, err := checkpoint.GetCheckpointData[map[string]types.User](checkpointer, CheckpointKeyUsers)
@@ -44,13 +46,14 @@ func New(
 		ckpt = c
 	}
 	return &Export{
-		github:            &wrapper{client},
+		github:            client,
 		org:               org,
 		repository:        repo,
 		checkpointManager: checkpointer,
 		tracer:            tracer,
 		userMap:           ckpt,
 		fileLogger:        logger,
+		report:            report,
 	}
 }
 

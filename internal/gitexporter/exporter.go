@@ -22,10 +22,12 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/harness/harness-migrate/internal/checkpoint"
 	"github.com/harness/harness-migrate/internal/codeerror"
 	"github.com/harness/harness-migrate/internal/common"
+	"github.com/harness/harness-migrate/internal/report"
 	"github.com/harness/harness-migrate/internal/tracer"
 	"github.com/harness/harness-migrate/internal/types"
 	"github.com/harness/harness-migrate/internal/util"
@@ -34,10 +36,11 @@ import (
 )
 
 const (
-	maxChunkSize   = 25 * 1024 * 1024 // 25 MB
-	prFileName     = "pr%d.json"
-	zipFileName    = "harness.zip"
-	maxParallelism = 20 // TODO: make this configurable by the user
+	maxChunkSize       = 25 * 1024 * 1024 // 25 MB
+	prFileName         = "pr%d.json"
+	zipFileName        = "harness.zip"
+	maxParallelism     = 20 // TODO: make this configurable by the user
+	UnknownEmailSuffix = "@unknownemail.harness.io"
 )
 
 type Exporter struct {
@@ -47,6 +50,7 @@ type Exporter struct {
 	ScmToken    string
 
 	Tracer tracer.Tracer
+	Report map[string]*report.Report
 }
 
 func NewExporter(
@@ -55,6 +59,7 @@ func NewExporter(
 	scmLogin string,
 	scmToken string,
 	tracer tracer.Tracer,
+	report map[string]*report.Report,
 ) Exporter {
 	return Exporter{
 		exporter:    exporter,
@@ -62,6 +67,7 @@ func NewExporter(
 		ScmLogin:    scmLogin,
 		ScmToken:    scmToken,
 		Tracer:      tracer,
+		Report:      report,
 	}
 }
 
@@ -86,7 +92,8 @@ func (e *Exporter) Export(ctx context.Context) error {
 		if err != nil {
 			return fmt.Errorf(common.ErrWritingFileData, err)
 		}
-		extractUsers(repo, users)
+		usersForRepo := extractUsers(repo, users)
+		e.reportUserMetrics(repo.Repository.RepoSlug, usersForRepo)
 	}
 
 	err = e.writeUsersJson(users)
@@ -116,6 +123,7 @@ func (e *Exporter) Export(ctx context.Context) error {
 		log.Printf("error cleaning up files: %v", err)
 	}
 
+	publishReport(e.Report)
 	return nil
 }
 
@@ -240,6 +248,7 @@ func (e *Exporter) getData(ctx context.Context, path string) ([]*types.RepoData,
 	for _, repository := range repositories {
 		data := &types.RepoData{Repository: repository}
 		repoData = append(repoData, data)
+		e.Report[repository.RepoSlug] = report.Init(repository.RepoSlug)
 	}
 
 	// 2. list pr per repo
@@ -264,6 +273,7 @@ func (e *Exporter) getData(ctx context.Context, path string) ([]*types.RepoData,
 			log.Default().Printf("encountered error in getting webhooks: %v", err)
 		}
 		repoData[i].Webhooks = webhooks
+		e.Report[repo.RepoSlug].ReportMetric(ReportTypeWebhooks, len(webhooks.ConvertedHooks))
 
 		// 4. get all branch rules for each repo
 		branchRules, err := e.exporter.ListBranchRules(ctx, repo.RepoSlug, types.ListOptions{Page: 1, Size: 25})
@@ -271,6 +281,7 @@ func (e *Exporter) getData(ctx context.Context, path string) ([]*types.RepoData,
 			return nil, fmt.Errorf("encountered error in getting branch rules: %w", err)
 		}
 		repoData[i].BranchRules = branchRules
+		e.Report[repo.RepoSlug].ReportMetric(ReportTypeBranchRules, len(branchRules))
 
 		// 5. get all data for each pr
 		prs, err := e.exporter.ListPullRequests(ctx, repo.RepoSlug,
@@ -281,6 +292,7 @@ func (e *Exporter) getData(ctx context.Context, path string) ([]*types.RepoData,
 		if err != nil {
 			return nil, fmt.Errorf("encountered error in getting pr: %w", err)
 		}
+		e.Report[repo.RepoSlug].ReportMetric(ReportTypePRs, len(prs))
 
 		prData, err := e.exportCommentsForPRs(ctx, prs, repo)
 		if err != nil {
@@ -363,28 +375,42 @@ func (e *Exporter) startResultChannel(
 	return g
 }
 
-func extractUsers(repo *types.RepoData, users map[string]bool) {
-	if repo.PullRequestData == nil {
-		return
+func (e *Exporter) reportUserMetrics(repo string, users map[string]bool) {
+	unknownEmailsCount := 0
+	for user := range users {
+		if strings.HasSuffix(user, UnknownEmailSuffix) {
+			e.Report[repo].ReportError(ReportTypeUsers, user, "User mapped to new email")
+			unknownEmailsCount++
+		}
 	}
+	e.Report[repo].ReportMetric(ReportTypeUsers, len(users)-unknownEmailsCount)
+}
+
+func extractUsers(repo *types.RepoData, users map[string]bool) map[string]bool {
+	repoUsers := make(map[string]bool)
 
 	for _, prData := range repo.PullRequestData {
 		users[prData.PullRequest.PullRequest.Author.Email] = true
+		repoUsers[prData.PullRequest.PullRequest.Author.Email] = true
 		for _, comment := range prData.Comments {
 			if comment.Author.Email != "" {
 				users[comment.Author.Email] = true
+				repoUsers[comment.Author.Email] = true
 			}
 		}
 		if prData.PullRequest.Author.Email != "" {
 			users[prData.PullRequest.Author.Email] = true
+			repoUsers[prData.PullRequest.Author.Email] = true
 		}
 	}
 
 	for _, rule := range repo.BranchRules {
 		for _, email := range rule.Definition.Bypass.UserEmails {
 			users[email] = true
+			repoUsers[email] = true
 		}
 	}
+	return repoUsers
 }
 
 // Calculate the size of the struct in bytes

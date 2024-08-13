@@ -18,11 +18,11 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/harness/harness-migrate/internal/gitexporter"
 	"github.com/harness/harness-migrate/internal/types"
 )
 
 const (
-	unknownEmailSuffix = "@unknownemail.harness.io"
 	unknownUserId      = -1
 	CheckpointKeyUsers = "users"
 )
@@ -33,7 +33,7 @@ func (e *Export) FindEmailByUsername(ctx context.Context, username string) (stri
 		return user.Email, nil
 	}
 
-	u, _, err := e.github.GetUserByUserName(ctx, username)
+	u, _, err := e.GetUserByUserName(ctx, username)
 	if err != nil {
 		return "", err
 	}
@@ -65,5 +65,5 @@ func (e *Export) FindEmailByUsername(ctx context.Context, username string) (stri
 }
 
 func getDefaultEmail(username string) string {
-	return username + unknownEmailSuffix
+	return username + gitexporter.UnknownEmailSuffix
 }

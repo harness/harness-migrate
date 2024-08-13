@@ -23,6 +23,7 @@ import (
 	"github.com/harness/harness-migrate/internal/checkpoint"
 	"github.com/harness/harness-migrate/internal/gitexporter"
 	"github.com/harness/harness-migrate/internal/migrate/github"
+	report "github.com/harness/harness-migrate/internal/report"
 	"github.com/harness/harness-migrate/internal/tracer"
 
 	"github.com/alecthomas/kingpin/v2"
@@ -98,9 +99,11 @@ func (c *exportCommand) run(*kingpin.ParseContext) error {
 	}
 
 	fileLogger := &gitexporter.FileLogger{Location: c.file}
-	e := github.New(client, c.org, repository, checkpointManager, fileLogger, tracer_)
+	reporter := make(map[string]*report.Report)
 
-	exporter := gitexporter.NewExporter(e, c.file, c.user, c.token, tracer_)
+	e := github.New(client, c.org, repository, checkpointManager, fileLogger, tracer_, reporter)
+
+	exporter := gitexporter.NewExporter(e, c.file, c.user, c.token, tracer_, reporter)
 	return exporter.Export(ctx)
 }
 

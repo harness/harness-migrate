@@ -15,8 +15,8 @@
 package common
 
 const (
-	MsgStartExport               = "Starting export repositorie(s)."
-	MsgCompleteExport            = "Finished export repositorie(s). Total repos: %d"
+	MsgStartExport               = "Starting export repo(s)."
+	MsgCompleteExport            = "Finished export repo(s). Total repos: %d"
 	MsgStartExportPRs            = "Starting export pull requests for repository %s."
 	MsgCompleteExportPRs         = "Finished export %d pull requests for repository %s."
 	MsgCheckpointLoadPr          = "Finished export %d pull requests for repository %s from checkpoint."

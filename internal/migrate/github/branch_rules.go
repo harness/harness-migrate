@@ -14,12 +14,12 @@ func (e *Export) ListBranchRules(
 	opts types.ListOptions,
 ) ([]*types.BranchRule, error) {
 	e.tracer.Start(common.MsgStartExportBranchRules, repoSlug)
-	allRules := []*types.BranchRule{}
-	allRulesets := []*types.BranchRule{}
+	var allRules []*types.BranchRule
+	var allRuleSets []*types.BranchRule
 
 	// classic branch protection rules
 	for {
-		rules, res, err := e.github.ListBranchRules(ctx, repoSlug, e.fileLogger, opts)
+		rules, res, err := e.ListBranchRulesInternal(ctx, repoSlug, opts)
 		if err != nil {
 			e.tracer.LogError(common.ErrListBranchRules, repoSlug, err)
 			e.tracer.Stop(common.MsgFailedExportBranchRules, repoSlug)
@@ -35,21 +35,21 @@ func (e *Export) ListBranchRules(
 
 	// rulesets
 	for {
-		rulesets, _, err := e.github.ListBranchRulesets(ctx, repoSlug, opts)
+		ruleSets, _, err := e.ListBranchRuleSets(ctx, repoSlug, opts)
 		if err != nil {
 			e.tracer.LogError(common.ErrListBranchRulesets, repoSlug, err)
 			e.tracer.Stop(common.MsgFailedExportBranchRules, repoSlug)
 			return nil, fmt.Errorf(common.ErrListBranchRulesets, repoSlug, err)
 		}
-		allRulesets = append(allRulesets, rulesets...)
+		allRuleSets = append(allRuleSets, ruleSets...)
 
-		if len(rulesets) == 0 {
+		if len(ruleSets) == 0 {
 			break
 		}
 		opts.Page += 1
 	}
-	for _, r := range allRulesets {
-		rule, _, err := e.github.FindBranchRuleset(ctx, repoSlug, e.fileLogger, r.ID)
+	for _, r := range allRuleSets {
+		rule, _, err := e.FindBranchRuleset(ctx, repoSlug, r.ID)
 		if err != nil {
 			e.tracer.LogError(common.ErrFetchBranchRuleset, r.ID, repoSlug, err)
 			e.tracer.Stop(common.MsgFailedExportBranchRules, repoSlug)

@@ -50,7 +50,7 @@ type Importer struct {
 
 func NewImporter(baseURL, space, repo, token, location, requestId string, skipUsers, gitness, trace bool, tracer tracer.Tracer) *Importer {
 	spaceParts := strings.Split(space, "/")
-	
+
 	client := harness.New(spaceParts[0], token, harness.WithAddress(baseURL), harness.WithTracing(trace))
 
 	if gitness {
@@ -112,8 +112,10 @@ func (m *Importer) Import(ctx context.Context) error {
 			return fmt.Errorf("failed to update the repo state to %s: %w", enum.RepoStateMigrateDataImport, err)
 		}
 
-		if err := m.importRepoMetaData(ctx, repoRef, f); err != nil {
-			return fmt.Errorf("failed to import repo metadata: %w", err)
+		if !repo.IsEmpty {
+			if err := m.importRepoMetaData(ctx, repoRef, f); err != nil {
+				return fmt.Errorf("failed to import repo metadata: %w", err)
+			}
 		}
 
 		// update the repo state to active
@@ -170,6 +172,10 @@ func (m *Importer) createRepoAndDoPush(ctx context.Context, repoFolder string) (
 	hRepo, err := m.CreateRepo(repo, m.HarnessSpace, m.Tracer)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create repo %q: %w", repo.Slug, err)
+	}
+
+	if repo.IsEmpty {
+		return &repo, nil
 	}
 
 	err = m.Push(ctx, repoFolder, hRepo, m.Tracer)

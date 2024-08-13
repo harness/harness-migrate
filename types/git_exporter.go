@@ -46,6 +46,7 @@ type (
 		Link       string     `json:"link"`
 		Created    time.Time  `json:"created"`
 		Updated    time.Time  `json:"updated"`
+		IsEmpty    bool       `json:"is_empty"`
 	}
 
 	Perm struct {

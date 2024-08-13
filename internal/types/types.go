@@ -74,6 +74,7 @@ type (
 	RepoResponse struct {
 		scm.Repository
 		RepoSlug string
+		IsEmpty  bool
 	}
 
 	ListOptions struct {

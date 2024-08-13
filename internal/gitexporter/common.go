@@ -101,6 +101,7 @@ func mapRepository(repository types.RepoResponse) externalTypes.Repository {
 		Link:       repository.Link,
 		Created:    repository.Created,
 		Updated:    repository.Updated,
+		IsEmpty:    repository.IsEmpty,
 	}
 }
 

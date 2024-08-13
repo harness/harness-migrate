@@ -2,7 +2,9 @@ package stash
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"io"
 	"strings"
 
 	"github.com/harness/harness-migrate/internal/common"
@@ -22,7 +24,8 @@ func (e *Export) ListRepositories(
 	if e.repository != "" {
 		repoSlug := strings.Join([]string{e.project, e.repository}, "/")
 		repo, _, err := e.stash.Repositories.Find(ctx, repoSlug)
-		if err != nil {
+		// stash returns EOF if call find for an empty repo
+		if err != nil && !errors.Is(err, io.EOF) {
 			e.tracer.LogError(common.ErrRepoList, err)
 			return nil, fmt.Errorf("failed to get the repo %s: %w", repoSlug, err)
 		}

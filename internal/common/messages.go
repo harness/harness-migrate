@@ -25,6 +25,7 @@ const (
 	MsgStartGitClone             = "Cloning git repository for %s."
 	MsgRepoAlreadyExists         = "Cloned git repository for %s already exists."
 	MsgCompleteGitClone          = "Finished clone for %s."
+	MsgGitCloneEmptyRepo         = "Empty repo %s, skipping clone and other metadata."
 	MsgStartExportWebhook        = "Starting webhooks export for repository %s."
 	MsgCompleteExportWebhooks    = "Finished export %d webhooks for repository %s."
 	MsgStartExportPrComments     = "Starting export comments for repository %s pull request number %d."

@@ -32,5 +32,4 @@ func (m *Importer) ReadRepoInfo(dir string) (types.Repository, error) {
 	}
 
 	return repoInfo, nil
-
 }

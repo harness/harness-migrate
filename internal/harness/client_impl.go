@@ -356,7 +356,7 @@ func (c *client) ImportRules(repoRef string, in *types.RulesInput) error {
 
 func (c *client) CheckUsers(in *types.CheckUsersInput) (*types.CheckUsersOutput, error) {
 	out := new(types.CheckUsersOutput)
-	uri := fmt.Sprintf("%s/api/v1/principals/check-emails?routingId=%s", c.address, c.account)
+	uri := fmt.Sprintf("%s/api/v1/principals/check-emails?routingId=%s&accountIdentifier=%s", c.address, c.account, c.account)
 
 	if err := c.post(uri, in, out); err != nil {
 		return nil, err

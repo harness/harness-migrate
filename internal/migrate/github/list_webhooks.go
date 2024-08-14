@@ -12,21 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package stash
+package github
 
 import (
 	"context"
 	"fmt"
 
+	"github.com/drone/go-scm/scm"
 	"github.com/harness/harness-migrate/internal/checkpoint"
 	"github.com/harness/harness-migrate/internal/common"
 	"github.com/harness/harness-migrate/internal/migrate"
 	"github.com/harness/harness-migrate/internal/types"
 	"github.com/harness/harness-migrate/internal/types/enum"
-
-	"github.com/drone/go-scm/scm"
 )
 
+// ListWebhooks implements gitexporter.Interface.
 func (e *Export) ListWebhooks(
 	ctx context.Context,
 	repoSlug string,
@@ -34,7 +34,10 @@ func (e *Export) ListWebhooks(
 ) (types.WebhookData, error) {
 	e.tracer.Start(common.MsgStartExportWebhook, repoSlug)
 	var allWebhooks []*scm.Hook
-	opts := scm.ListOptions{Size: 25, Page: 1}
+	opts := scm.ListOptions{
+		Size: options.Size,
+		Page: options.Page,
+	}
 
 	checkpointDataKey := fmt.Sprintf(common.WebhookCheckpointData, repoSlug)
 	val, ok, err := checkpoint.GetCheckpointData[[]*scm.Hook](e.checkpointManager, checkpointDataKey)
@@ -60,23 +63,13 @@ func (e *Export) ListWebhooks(
 	}
 
 	for {
-		webhooks, resp, err := e.stash.Repositories.ListHooks(ctx, repoSlug, opts)
+		webhooks, resp, err := e.github.Repositories.ListHooks(ctx, repoSlug, opts)
 		if err != nil {
 			e.tracer.LogError(common.ErrWebhookList, repoSlug, err)
 			e.tracer.Stop(common.ErrListWebhooks, repoSlug, err)
 			return types.WebhookData{}, err
 		}
 		allWebhooks = append(allWebhooks, webhooks...)
-
-		err = e.checkpointManager.SaveCheckpoint(checkpointDataKey, allWebhooks)
-		if err != nil {
-			e.tracer.LogError(common.ErrCheckpointWebhooksDataSave, repoSlug, err)
-		}
-
-		err = e.checkpointManager.SaveCheckpoint(checkpointPageKey, resp.Page.Next)
-		if err != nil {
-			e.tracer.LogError(common.ErrCheckpointWebhooksPageSave, repoSlug, err)
-		}
 
 		if resp.Page.Next == 0 {
 			break
@@ -114,20 +107,18 @@ func mapEvents(triggers []string) ([]enum.WebhookTrigger, []string) {
 
 	for _, v := range triggers {
 		switch v {
-		case "repo:refs_changed":
-			events = append(events, enum.WebhookTriggerBranchCreated, enum.WebhookTriggerBranchDeleted, enum.WebhookTriggerBranchUpdated, enum.WebhookTriggerTagCreated, enum.WebhookTriggerTagDeleted, enum.WebhookTriggerTagUpdated)
-		case "pr:opened":
-			events = append(events, enum.WebhookTriggerPullReqCreated, enum.WebhookTriggerPullReqReopened)
-		case "pr:merged":
-			events = append(events, enum.WebhookTriggerPullReqMerged)
-		case "pr:modified":
-			events = append(events, enum.WebhookTriggerPullReqUpdated)
-		case "pr:declined":
-			events = append(events, enum.WebhookTriggerPullReqClosed)
-		case "pr:from_ref_updated":
-			events = append(events, enum.WebhookTriggerPullReqBranchUpdated)
-		case "pr:comment:added":
+		case "create":
+			events = append(events, enum.WebhookTriggerBranchCreated, enum.WebhookTriggerTagCreated)
+		case "delete":
+			events = append(events, enum.WebhookTriggerBranchDeleted, enum.WebhookTriggerTagDeleted)
+		case "pull_request":
+			events = append(events, enum.WebhookTriggerPullReqCreated, enum.WebhookTriggerPullReqReopened,
+				enum.WebhookTriggerPullReqClosed, enum.WebhookTriggerPullReqUpdated, enum.WebhookTriggerPullReqMerged)
+		case "pull_request_review_comment", "commit_comment":
 			events = append(events, enum.WebhookTriggerPullReqCommentCreated)
+		case "push":
+			events = append(events, enum.WebhookTriggerPullReqBranchUpdated, enum.WebhookTriggerBranchUpdated,
+				enum.WebhookTriggerTagUpdated)
 		default:
 			notSupportedEvents = append(notSupportedEvents, v)
 		}

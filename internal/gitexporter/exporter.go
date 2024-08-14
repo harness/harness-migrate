@@ -17,7 +17,6 @@ package gitexporter
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -25,7 +24,6 @@ import (
 	"strings"
 
 	"github.com/harness/harness-migrate/internal/checkpoint"
-	"github.com/harness/harness-migrate/internal/codeerror"
 	"github.com/harness/harness-migrate/internal/common"
 	"github.com/harness/harness-migrate/internal/report"
 	"github.com/harness/harness-migrate/internal/tracer"
@@ -237,7 +235,6 @@ func (e *Exporter) writeUsersJson(usersMap map[string]bool) error {
 
 func (e *Exporter) getData(ctx context.Context, path string) ([]*types.RepoData, error) {
 	repoData := make([]*types.RepoData, 0)
-	var notSupportedErr *codeerror.OpNotSupportedError
 
 	// 1. list all the repos for the given org
 	repositories, err := e.exporter.ListRepositories(ctx, types.ListOptions{Page: 1, Size: 25})
@@ -271,11 +268,8 @@ func (e *Exporter) getData(ctx context.Context, path string) ([]*types.RepoData,
 
 		// 3. get all webhooks for each repo
 		webhooks, err := e.exporter.ListWebhooks(ctx, repo.RepoSlug, types.WebhookListOptions{})
-		if errors.As(err, &notSupportedErr) {
-			return repoData, nil
-		}
 		if err != nil {
-			log.Default().Printf("encountered error in getting webhooks: %v", err)
+			return nil, fmt.Errorf("encountered error in getting webhooks: %v", err)
 		}
 		repoData[i].Webhooks = webhooks
 		e.Report[repo.RepoSlug].ReportMetric(ReportTypeWebhooks, len(webhooks.ConvertedHooks))
@@ -291,9 +285,6 @@ func (e *Exporter) getData(ctx context.Context, path string) ([]*types.RepoData,
 		// 5. get all data for each pr
 		prs, err := e.exporter.ListPullRequests(ctx, repo.RepoSlug,
 			types.PullRequestListOptions{Page: 1, Size: 25, Open: true, Closed: true})
-		if errors.As(err, &notSupportedErr) {
-			return repoData, nil
-		}
 		if err != nil {
 			return nil, fmt.Errorf("encountered error in getting pr: %w", err)
 		}

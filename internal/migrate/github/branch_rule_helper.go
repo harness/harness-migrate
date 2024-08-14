@@ -24,9 +24,9 @@ import (
 
 	"github.com/harness/harness-migrate/internal/common"
 	"github.com/harness/harness-migrate/internal/gitexporter"
+	"github.com/harness/harness-migrate/internal/migrate"
 	"github.com/harness/harness-migrate/internal/types"
 	"github.com/harness/harness-migrate/internal/types/enum"
-	gonanoid "github.com/matoous/go-nanoid"
 )
 
 func (e *Export) convertBranchRulesList(from *branchProtectionRulesResponse, repo string) []*types.BranchRule {
@@ -52,13 +52,10 @@ func (e *Export) convertBranchRule(from branchProtectionRule, repo string) []*ty
 	var warningMsg string
 	var rules []*types.BranchRule
 	// randomize is set as true as rulesets might have same pattern
-	ruleName, err := patternNameToIdentifier(from.Pattern, true)
-	if err != nil {
-		log.Default().Printf("failed to name pattern %q to identifier: %v", from.Pattern, err)
-	}
+
 	rule := &types.BranchRule{
 		ID:    from.DatabaseID,
-		Name:  ruleName,
+		Name:  migrate.DisplayNameToIdentifier(from.Pattern, "rule", from.ID),
 		State: enum.RuleStateActive,
 		Pattern: types.Pattern{
 			IncludedPatterns: []string{from.Pattern},
@@ -137,7 +134,7 @@ func (e *Export) convertBranchRule(from branchProtectionRule, repo string) []*ty
 	if from.RestrictsPushes {
 		r := &types.BranchRule{
 			ID:    from.DatabaseID,
-			Name:  ruleName + "_restricts_pushes",
+			Name:  migrate.DisplayNameToIdentifier(from.Pattern, "rule", from.ID),
 			State: enum.RuleStateActive,
 			Pattern: types.Pattern{
 				IncludedPatterns: []string{from.Pattern},
@@ -184,7 +181,7 @@ func (e *Export) convertBranchRuleset(from *detailedRuleSet, repo string) *types
 	excludedPatterns, _ := mapPatterns(from.Conditions.RefName.Exclude)
 	return &types.BranchRule{
 		ID:         from.ID,
-		Name:       from.Name,
+		Name:       migrate.DisplayNameToIdentifier(from.Name, "ruleset", strconv.Itoa(from.ID)),
 		State:      mapRuleEnforcement(from.Enforcement),
 		Definition: e.mapRuleDefinition(from, repo),
 		Pattern: types.Pattern{
@@ -310,94 +307,4 @@ func encodeListOptions(opts types.ListOptions) string {
 	}
 	params.Set("per_page", strconv.Itoa(limit))
 	return params.Encode()
-}
-
-func patternNameToIdentifier(displayName string, randomize bool) (string, error) {
-	const placeholder = '_'
-	const specialChars = ".-_"
-	// remove / replace any illegal characters
-	// Identifier Regex: ^[a-zA-Z0-9-_.]*$
-	identifier := strings.Map(func(r rune) rune {
-		switch {
-		// drop any control characters or empty characters
-		case r < 32 || r == 127:
-			return -1
-
-		// keep all allowed character
-		case ('a' <= r && r <= 'z') ||
-			('A' <= r && r <= 'Z') ||
-			('0' <= r && r <= '9') ||
-			strings.ContainsRune(specialChars, r):
-			return r
-
-		// everything else is replaced with the placeholder
-		default:
-			return placeholder
-		}
-	}, displayName)
-
-	// remove any leading/trailing special characters
-	identifier = strings.Trim(identifier, specialChars)
-
-	// ensure string doesn't start with numbers (leading '_' is valid)
-	if len(identifier) > 0 && identifier[0] >= '0' && identifier[0] <= '9' {
-		identifier = string(placeholder) + identifier
-	}
-
-	// remove consecutive special characters
-	identifier = sanitizeConsecutiveChars(identifier, specialChars)
-
-	// ensure length restrictions
-	if len(identifier) > maxIdentifierLength {
-		identifier = identifier[0:maxIdentifierLength]
-	}
-
-	// backfill randomized identifier if sanitization ends up with empty identifier
-	if len(identifier) == 0 {
-		identifier = "rule"
-		randomize = true
-	}
-
-	if randomize {
-		return randomizeIdentifier(identifier)
-	}
-
-	return identifier, nil
-}
-
-func sanitizeConsecutiveChars(in string, charSet string) string {
-	if len(in) == 0 {
-		return ""
-	}
-
-	inSet := func(b byte) bool {
-		return strings.ContainsRune(charSet, rune(b))
-	}
-
-	out := strings.Builder{}
-	out.WriteByte(in[0])
-	for i := 1; i < len(in); i++ {
-		if inSet(in[i]) && inSet(in[i-1]) {
-			continue
-		}
-		out.WriteByte(in[i])
-	}
-
-	return out.String()
-}
-
-func randomizeIdentifier(identifier string) (string, error) {
-	const alphabet = "abcdefghijklmnopqrstuvwxyz0123456789"
-	const length = 4
-	const maxLength = maxIdentifierLength - length - 1 // max length of identifier to fit random suffix
-
-	if len(identifier) > maxLength {
-		identifier = identifier[0:maxLength]
-	}
-	suffix, err := gonanoid.Generate(alphabet, length)
-	if err != nil {
-		return "", fmt.Errorf("failed to generate gonanoid: %w", err)
-	}
-
-	return identifier + "_" + suffix, nil
 }

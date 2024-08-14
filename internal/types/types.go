@@ -69,6 +69,8 @@ type (
 	}
 
 	WebhookListOptions struct {
+		Page int
+		Size int
 	}
 
 	RepoResponse struct {

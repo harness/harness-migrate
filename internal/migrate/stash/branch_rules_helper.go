@@ -23,6 +23,7 @@ import (
 
 	"github.com/harness/harness-migrate/internal/common"
 	"github.com/harness/harness-migrate/internal/gitexporter"
+	"github.com/harness/harness-migrate/internal/migrate"
 	"github.com/harness/harness-migrate/internal/types"
 	"github.com/harness/harness-migrate/internal/types/enum"
 )
@@ -90,11 +91,8 @@ func (e *Export) convertBranchRule(
 	e.report[repoSlug].ReportErrors(gitexporter.ReportTypeBranchRules, strconv.Itoa(from.ID), logs)
 
 	return &types.BranchRule{
-		ID: from.ID,
-		Name: strings.Join([]string{
-			from.Matcher.DisplayID,
-			strconv.Itoa(from.ID),
-		}, "-"),
+		ID:         from.ID,
+		Name:       migrate.DisplayNameToIdentifier(from.Matcher.DisplayID, "rule", strconv.Itoa(from.ID)),
 		State:      enum.RuleStateActive,
 		Definition: mapRuleDefinition(from.Type, from.Users),
 		Pattern: types.Pattern{

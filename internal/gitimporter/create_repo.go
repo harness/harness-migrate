@@ -11,7 +11,7 @@ import (
 )
 
 func (m *Importer) CreateRepo(
-	repo types.Repository,
+	repo *types.Repository,
 	targetSpace string,
 	tracer tracer.Tracer,
 ) (*harness.Repository, error) {

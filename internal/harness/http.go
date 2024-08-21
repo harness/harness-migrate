@@ -17,6 +17,7 @@ package harness
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -25,6 +26,13 @@ import (
 	"net/url"
 	"os"
 	"strconv"
+)
+
+var (
+	ErrDuplicate    = errors.New("Resource already exists")
+	ErrNotFound     = errors.New("Resource not found")
+	ErrUnauthorized = errors.New("Unauthorized")
+	ErrForbidden    = errors.New("Forbidden")
 )
 
 // helper function to make an http request
@@ -89,7 +97,20 @@ func Open(rawurl, method string, setAuth func(h *http.Header), in, out interface
 		os.Stdout.Write(dump)
 	}
 
-	if resp.StatusCode > 299 {
+	if resp.StatusCode < 299 {
+		return resp.Body, nil
+	}
+
+	switch resp.StatusCode {
+	case 401:
+		return nil, ErrUnauthorized
+	case 403:
+		return nil, ErrForbidden
+	case 404:
+		return nil, ErrNotFound
+	case 409:
+		return nil, ErrDuplicate
+	default:
 		defer resp.Body.Close()
 		out, _ := ioutil.ReadAll(resp.Body)
 		// attempt to unmarshal the error into the
@@ -101,5 +122,4 @@ func Open(rawurl, method string, setAuth func(h *http.Header), in, out interface
 		// else return the error body as a string
 		return nil, fmt.Errorf("client error %d: %s", resp.StatusCode, string(out))
 	}
-	return resp.Body, nil
 }

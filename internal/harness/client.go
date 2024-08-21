@@ -76,11 +76,14 @@ type Client interface {
 	// CreateRepository creates a repository.
 	CreateRepository(parentRef string, repo *CreateRepositoryInput) (*Repository, error)
 
+	// DeleteRepository deletes a repository
+	DeleteRepository(repoRef string) error
+
 	// CreateRepositoryForMigration creates an empty repository ready for migration.
 	CreateRepositoryForMigration(in *CreateRepositoryForMigrateInput) (*Repository, error)
 
 	// UpdateRepositoryState updates a repository state (for different steps of the migration).
-	UpdateRepositoryState(parentRef string, in *UpdateRepositoryStateInput) (*Repository, error)
+	UpdateRepositoryState(repoRef string, in *UpdateRepositoryStateInput) (*Repository, error)
 
 	// ImportPRs imports pull requests of a repository.
 	ImportPRs(repoRef string, in *types.PRsImportInput) error

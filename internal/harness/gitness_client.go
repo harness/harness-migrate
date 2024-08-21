@@ -135,6 +135,19 @@ func (c *gitnessClient) CreateRepository(parentRef string, repo *CreateRepositor
 	return out, nil
 }
 
+func (c *gitnessClient) DeleteRepository(repoRef string) error {
+	repoRef = strings.ReplaceAll(repoRef, pathSeparator, encodedPathSeparator)
+	uri := fmt.Sprintf("%s/api/v1/repos/%s",
+		c.address,
+		repoRef,
+	)
+
+	if err := c.delete(uri); err != nil {
+		return err
+	}
+	return nil
+}
+
 func (c *gitnessClient) CreateRepositoryForMigration(in *CreateRepositoryForMigrateInput) (*Repository, error) {
 	out := new(Repository)
 	uri := fmt.Sprintf("%s/api/v1/migrate/repos",

@@ -15,10 +15,13 @@
 package harness
 
 import (
+	"errors"
 	"fmt"
 	"net/url"
 	"strings"
 )
+
+var ErrInvalidRef = errors.New("space reference is invalid")
 
 const (
 	pathSeparator        = "/"
@@ -36,7 +39,8 @@ func getQueryParamsFromRepoRef(repoRef string) (string, error) {
 	repoRefParts := strings.Split(s, "/")
 	// valid repoRef: "Acc/Repo", "Acc/Org/Repo", "Acc/Org/Projct/Repo"
 	if len(repoRefParts) < 2 || len(repoRefParts) > 4 {
-		return "", fmt.Errorf("repo ref %s segments is invalid, got %d want 2-4", repoRef, len(repoRefParts))
+		return "", fmt.Errorf("%w. reference %s has %d segments, want 2-4",
+			ErrInvalidRef, repoRef, len(repoRefParts))
 	}
 	params.Set(accountIdentifier, repoRefParts[0])
 	params.Set(routingId, repoRefParts[0])

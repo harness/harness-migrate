@@ -265,6 +265,25 @@ func (c *client) CreateRepository(parentRef string, repo *CreateRepositoryInput)
 	return out, nil
 }
 
+func (c *client) DeleteRepository(repoRef string) error {
+	queryParams, err := getQueryParamsFromRepoRef(path.Join(repoRef))
+	if err != nil {
+		return err
+	}
+
+	repoRef = strings.ReplaceAll(repoRef, pathSeparator, encodedPathSeparator)
+	uri := fmt.Sprintf("%s/api/v1/repos/%s?%s",
+		c.address,
+		repoRef,
+		queryParams,
+	)
+
+	if err := c.delete(uri); err != nil {
+		return err
+	}
+	return nil
+}
+
 func (c *client) CreateRepositoryForMigration(in *CreateRepositoryForMigrateInput) (*Repository, error) {
 	out := new(Repository)
 	queryParams, err := getQueryParamsFromRepoRef(path.Join(in.ParentRef, in.Identifier))

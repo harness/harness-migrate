@@ -17,6 +17,7 @@ package gitimporter
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	filepath "path/filepath"
@@ -29,6 +30,8 @@ import (
 	"github.com/harness/harness-migrate/internal/util"
 	"github.com/harness/harness-migrate/types"
 )
+
+var ErrAbortMigration = errors.New("aborting the migration. please checkout your command and try again")
 
 // Importer imports data from gitlab to Harness.
 type Importer struct {
@@ -97,12 +100,27 @@ func (m *Importer) Import(ctx context.Context) error {
 	}
 
 	for _, f := range folders {
-		repo, err := m.createRepoAndDoPush(ctx, f)
+		repository, err := m.ReadRepoInfo(f)
 		if err != nil {
-			return fmt.Errorf("failed to create or push git data: %w", err)
+			m.Tracer.LogError("failed to read repo info from %q: %s", f, err.Error())
+			continue
 		}
 
-		repoRef := util.JoinPaths(m.HarnessSpace, repo.Name)
+		repoRef := util.JoinPaths(m.HarnessSpace, repository.Name)
+
+		if err := m.createRepoAndDoPush(ctx, f, &repository); err != nil {
+			m.Tracer.LogError("failed to create or push git data for %q: %s", repoRef, err.Error())
+			if !errors.Is(err, harness.ErrDuplicate) {
+				// only cleanup if repo is not already existed (meaning was created by the migrator)
+				m.cleanup(repoRef, m.Tracer)
+			}
+			if notRecoverableError(err) {
+				return ErrAbortMigration
+			}
+
+			continue
+		}
+
 		// update the repo state to migrate data import
 		_, err = m.Harness.UpdateRepositoryState(
 			repoRef,
@@ -112,9 +130,17 @@ func (m *Importer) Import(ctx context.Context) error {
 			return fmt.Errorf("failed to update the repo state to %s: %w", enum.RepoStateMigrateDataImport, err)
 		}
 
-		if !repo.IsEmpty {
-			if err := m.importRepoMetaData(ctx, repoRef, f); err != nil {
-				return fmt.Errorf("failed to import repo metadata: %w", err)
+		if !repository.IsEmpty {
+			err := m.importRepoMetaData(ctx, repoRef, f)
+			if err != nil {
+				m.Tracer.LogError("failed to import repo meta data for %q: %s", repoRef, err.Error())
+				// best effort delete the repo on server
+				m.cleanup(repoRef, m.Tracer)
+
+				if notRecoverableError(err) {
+					return ErrAbortMigration
+				}
+				continue
 			}
 		}
 
@@ -163,27 +189,22 @@ func (m *Importer) checkUsers(unzipLocation string) error {
 	return nil
 }
 
-func (m *Importer) createRepoAndDoPush(ctx context.Context, repoFolder string) (*types.Repository, error) {
-	repo, err := m.ReadRepoInfo(repoFolder)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read repo infos: %w", err)
-	}
-
+func (m *Importer) createRepoAndDoPush(ctx context.Context, repoFolder string, repo *types.Repository) error {
 	hRepo, err := m.CreateRepo(repo, m.HarnessSpace, m.Tracer)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create repo %q: %w", repo.Slug, err)
+		return fmt.Errorf("failed to create repo %q: %w", repo.Slug, err)
 	}
 
 	if repo.IsEmpty {
-		return &repo, nil
+		return nil
 	}
 
 	err = m.Push(ctx, repoFolder, hRepo, m.Tracer)
 	if err != nil {
-		return nil, fmt.Errorf("failed to push to repo: %w", err)
+		return fmt.Errorf("failed to push to repo: %w", err)
 	}
 
-	return &repo, nil
+	return nil
 }
 
 func (m *Importer) importRepoMetaData(_ context.Context, repoRef, repoFolder string) error {
@@ -200,6 +221,30 @@ func (m *Importer) importRepoMetaData(_ context.Context, repoRef, repoFolder str
 	}
 
 	return nil
+}
+
+// Cleanup cleans up the repo best effort.
+func (m *Importer) cleanup(repoRef string, tracer tracer.Tracer) {
+	tracer.Start(common.MsgStartRepoCleanup, repoRef)
+	err := m.Harness.DeleteRepository(repoRef)
+	if err != nil {
+		tracer.Stop("failed to clean up the repo on server: %w", err)
+		m.Tracer.LogError("failed to delete the repo %s: %s", repoRef, err.Error())
+	}
+
+	tracer.Stop(common.MsgCompleteRepoCleanup, repoRef)
+}
+
+// notRecoverableError checks if error is not recoverable, otherwise migration can continue
+func notRecoverableError(err error) bool {
+	if errors.Is(err, harness.ErrForbidden) ||
+		errors.Is(err, harness.ErrUnauthorized) ||
+		errors.Is(err, harness.ErrNotFound) ||
+		errors.Is(err, harness.ErrInvalidRef) {
+		return true
+	}
+
+	return false
 }
 
 func getRepoBaseFolders(directory string, singleRepo string) ([]string, error) {

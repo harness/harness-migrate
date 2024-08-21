@@ -47,6 +47,8 @@ const (
 	MsgCompleteImportPRs         = "Finished import %d pull requests with comments for repository %s."
 	MsgStartImportWebhooks       = "Starting importing webhooks for repository %s."
 	MsgCompleteImportWebhooks    = "Finished import %d webhooks for repository %s."
+	MsgStartRepoCleanup          = "Starting repo cleanup due to an incomplete export of %s"
+	MsgCompleteRepoCleanup       = "Finished repo cleanup due to an incomplete export of %s"
 
 	ErrGitClone                     = "cannot clone the git repository %q due to error: %w"
 	ErrGitFetch                     = "cannot fetch repository references for %s: %w"

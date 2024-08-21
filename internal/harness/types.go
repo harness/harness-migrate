@@ -59,6 +59,11 @@ type (
 		DefaultBranch string `json:"default_branch"`
 		GitURL        string `json:"git_url"`
 	}
+
+	// RepoSettings defines general repository settings which are externally accessible
+	RepoSettings struct {
+		FileSizeLimit *int64 `json:"file_size_limit"`
+	}
 )
 
 //

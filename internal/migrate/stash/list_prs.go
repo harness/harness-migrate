@@ -56,7 +56,7 @@ func (e *Export) ListPullRequests(
 	for {
 		prs, resp, err := e.stash.PullRequests.List(ctx, repoSlug, opts)
 		if err != nil {
-			e.tracer.LogError(common.ErrPrList, err)
+			e.tracer.LogError(common.ErrListPr, err)
 			return nil, fmt.Errorf("cannot list prs: %w", err)
 		}
 		mappedPrs := common.MapPullRequest(prs)

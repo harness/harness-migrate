@@ -42,6 +42,8 @@ type Importer struct {
 	HarnessToken string
 	Endpoint     string
 
+	FileSizeLimit int64
+
 	ZipFileLocation string
 	SkipUsers       bool
 	Gitness         bool
@@ -51,7 +53,18 @@ type Importer struct {
 	RequestId string
 }
 
-func NewImporter(baseURL, space, repo, token, location, requestId string, skipUsers, gitness, trace bool, tracer tracer.Tracer) *Importer {
+func NewImporter(
+	baseURL,
+	space,
+	repo,
+	token,
+	location,
+	requestId string,
+	fileSizeLimit int64,
+	skipUsers,
+	gitness,
+	trace bool,
+	tracer tracer.Tracer) *Importer {
 	spaceParts := strings.Split(space, "/")
 
 	client := harness.New(spaceParts[0], token, harness.WithAddress(baseURL), harness.WithTracing(trace))
@@ -68,6 +81,7 @@ func NewImporter(baseURL, space, repo, token, location, requestId string, skipUs
 		Tracer:          tracer,
 		RequestId:       requestId,
 		Endpoint:        baseURL,
+		FileSizeLimit:   fileSizeLimit,
 		Gitness:         gitness,
 		ZipFileLocation: location,
 		SkipUsers:       skipUsers,
@@ -112,7 +126,7 @@ func (m *Importer) Import(ctx context.Context) error {
 			m.Tracer.LogError("failed to create or push git data for %q: %s", repoRef, err.Error())
 			if !errors.Is(err, harness.ErrDuplicate) {
 				// only cleanup if repo is not already existed (meaning was created by the migrator)
-				m.cleanup(repoRef, m.Tracer)
+				m.cleanup(repoRef)
 			}
 			if notRecoverableError(err) {
 				return ErrAbortMigration
@@ -135,7 +149,7 @@ func (m *Importer) Import(ctx context.Context) error {
 			if err != nil {
 				m.Tracer.LogError("failed to import repo meta data for %q: %s", repoRef, err.Error())
 				// best effort delete the repo on server
-				m.cleanup(repoRef, m.Tracer)
+				m.cleanup(repoRef)
 
 				if notRecoverableError(err) {
 					return ErrAbortMigration
@@ -199,9 +213,33 @@ func (m *Importer) createRepoAndDoPush(ctx context.Context, repoFolder string, r
 		return nil
 	}
 
+	repoRef := util.JoinPaths(m.HarnessSpace, repo.Name)
+	originalLimit, err := m.getFileSizeLimit(repoRef, m.Tracer)
+	if err != nil {
+		return fmt.Errorf("failed to get repo file size limit: %w", err)
+	}
+
+	// update the file-size-limit as push might get declined by the pre-receive hook on server due to large file sizes.
+	if originalLimit < m.FileSizeLimit {
+		m.Tracer.Log("Updating the file-size-limit from %d to %d.", originalLimit, m.FileSizeLimit)
+		err := m.setFileSizeLimit(repoRef, m.FileSizeLimit, m.Tracer)
+		if err != nil {
+			return fmt.Errorf("failed to set file size limit on repo: %w", err)
+		}
+	}
+
 	err = m.Push(ctx, repoFolder, hRepo, m.Tracer)
 	if err != nil {
 		return fmt.Errorf("failed to push to repo: %w", err)
+	}
+
+	// revert the file-size-limit to it's original value
+	if originalLimit < m.FileSizeLimit {
+		m.Tracer.Log("Reverting the file-size-limit from %d to its original value %d.", m.FileSizeLimit, originalLimit)
+		err := m.setFileSizeLimit(repoRef, originalLimit, m.Tracer)
+		if err != nil {
+			return fmt.Errorf("failed to set file size limit on repo: %w", err)
+		}
 	}
 
 	return nil
@@ -224,15 +262,15 @@ func (m *Importer) importRepoMetaData(_ context.Context, repoRef, repoFolder str
 }
 
 // Cleanup cleans up the repo best effort.
-func (m *Importer) cleanup(repoRef string, tracer tracer.Tracer) {
-	tracer.Start(common.MsgStartRepoCleanup, repoRef)
+func (m *Importer) cleanup(repoRef string) {
+	m.Tracer.Start(common.MsgStartRepoCleanup, repoRef)
 	err := m.Harness.DeleteRepository(repoRef)
 	if err != nil {
-		tracer.Stop("failed to clean up the repo on server: %w", err)
-		m.Tracer.LogError("failed to delete the repo %s: %s", repoRef, err.Error())
+		m.Tracer.LogError(common.ErrCleanupRepo, err)
+		return
 	}
 
-	tracer.Stop(common.MsgCompleteRepoCleanup, repoRef)
+	m.Tracer.Stop(common.MsgCompleteRepoCleanup, repoRef)
 }
 
 // notRecoverableError checks if error is not recoverable, otherwise migration can continue

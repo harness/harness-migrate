@@ -82,6 +82,12 @@ type Client interface {
 	// CreateRepositoryForMigration creates an empty repository ready for migration.
 	CreateRepositoryForMigration(in *CreateRepositoryForMigrateInput) (*Repository, error)
 
+	// FindRepoSettings finds general settings of a repository.
+	FindRepoSettings(repoRef string) (*RepoSettings, error)
+
+	// UpdateRepoSettings updates general settings of a repository.
+	UpdateRepoSettings(repoRef string, in *RepoSettings) (*RepoSettings, error)
+
 	// UpdateRepositoryState updates a repository state (for different steps of the migration).
 	UpdateRepositoryState(repoRef string, in *UpdateRepositoryStateInput) (*Repository, error)
 

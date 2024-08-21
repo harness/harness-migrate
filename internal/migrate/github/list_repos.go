@@ -23,7 +23,7 @@ func (e *Export) ListRepositories(
 		repoSlug := strings.Join([]string{e.org, e.repository}, "/")
 		repo, _, err := e.github.Repositories.Find(ctx, repoSlug)
 		if err != nil {
-			e.tracer.LogError(common.ErrRepoList, err)
+			e.tracer.LogError(common.ErrListRepo, err)
 			return nil, fmt.Errorf("failed to get the repo %s: %w", repoSlug, err)
 		}
 		e.tracer.Stop(common.MsgCompleteRepoList, 1)
@@ -33,7 +33,7 @@ func (e *Export) ListRepositories(
 	for {
 		repos, resp, err := e.github.Repositories.ListNamespace(ctx, e.org, opts)
 		if err != nil {
-			e.tracer.LogError(common.ErrRepoList, err)
+			e.tracer.LogError(common.ErrListRepo, err)
 			return nil, fmt.Errorf("failed to get repos for org %s: %w", e.org, err)
 		}
 		allRepos = append(allRepos, repos...)

@@ -51,8 +51,8 @@ func (e *Export) ListPullRequestComments(
 	for {
 		comments, res, err := e.github.Issues.ListComments(ctx, repoSlug, prNumber, params)
 		if err != nil {
-			e.tracer.LogError(common.ErrCommentsList, repoSlug, prNumber, err)
-			return nil, fmt.Errorf(common.ErrCommentsList, repoSlug, prNumber, err)
+			e.tracer.LogError(common.ErrListComments, repoSlug, prNumber, err)
+			return nil, fmt.Errorf(common.ErrListComments, repoSlug, prNumber, err)
 		}
 		if len(comments) == 0 {
 			break
@@ -75,8 +75,8 @@ func (e *Export) ListPullRequestComments(
 	for {
 		comments, res, err := e.ListPRComments(ctx, repoSlug, prNumber, opts)
 		if err != nil {
-			e.tracer.LogError(common.ErrCommentsList, repoSlug, prNumber, err)
-			return nil, fmt.Errorf(common.ErrCommentsList, repoSlug, prNumber, err)
+			e.tracer.LogError(common.ErrListComments, repoSlug, prNumber, err)
+			return nil, fmt.Errorf(common.ErrListComments, repoSlug, prNumber, err)
 		}
 		if len(comments) == 0 {
 			break

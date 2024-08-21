@@ -265,6 +265,50 @@ func (c *client) CreateRepository(parentRef string, repo *CreateRepositoryInput)
 	return out, nil
 }
 
+// FindRepoSettings finds general settings of a repository.
+func (c *client) FindRepoSettings(repoRef string) (*RepoSettings, error) {
+	out := new(RepoSettings)
+	queryParams, err := getQueryParamsFromRepoRef(repoRef)
+	if err != nil {
+		return nil, err
+	}
+
+	repoRef = strings.ReplaceAll(repoRef, pathSeparator, encodedPathSeparator)
+	uri := fmt.Sprintf("%s/api/v1/repos/%s/settings/general?%s",
+		c.address,
+		repoRef,
+		queryParams,
+	)
+
+	if err := c.get(uri, out); err != nil {
+		return nil, err
+	}
+
+	return out, nil
+}
+
+// UpdateRepoSettings updates general settings of a repository.
+func (c *client) UpdateRepoSettings(repoRef string, in *RepoSettings) (*RepoSettings, error) {
+	out := new(RepoSettings)
+	queryParams, err := getQueryParamsFromRepoRef(repoRef)
+	if err != nil {
+		return nil, err
+	}
+
+	repoRef = strings.ReplaceAll(repoRef, pathSeparator, encodedPathSeparator)
+	uri := fmt.Sprintf("%s/api/v1/repos/%s/settings/general?%s",
+		c.address,
+		repoRef,
+		queryParams,
+	)
+
+	if err := c.patch(uri, in, out); err != nil {
+		return nil, err
+	}
+
+	return out, nil
+}
+
 func (c *client) DeleteRepository(repoRef string) error {
 	queryParams, err := getQueryParamsFromRepoRef(path.Join(repoRef))
 	if err != nil {
@@ -277,10 +321,10 @@ func (c *client) DeleteRepository(repoRef string) error {
 		repoRef,
 		queryParams,
 	)
-
 	if err := c.delete(uri); err != nil {
 		return err
 	}
+
 	return nil
 }
 

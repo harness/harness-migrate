@@ -26,7 +26,7 @@ func (e *Export) ListRepositories(
 		repo, _, err := e.stash.Repositories.Find(ctx, repoSlug)
 		// stash returns EOF if call find for an empty repo
 		if err != nil && !errors.Is(err, io.EOF) {
-			e.tracer.LogError(common.ErrRepoList, err)
+			e.tracer.LogError(common.ErrListRepo, err)
 			return nil, fmt.Errorf("failed to get the repo %s: %w", repoSlug, err)
 		}
 		e.tracer.Stop(common.MsgCompleteRepoList, 1)
@@ -36,7 +36,7 @@ func (e *Export) ListRepositories(
 	for {
 		repos, resp, err := e.stash.Repositories.ListNamespace(ctx, e.project, opts)
 		if err != nil {
-			e.tracer.LogError(common.ErrRepoList, err)
+			e.tracer.LogError(common.ErrListRepo, err)
 			return nil, fmt.Errorf("failed to get repos for project %s: %w", e.project, err)
 		}
 		allRepos = append(allRepos, repos...)

@@ -135,13 +135,44 @@ func (c *gitnessClient) CreateRepository(parentRef string, repo *CreateRepositor
 	return out, nil
 }
 
+// FindRepoSettings finds general settings of a repository.
+func (c *gitnessClient) FindRepoSettings(repoRef string) (*RepoSettings, error) {
+	out := new(RepoSettings)
+	repoRef = strings.ReplaceAll(repoRef, pathSeparator, encodedPathSeparator)
+	uri := fmt.Sprintf("%s/api/v1/repos/%s/settings/general",
+		c.address,
+		repoRef,
+	)
+
+	if err := c.get(uri, out); err != nil {
+		return nil, err
+	}
+
+	return out, nil
+}
+
+// UpdateRepoSettings updates general settings of a repository.
+func (c *gitnessClient) UpdateRepoSettings(repoRef string, in *RepoSettings) (*RepoSettings, error) {
+	out := new(RepoSettings)
+	repoRef = strings.ReplaceAll(repoRef, pathSeparator, encodedPathSeparator)
+	uri := fmt.Sprintf("%s/api/v1/repos/%s/settings/general",
+		c.address,
+		repoRef,
+	)
+
+	if err := c.patch(uri, in, out); err != nil {
+		return nil, err
+	}
+
+	return out, nil
+}
+
 func (c *gitnessClient) DeleteRepository(repoRef string) error {
 	repoRef = strings.ReplaceAll(repoRef, pathSeparator, encodedPathSeparator)
 	uri := fmt.Sprintf("%s/api/v1/repos/%s",
 		c.address,
 		repoRef,
 	)
-
 	if err := c.delete(uri); err != nil {
 		return err
 	}

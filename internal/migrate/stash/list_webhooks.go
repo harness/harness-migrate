@@ -62,7 +62,7 @@ func (e *Export) ListWebhooks(
 	for {
 		webhooks, resp, err := e.stash.Repositories.ListHooks(ctx, repoSlug, opts)
 		if err != nil {
-			e.tracer.LogError(common.ErrWebhookList, repoSlug, err)
+			e.tracer.LogError(common.ErrListWebhook, repoSlug, err)
 			e.tracer.Stop(common.ErrListWebhooks, repoSlug, err)
 			return types.WebhookData{}, err
 		}

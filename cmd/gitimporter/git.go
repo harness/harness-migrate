@@ -16,6 +16,7 @@ package gitimporter
 
 import (
 	"context"
+	"strconv"
 	"strings"
 
 	"github.com/harness/harness-migrate/cmd/util"
@@ -36,8 +37,9 @@ type gitImport struct {
 	harnessSpace string
 	harnessRepo  string // single repo import
 
-	skipUsers bool
-	Gitness   bool
+	skipUsers     bool
+	Gitness       bool
+	fileSizeLimit int64
 
 	filePath string
 }
@@ -58,7 +60,9 @@ func (c *gitImport) run(*kingpin.ParseContext) error {
 	c.harnessRepo = strings.Trim(c.harnessRepo, " ")
 	importUuid := uuid.New().String()
 	c.endpoint, _ = strings.CutSuffix(c.endpoint, "/")
-	importer := gitimporter.NewImporter(c.endpoint, c.harnessSpace, c.harnessRepo, c.harnessToken, c.filePath, importUuid, c.skipUsers, c.Gitness, c.trace, tracer_)
+	importer := gitimporter.NewImporter(
+		c.endpoint, c.harnessSpace, c.harnessRepo, c.harnessToken, c.filePath,
+		importUuid, c.fileSizeLimit, c.skipUsers, c.Gitness, c.trace, tracer_)
 
 	tracer_.Log("starting operation with id: %s", importUuid)
 	return importer.Import(ctx)
@@ -96,6 +100,11 @@ func registerGitImporter(app *kingpin.CmdClause) {
 	cmd.Flag("repo-path", "optional path of a single repo to import (e.g, Org/repo).").
 		Envar("HARNESS_REPO_PATH").
 		StringVar(&c.harnessRepo)
+
+	cmd.Flag("file-size-limit", "temporarily update git push file size limit for large repositories during migration. Default: 100MB").
+		Default(strconv.FormatInt(int64(1e+8), 10)).
+		Envar("FILE_SIZE_LIMIT").
+		Int64Var(&c.fileSizeLimit)
 
 	cmd.Flag("gitness", "import into a Gitness instance").
 		Default("false").

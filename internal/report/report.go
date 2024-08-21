@@ -73,7 +73,7 @@ func (r *Report) ReportErrors(typ string, key string, errors []string) {
 }
 func (r *Report) PublishReport() {
 	rowConfigAutoMerge := table.RowConfig{AutoMerge: true}
-	fmt.Println("\n")
+	fmt.Println("")
 	t := table.NewWriter()
 	t.AppendHeader(table.Row{"Type", "Success", "Error(s)"}, rowConfigAutoMerge)
 	var rows []table.Row

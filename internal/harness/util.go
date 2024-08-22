@@ -31,19 +31,24 @@ const (
 	projectIdentifier = "projectIdentifier"
 	orgIdentifier     = "orgIdentifier"
 	routingId         = "routingId"
+	spacePath         = "space_path"
 )
 
 func getQueryParamsFromRepoRef(repoRef string) (string, error) {
 	params := url.Values{}
 	s := strings.TrimSuffix(repoRef, "/+")
 	repoRefParts := strings.Split(s, "/")
+
 	// valid repoRef: "Acc/Repo", "Acc/Org/Repo", "Acc/Org/Projct/Repo"
 	if len(repoRefParts) < 2 || len(repoRefParts) > 4 {
 		return "", fmt.Errorf("%w. reference %s has %d segments, want 2-4",
 			ErrInvalidRef, repoRef, len(repoRefParts))
 	}
+
+	parentRef := strings.Join(repoRefParts[:len(repoRefParts)-1], encodedPathSeparator)
 	params.Set(accountIdentifier, repoRefParts[0])
 	params.Set(routingId, repoRefParts[0])
+	params.Set(spacePath, parentRef)
 
 	switch len(repoRefParts) {
 	case 3:

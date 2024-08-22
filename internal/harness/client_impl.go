@@ -274,7 +274,7 @@ func (c *client) FindRepoSettings(repoRef string) (*RepoSettings, error) {
 	}
 
 	repoRef = strings.ReplaceAll(repoRef, pathSeparator, encodedPathSeparator)
-	uri := fmt.Sprintf("%s/api/v1/repos/%s/settings/general?%s",
+	uri := fmt.Sprintf("%s/gateway/code/api/v1/repos/%s/settings/general?%s",
 		c.address,
 		repoRef,
 		queryParams,
@@ -296,7 +296,7 @@ func (c *client) UpdateRepoSettings(repoRef string, in *RepoSettings) (*RepoSett
 	}
 
 	repoRef = strings.ReplaceAll(repoRef, pathSeparator, encodedPathSeparator)
-	uri := fmt.Sprintf("%s/api/v1/repos/%s/settings/general?%s",
+	uri := fmt.Sprintf("%s/gateway/code/api/v1/repos/%s/settings/general?%s",
 		c.address,
 		repoRef,
 		queryParams,
@@ -310,13 +310,13 @@ func (c *client) UpdateRepoSettings(repoRef string, in *RepoSettings) (*RepoSett
 }
 
 func (c *client) DeleteRepository(repoRef string) error {
-	queryParams, err := getQueryParamsFromRepoRef(path.Join(repoRef))
+	queryParams, err := getQueryParamsFromRepoRef(repoRef)
 	if err != nil {
 		return err
 	}
 
 	repoRef = strings.ReplaceAll(repoRef, pathSeparator, encodedPathSeparator)
-	uri := fmt.Sprintf("%s/api/v1/repos/%s?%s",
+	uri := fmt.Sprintf("%s/gateway/code/api/v1/repos/%s?%s",
 		c.address,
 		repoRef,
 		queryParams,
@@ -335,7 +335,7 @@ func (c *client) CreateRepositoryForMigration(in *CreateRepositoryForMigrateInpu
 		return nil, err
 	}
 
-	uri := fmt.Sprintf("%s/api/v1/migrate/repos?%s", c.address, queryParams)
+	uri := fmt.Sprintf("%s/gateway/code/api/v1/migrate/repos?%s", c.address, queryParams)
 	if err := c.post(uri, in, out); err != nil {
 		return nil, err
 	}
@@ -350,7 +350,7 @@ func (c *client) UpdateRepositoryState(repoRef string, in *UpdateRepositoryState
 	}
 
 	repoRef = strings.ReplaceAll(repoRef, pathSeparator, encodedPathSeparator)
-	uri := fmt.Sprintf("%s/api/v1/migrate/repos/%s/update-state?%s",
+	uri := fmt.Sprintf("%s/gateway/code/api/v1/migrate/repos/%s/update-state?%s",
 		c.address,
 		repoRef,
 		queryParams,
@@ -369,7 +369,7 @@ func (c *client) ImportPRs(repoRef string, in *types.PRsImportInput) error {
 	}
 
 	repoRef = strings.ReplaceAll(repoRef, pathSeparator, encodedPathSeparator)
-	uri := fmt.Sprintf("%s/api/v1/migrate/repos/%s/pullreqs?%s",
+	uri := fmt.Sprintf("%s/gateway/code/api/v1/migrate/repos/%s/pullreqs?%s",
 		c.address,
 		repoRef,
 		queryParams,
@@ -388,7 +388,7 @@ func (c *client) ImportWebhooks(repoRef string, in *types.WebhookInput) error {
 	}
 
 	repoRef = strings.ReplaceAll(repoRef, pathSeparator, encodedPathSeparator)
-	uri := fmt.Sprintf("%s/api/v1/migrate/repos/%s/webhooks?%s",
+	uri := fmt.Sprintf("%s/gateway/code/api/v1/migrate/repos/%s/webhooks?%s",
 		c.address,
 		repoRef,
 		queryParams,
@@ -406,7 +406,7 @@ func (c *client) ImportRules(repoRef string, in *types.RulesInput) error {
 	}
 
 	repoRef = strings.ReplaceAll(repoRef, pathSeparator, encodedPathSeparator)
-	uri := fmt.Sprintf("%s/api/v1/migrate/repos/%s/rules?%s",
+	uri := fmt.Sprintf("%s/gateway/code/api/v1/migrate/repos/%s/rules?%s",
 		c.address,
 		repoRef,
 		queryParams,
@@ -419,7 +419,7 @@ func (c *client) ImportRules(repoRef string, in *types.RulesInput) error {
 
 func (c *client) CheckUsers(in *types.CheckUsersInput) (*types.CheckUsersOutput, error) {
 	out := new(types.CheckUsersOutput)
-	uri := fmt.Sprintf("%s/api/v1/principals/check-emails?routingId=%s&accountIdentifier=%s", c.address, c.account, c.account)
+	uri := fmt.Sprintf("%s/gateway/code/api/v1/principals/check-emails?routingId=%s&accountIdentifier=%s", c.address, c.account, c.account)
 
 	if err := c.post(uri, in, out); err != nil {
 		return nil, err

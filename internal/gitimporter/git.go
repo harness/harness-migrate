@@ -1,6 +1,7 @@
 package gitimporter
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -40,6 +41,8 @@ func (m *Importer) Push(
 		return fmt.Errorf("failed to set remote to %q: %w", repo.GitURL, err)
 	}
 
+	var output bytes.Buffer
+
 	err = gitRepo.PushContext(ctx, &git.PushOptions{
 		RemoteName: gitRemoteHarness,
 		Auth: &http.BasicAuth{
@@ -54,10 +57,11 @@ func (m *Importer) Push(
 		RemoteURL:       repo.GitURL,
 		Force:           true,
 		InsecureSkipTLS: true,
+		Progress:        &output,
 	})
 	if err != nil && !errors.Is(err, git.NoErrAlreadyUpToDate) {
-		tracer.Stop(common.ErrGitPush, repo.GitURL, err)
-		return fmt.Errorf(common.ErrGitPush, repo.GitURL, err)
+		tracer.Stop(common.ErrGitPush, repo.GitURL, err.Error(), output.String())
+		return fmt.Errorf(common.ErrGitPush, repo.GitURL, err.Error(), output.String())
 	}
 
 	tracer.Stop(common.MsgCompleteImportGit, repo.GitURL)

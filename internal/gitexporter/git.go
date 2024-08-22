@@ -1,6 +1,7 @@
 package gitexporter
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -34,6 +35,7 @@ func (e *Exporter) CloneRepository(
 		return isEmpty, err
 	}
 
+	var cloneOutput bytes.Buffer
 	repo, err := git.PlainCloneContext(ctx, gitPath, true, &git.CloneOptions{
 		URL: repoData.Clone,
 		Auth: &http.BasicAuth{
@@ -43,6 +45,7 @@ func (e *Exporter) CloneRepository(
 		SingleBranch: false,
 		Tags:         git.AllTags,
 		NoCheckout:   true,
+		Progress:     &cloneOutput,
 	})
 
 	if errors.Is(err, git.ErrRepositoryAlreadyExists) {
@@ -60,24 +63,26 @@ func (e *Exporter) CloneRepository(
 	}
 
 	if err != nil {
-		tracer.LogError(common.ErrGitClone, repoSlug, err)
+		tracer.LogError(common.ErrGitClone, repoSlug, err.Error(), cloneOutput.String())
 		return isEmpty, fmt.Errorf("failed to clone repo %s from %q: %w", repoSlug, repoData.Clone, err)
 	}
 
 	refSpecs := []config.RefSpec{"refs/heads/*:refs/heads/*", "refs/tags/*:refs/tags/*"}
 	refSpecs = append(refSpecs, pullreqRef...)
 
+	var fetchOutput bytes.Buffer
 	err = repo.Fetch(&git.FetchOptions{
 		RefSpecs: refSpecs,
 		Auth: &http.BasicAuth{
 			Username: e.ScmLogin,
 			Password: e.ScmToken,
 		},
-		Force: true,
+		Force:    true,
+		Progress: &fetchOutput,
 	})
 
 	if err != nil && !errors.Is(err, git.NoErrAlreadyUpToDate) {
-		tracer.LogError(common.ErrGitFetch, repoSlug, err)
+		tracer.LogError(common.ErrGitFetch, repoSlug, err.Error(), fetchOutput.String())
 		return isEmpty, fmt.Errorf("failed to sync repo %s from %q: %w", repoSlug, repoData.Clone, err)
 	}
 

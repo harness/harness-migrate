@@ -64,12 +64,12 @@ func (e *Export) ListPullRequests(
 
 		err = e.checkpointManager.SaveCheckpoint(checkpointDataKey, allPrs)
 		if err != nil {
-			e.tracer.LogError(common.ErrCheckpointPrDataSave)
+			e.tracer.LogError(common.ErrCheckpointPrDataSave, err)
 		}
 
 		err = e.checkpointManager.SaveCheckpoint(checkpointPageKey, resp.Page.Next)
 		if err != nil {
-			e.tracer.LogError(common.ErrCheckpointPrPageSave)
+			e.tracer.LogError(common.ErrCheckpointPrPageSave, err)
 		}
 
 		if resp.Page.Next == 0 {
@@ -80,7 +80,7 @@ func (e *Export) ListPullRequests(
 
 	err = e.checkpointManager.SaveCheckpoint(checkpointPageKey, -1)
 	if err != nil {
-		e.tracer.LogError(common.ErrCheckpointPrPageSave)
+		e.tracer.LogError(common.ErrCheckpointPrPageSave, err)
 	}
 
 	return allPrs, nil

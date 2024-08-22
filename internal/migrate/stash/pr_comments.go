@@ -55,12 +55,12 @@ func (e *Export) ListPullRequestComments(
 
 		err = e.checkpointManager.SaveCheckpoint(checkpointDataKey, allComments)
 		if err != nil {
-			e.tracer.LogError(common.ErrCheckpointPrCommentsDataSave)
+			e.tracer.LogError(common.ErrCheckpointPrCommentsDataSave, err)
 		}
 
 		err = e.checkpointManager.SaveCheckpoint(checkpointPageKey, res.Page.Next)
 		if err != nil {
-			e.tracer.LogError(common.ErrCheckpointPrCommentsPageSave)
+			e.tracer.LogError(common.ErrCheckpointPrCommentsPageSave, err)
 		}
 
 		if res.Page.Next == 0 {

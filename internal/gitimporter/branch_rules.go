@@ -34,7 +34,7 @@ func (m *Importer) ImportBranchRules(
 	tracer.Start(common.MsgStartImportBranchRules, repoRef)
 	in, err := m.readBranchRules(repoFolder)
 	if err != nil {
-		tracer.Stop(common.ErrImportBranchRules, repoRef)
+		tracer.Stop(common.ErrImportBranchRules, repoRef, err)
 		return fmt.Errorf("failed to read branch rules from %q: %w", repoFolder, err)
 	}
 
@@ -45,13 +45,13 @@ func (m *Importer) ImportBranchRules(
 
 	rules, err := convertBranchRulesToRules(in)
 	if err != nil {
-		tracer.Stop(common.ErrImportBranchRules, repoRef)
+		tracer.Stop(common.ErrImportBranchRules, repoRef, err)
 		return fmt.Errorf("failed to convert branch rules for import: %w", err)
 	}
 
 	err = m.Harness.ImportRules(repoRef, &types.RulesInput{Rules: rules, Type: types.RuleTypeBranch})
 	if err != nil {
-		tracer.Stop(common.ErrImportBranchRules, repoRef)
+		tracer.Stop(common.ErrImportBranchRules, repoRef, err)
 		return fmt.Errorf("failed to import branch rules for repo '%s' : %w",
 			repoRef, err)
 	}

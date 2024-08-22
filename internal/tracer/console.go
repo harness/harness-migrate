@@ -17,10 +17,10 @@ package tracer
 import (
 	"fmt"
 	"os"
+	"strings"
 	"sync"
 	"time"
 
-	"github.com/mattn/go-colorable"
 	"github.com/schollz/progressbar/v3"
 )
 
@@ -42,11 +42,12 @@ func (c *console) LogError(format string, args ...interface{}) {
 	// ANSI escape code for red text
 	red := "\033[31m"
 	reset := "\033[0m"
-	out := colorable.NewColorableStdout()
+	// make sure only print the error message if passed
+	modifiedFormat := strings.ReplaceAll(format, "%w", "%v")
 	// Print red text
-	fmt.Println(out, red)
-	fmt.Printf(format, args...)
-	fmt.Println(out, reset)
+	fmt.Println(red)
+	fmt.Printf(modifiedFormat, args...)
+	fmt.Println(reset)
 }
 
 // New returns a tracer that outputs
@@ -87,7 +88,9 @@ func (c *console) Stop(format string, args ...interface{}) {
 	}
 
 	c.bar.Clear()
-	fmt.Printf(format, args...)
+	// make sure only print the error message if passed
+	modifiedFormat := strings.ReplaceAll(format, "%w", "%v")
+	fmt.Printf(modifiedFormat, args...)
 	fmt.Println("")
 }
 

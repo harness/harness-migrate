@@ -34,7 +34,7 @@ func (m *Importer) ImportWebhooks(
 	tracer.Start(common.MsgStartImportWebhooks, repoRef)
 	in, err := m.readWebhooks(repoFolder)
 	if err != nil {
-		tracer.Stop(common.ErrImportWebhooks, repoRef)
+		tracer.Stop(common.ErrImportWebhooks, repoRef, err)
 		return fmt.Errorf("failed to read webhooks from %q: %w", repoFolder, err)
 	}
 
@@ -44,7 +44,7 @@ func (m *Importer) ImportWebhooks(
 	}
 
 	if err := m.Harness.ImportWebhooks(repoRef, &types.WebhookInput{*in}); err != nil {
-		tracer.Stop(common.ErrImportWebhooks, repoRef)
+		tracer.Stop(common.ErrImportWebhooks, repoRef, err)
 		return fmt.Errorf("failed to import webhooks for repo '%s' : %w",
 			repoRef, err)
 	}

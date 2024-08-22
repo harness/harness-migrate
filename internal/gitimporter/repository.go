@@ -40,9 +40,8 @@ func (m *Importer) CreateRepo(
 
 	repoOut, err := m.Harness.CreateRepositoryForMigration(in)
 	if err != nil {
-		wrappedErr := fmt.Errorf(common.ErrCreateRepo, repo.Name, targetSpace, err)
-		tracer.LogError(wrappedErr.Error())
-		return nil, wrappedErr
+		tracer.LogError(common.ErrCreateRepo, repo.Name, targetSpace, err)
+		return nil, fmt.Errorf(common.ErrCreateRepo, repo.Name, targetSpace, err)
 	}
 
 	m.Tracer.Stop(common.MsgCompleteImportCreateRepo, repo.Name, targetSpace)

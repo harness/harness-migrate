@@ -36,7 +36,7 @@ func (m *Importer) ImportPullRequests(
 	prDir := filepath.Join(repoFolder, types.PullRequestDir)
 	in, err := m.readPRs(prDir)
 	if err != nil {
-		tracer.Stop(common.ErrImportPRs, repoRef)
+		tracer.Stop(common.ErrImportPRs, repoRef, err)
 		return fmt.Errorf("failed to read pull requests and comments from %q: %w", prDir, err)
 	}
 
@@ -46,7 +46,7 @@ func (m *Importer) ImportPullRequests(
 	}
 
 	if err := m.Harness.ImportPRs(repoRef, &types.PRsImportInput{in}); err != nil {
-		tracer.Stop(common.ErrImportPRs, repoRef)
+		tracer.Stop(common.ErrImportPRs, repoRef, err)
 		return fmt.Errorf("failed to import pull requests and comments for repo '%s' : %w",
 			repoRef, err)
 	}

@@ -60,8 +60,8 @@ func (m *Importer) Push(
 		Progress:        &output,
 	})
 	if err != nil && !errors.Is(err, git.NoErrAlreadyUpToDate) {
-		tracer.Stop(common.ErrGitPush, repo.GitURL, err.Error(), output.String())
-		return fmt.Errorf(common.ErrGitPush, repo.GitURL, err.Error(), output.String())
+		tracer.Stop(common.ErrGitPush, repo.GitURL, err, output.String())
+		return fmt.Errorf(common.ErrGitPush, repo.GitURL, err, output.String())
 	}
 
 	tracer.Stop(common.MsgCompleteImportGit, repo.GitURL)

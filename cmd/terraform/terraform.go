@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"strings"
 	"text/template"
 
 	"github.com/drone/funcmap"
@@ -184,6 +185,14 @@ func (c *terraformCommand) parseTemplate(tmpl string) (*template.Template, error
 			"toYaml": func(in interface{}) string {
 				out, _ := yaml.Marshal(in)
 				return string(out)
+			},
+			"indent": func(in string, spaces int) string {
+				prefix := strings.Repeat(" ", spaces)
+				lines := strings.Split(in, "\n")
+				for i, line := range lines {
+					lines[i] = prefix + line
+				}
+				return strings.Join(lines, "\n")
 			},
 		}).
 		Parse(tmpl)

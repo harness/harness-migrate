@@ -15,6 +15,9 @@
 package util
 
 import (
+	"encoding/json"
+	"fmt"
+	"os"
 	"strings"
 
 	"github.com/gotidy/ptr"
@@ -148,9 +151,63 @@ func CreateDockerConnector(org, id string, args ...interface{}) *harness.Connect
 	}
 }
 
-// IsErrConflict helper function return true if the error message
+// IsErrConflict helper function return true if the codeerror message
 // indicate the resource already exists.
 func IsErrConflict(err error) bool {
 	return strings.Contains(err.Error(), "already present") ||
 		strings.Contains(err.Error(), "already exists")
+}
+
+func CreateFolder(path string) error {
+	return os.MkdirAll(path, os.ModePerm)
+}
+
+func WriteFile(path string, prJson []byte) error {
+	err := os.WriteFile(path, prJson, os.ModePerm)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func AppendFile(path string, data []byte) error {
+	file, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+	if _, err := file.Write(data); err != nil {
+		return err
+	}
+	return nil
+}
+
+func GetJson(data any) ([]byte, error) {
+	jsonString, err := json.MarshalIndent(data, "", "    ")
+	if err != nil {
+		return nil, fmt.Errorf("cannot serialize json string for data: %w", err)
+	}
+	return jsonString, nil
+}
+
+// Join joins any number of path elements into a single path,
+// separating them with slashes. Empty elements are ignored.
+func JoinPaths(elem ...string) string {
+	size := 0
+	for _, e := range elem {
+		size += len(e)
+	}
+	if size == 0 {
+		return ""
+	}
+	buf := make([]byte, 0, size+len(elem)-1)
+	for _, e := range elem {
+		if len(buf) > 0 || e != "" {
+			if len(buf) > 0 {
+				buf = append(buf, '/')
+			}
+			buf = append(buf, e...)
+		}
+	}
+	return string(buf)
 }

@@ -17,6 +17,7 @@ package tracer
 import (
 	"fmt"
 	"os"
+	"strings"
 	"sync"
 	"time"
 
@@ -34,6 +35,19 @@ type console struct {
 func (c *console) Log(format string, args ...interface{}) {
 	fmt.Printf(format, args...)
 	fmt.Println("")
+}
+
+// LogError logs an error message to the console.
+func (c *console) LogError(format string, args ...interface{}) {
+	// ANSI escape code for red text
+	red := "\033[31m"
+	reset := "\033[0m"
+	// make sure only print the error message if passed
+	modifiedFormat := strings.ReplaceAll(format, "%w", "%v")
+	// Print red text
+	fmt.Println(red)
+	fmt.Printf(modifiedFormat, args...)
+	fmt.Println(reset)
 }
 
 // New returns a tracer that outputs
@@ -74,7 +88,9 @@ func (c *console) Stop(format string, args ...interface{}) {
 	}
 
 	c.bar.Clear()
-	fmt.Printf(format, args...)
+	// make sure only print the error message if passed
+	modifiedFormat := strings.ReplaceAll(format, "%w", "%v")
+	fmt.Printf(modifiedFormat, args...)
 	fmt.Println("")
 }
 

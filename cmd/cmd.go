@@ -15,7 +15,6 @@
 package cmd
 
 import (
-	"context"
 	"os"
 
 	"github.com/harness/harness-migrate/cmd/bitbucket"
@@ -23,16 +22,15 @@ import (
 	"github.com/harness/harness-migrate/cmd/cloudbuild"
 	"github.com/harness/harness-migrate/cmd/drone"
 	"github.com/harness/harness-migrate/cmd/github"
+	"github.com/harness/harness-migrate/cmd/gitimporter"
 	"github.com/harness/harness-migrate/cmd/gitlab"
 	"github.com/harness/harness-migrate/cmd/jenkinsxml"
+	"github.com/harness/harness-migrate/cmd/stash"
 	"github.com/harness/harness-migrate/cmd/terraform"
 	"github.com/harness/harness-migrate/cmd/travis"
 
 	"github.com/alecthomas/kingpin/v2"
 )
-
-// empty context
-var nocontext = context.Background()
 
 // application name
 const application = "harness-migrate"
@@ -57,6 +55,9 @@ func Command() {
 	jenkinsxml.Register(app)
 	travis.Register(app)
 	terraform.Register(app)
+	stash.Register(app)
+
+	gitimporter.Register(app)
 
 	app.Version(version)
 	kingpin.MustParse(app.Parse(os.Args[1:]))

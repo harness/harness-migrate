@@ -14,6 +14,8 @@
 
 package harness
 
+import "github.com/harness/harness-migrate/internal/types/enum"
+
 type (
 	// Pipeline defines a pipeline.
 	Pipeline struct {
@@ -50,12 +52,17 @@ type (
 
 	// Repository defines a resository.
 	Repository struct {
-		UID           string `json:"uid"`
+		Identifier    string `json:"identifier"`
 		ParentID      int64  `json:"parent_id"`
 		Description   string `json:"description"`
 		IsPublic      bool   `json:"is_public"`
 		DefaultBranch string `json:"default_branch"`
 		GitURL        string `json:"git_url"`
+	}
+
+	// RepoSettings defines general repository settings which are externally accessible
+	RepoSettings struct {
+		FileSizeLimit *int64 `json:"file_size_limit"`
 	}
 )
 
@@ -155,13 +162,13 @@ type (
 // Error Types
 //
 
-// Error represents an API error response.
+// Error represents an API codeerror response.
 type Error struct {
 	Code    string `json:"code"`
 	Message string `json:"message"`
 }
 
-// Error returns the error message.
+// Error returns the codeerror message.
 func (e *Error) Error() string {
 	return e.Message
 }
@@ -241,11 +248,33 @@ type (
 		Secret *Secret `json:"secret"`
 	}
 
-	// RepositoryCreateRequest defines a repo creation request.
-	RepositoryCreateRequest struct {
-		UID           string `json:"uid"`
+	// CreateRepositoryInput defines a repo creation request input.
+	CreateRepositoryInput struct {
+		Identifier    string `json:"identifier"`
 		DefaultBranch string `json:"default_branch"`
-		Description   string `json:"description"`
 		IsPublic      bool   `json:"is_public"`
+	}
+
+	// CreateGitnessRepositoryInput defines a repo creation request input for gitness.
+	CreateGitnessRepositoryInput struct {
+		CreateRepositoryInput
+		ParentRef string `json:"parent_ref"`
+	}
+
+	// CreateRepositoryForMigrateInput defines a repo creation request input for migration.
+	CreateRepositoryForMigrateInput struct {
+		Identifier    string `json:"identifier"`
+		DefaultBranch string `json:"default_branch"`
+		IsPublic      bool   `json:"is_public"`
+		ParentRef     string `json:"parent_ref"`
+	}
+
+	// UpdateRepositoryStateInput defines a repo update state request input.
+	UpdateRepositoryStateInput struct {
+		State enum.RepoState `json:"state"`
+	}
+
+	UpdateDefaultBranchInput struct {
+		Name string `json:"name"`
 	}
 )

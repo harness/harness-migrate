@@ -14,3 +14,52 @@
 
 // Package github provides automatic migration tools from Github to Harness.
 package github
+
+import (
+	"context"
+	"fmt"
+
+	"github.com/harness/harness-migrate/internal/checkpoint"
+	"github.com/harness/harness-migrate/internal/gitexporter"
+	"github.com/harness/harness-migrate/internal/report"
+	"github.com/harness/harness-migrate/internal/tracer"
+	"github.com/harness/harness-migrate/internal/types"
+
+	"github.com/drone/go-scm/scm"
+)
+
+func New(
+	client *scm.Client,
+	org string,
+	repo string,
+	checkpointer *checkpoint.CheckpointManager,
+	logger *gitexporter.FileLogger,
+	tracer tracer.Tracer,
+	report map[string]*report.Report,
+) *Export {
+	ckpt := make(map[string]types.User)
+	c, ok, err := checkpoint.GetCheckpointData[map[string]types.User](checkpointer, CheckpointKeyUsers)
+	if err != nil {
+		tracer.LogError("cannot load checkpoint userdata: %v", err)
+	}
+	if ok {
+		ckpt = c
+	}
+	return &Export{
+		github:            client,
+		org:               org,
+		repository:        repo,
+		checkpointManager: checkpointer,
+		tracer:            tracer,
+		userMap:           ckpt,
+		fileLogger:        logger,
+		report:            report,
+	}
+}
+
+// PullRequestReviewers implements gitexporter.Interface.
+func (e *Export) PullRequestReviewers(ctx context.Context, prNumber int) error {
+	// Mock implementation
+	fmt.Printf("Fetching reviewers for pull request #%d\n", prNumber)
+	return nil
+}

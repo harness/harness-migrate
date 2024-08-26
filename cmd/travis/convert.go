@@ -19,11 +19,10 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/drone/go-convert/convert/travis"
-
 	"github.com/alecthomas/chroma/quick"
 	"github.com/alecthomas/kingpin/v2"
 	"github.com/drone/go-convert/convert/harness/downgrader"
+	"github.com/drone/go-convert/convert/travis"
 	"github.com/mattn/go-isatty"
 )
 

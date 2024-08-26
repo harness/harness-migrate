@@ -1,7 +1,75 @@
-_notes*
-_testing
-**/testdata/**/output/*
-harness-migrate
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+
+# Output of the go coverage tool, specifically when used with LiteIDE
+*.out
+
+# Configuration file for LiteIDE
+.liteide/
+
+# IDE and editor specific files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+
+# Coverage reports
+*.cover
+
+# Dependency directories (remove the comment below if you use vendoring)
+# vendor/
+
+# Glide dependencies and packages
+.glide/
+glide.lock
+
+# Godep dependency directories
+Godeps/
+
+# Go workspace file
+go.work
+
+# Goland IDE files
+*.iml
+.idea_modules/
+__pycache__/
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# User-specific files
+*.local
+
+# Package files
+*.tar.gz
+*.zip
+*.sh
+
+# Build directories
+bin/
+obj/
+
+# Compiled object files
+*.o
+*.a
+
+# Coverage files
+*.coverprofile
+
+# Configuration files
 .env
-/data.json
-/release
+
+# Profiling data
+*.pprof
+
+migrator

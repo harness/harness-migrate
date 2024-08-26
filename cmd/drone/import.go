@@ -84,7 +84,7 @@ func (c *importCommand) run(*kingpin.ParseContext) error {
 	return importer.Import(ctx, org)
 }
 
-func (c *importCommand) readAndUnmarshalOrg(filename string, log slog.Logger) (*types.Org, error) {
+func (c *importCommand) readAndUnmarshalOrg(filename string, log *slog.Logger) (*types.Org, error) {
 	data, err := os.ReadFile(filename)
 	if err != nil {
 		log.Error("cannot read data file", nil)
@@ -100,7 +100,7 @@ func (c *importCommand) readAndUnmarshalOrg(filename string, log slog.Logger) (*
 	return org, nil
 }
 
-func (c *importCommand) createImporter(log slog.Logger, ctx context.Context) (*migrate.Importer, error) {
+func (c *importCommand) createImporter(log *slog.Logger, ctx context.Context) (*migrate.Importer, error) {
 	tracer_ := tracer.New()
 	defer tracer_.Close()
 
@@ -138,7 +138,7 @@ func (c *importCommand) createImporter(log slog.Logger, ctx context.Context) (*m
 	return importer, nil
 }
 
-func (c *importCommand) createAndVerifyScmClient(log slog.Logger, ctx context.Context) (*scm.Client, *scm.User, error) {
+func (c *importCommand) createAndVerifyScmClient(log *slog.Logger, ctx context.Context) (*scm.Client, *scm.User, error) {
 	client := util.CreateClient(
 		c.githubToken,
 		c.gitlabToken,

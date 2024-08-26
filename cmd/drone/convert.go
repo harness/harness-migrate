@@ -21,11 +21,10 @@ import (
 	"os"
 	"strings"
 
-	"github.com/drone/go-convert/convert/drone"
-	"github.com/drone/go-convert/convert/harness/downgrader"
-
 	"github.com/alecthomas/chroma/quick"
 	"github.com/alecthomas/kingpin/v2"
+	"github.com/drone/go-convert/convert/drone"
+	"github.com/drone/go-convert/convert/harness/downgrader"
 	"github.com/mattn/go-isatty"
 )
 

@@ -32,10 +32,10 @@ import (
 )
 
 // CreateLogger helper function creates a logger
-func CreateLogger(debug bool) slog.Logger {
+func CreateLogger(debug bool) *slog.Logger {
 	opts := new(slog.HandlerOptions)
 	if debug {
-		opts.Level = slog.DebugLevel
+		opts.Level = slog.LevelDebug
 	}
 	return slog.New(
 		opts.NewTextHandler(os.Stdout),

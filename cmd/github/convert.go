@@ -19,13 +19,11 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/mattn/go-isatty"
-
-	"github.com/drone/go-convert/convert/github"
-	"github.com/drone/go-convert/convert/harness/downgrader"
-
 	"github.com/alecthomas/chroma/quick"
 	"github.com/alecthomas/kingpin/v2"
+	"github.com/drone/go-convert/convert/github"
+	"github.com/drone/go-convert/convert/harness/downgrader"
+	"github.com/mattn/go-isatty"
 )
 
 type convertCommand struct {

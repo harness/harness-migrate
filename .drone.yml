@@ -4,13 +4,13 @@ name: default
 
 steps:
   - name: test
-    image: golang:1.19
+    image: golang:1.21
     commands:
       - go test -coverprofile=cover.out ./...
       - go tool cover -func=cover.out
 
   - name: build
-    image: golang:1.19
+    image: golang:1.21
     environment:
       CGO_ENABLED: 0
     commands:

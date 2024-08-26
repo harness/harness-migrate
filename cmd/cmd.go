@@ -24,6 +24,7 @@ import (
 	"github.com/harness/harness-migrate/cmd/github"
 	"github.com/harness/harness-migrate/cmd/gitimporter"
 	"github.com/harness/harness-migrate/cmd/gitlab"
+	"github.com/harness/harness-migrate/cmd/jenkinsxml"
 	"github.com/harness/harness-migrate/cmd/stash"
 	"github.com/harness/harness-migrate/cmd/terraform"
 	"github.com/harness/harness-migrate/cmd/travis"
@@ -51,6 +52,7 @@ func Command() {
 	drone.Register(app)
 	gitlab.Register(app)
 	github.Register(app)
+	jenkinsxml.Register(app)
 	travis.Register(app)
 	terraform.Register(app)
 	stash.Register(app)

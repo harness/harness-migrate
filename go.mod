@@ -7,7 +7,7 @@ require (
 	github.com/alecthomas/chroma v0.10.0
 	github.com/alecthomas/kingpin/v2 v2.3.1
 	github.com/drone/funcmap v0.0.0-20190918184546-d4ef6e88376d
-	github.com/drone/go-convert v0.0.0-20230919093251-7104c3bcc635
+	github.com/drone/go-convert v0.0.0-20240821195621-c6d7be7727ec
 	github.com/drone/go-scm v1.38.4
 	github.com/go-git/go-git/v5 v5.5.2
 	github.com/google/go-cmp v0.5.9
@@ -25,12 +25,12 @@ require (
 	github.com/schollz/progressbar/v3 v3.13.0
 	golang.org/x/exp v0.0.0-20230108222341-4b8118a2686a
 	golang.org/x/sync v0.7.0
-	golang.org/x/text v0.13.0
+	golang.org/x/text v0.17.0
 	gopkg.in/yaml.v2 v2.4.0
 )
 
 require (
-	dario.cat/mergo v1.0.0 // indirect
+	dario.cat/mergo v1.0.1 // indirect
 	github.com/Microsoft/go-winio v0.5.2 // indirect
 	github.com/ProtonMail/go-crypto v0.0.0-20221026131551-cf6655e29de4 // indirect
 	github.com/acomagu/bufpipe v1.0.3 // indirect

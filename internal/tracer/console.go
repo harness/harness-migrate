@@ -21,6 +21,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/fatih/color"
 	"github.com/schollz/progressbar/v3"
 )
 
@@ -39,15 +40,10 @@ func (c *console) Log(format string, args ...interface{}) {
 
 // LogError logs an error message to the console.
 func (c *console) LogError(format string, args ...interface{}) {
-	// ANSI escape code for red text
-	red := "\033[31m"
-	reset := "\033[0m"
 	// make sure only print the error message if passed
 	modifiedFormat := strings.ReplaceAll(format, "%w", "%v")
-	// Print red text
-	fmt.Println(red)
-	fmt.Printf(modifiedFormat, args...)
-	fmt.Println(reset)
+	fmt.Println()
+	color.Red(modifiedFormat, args...)
 }
 
 // New returns a tracer that outputs

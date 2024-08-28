@@ -170,4 +170,10 @@ type (
 	allowances struct {
 		TotalCount int `json:"totalCount"`
 	}
+
+	label struct {
+		Name        string `json:"name"`
+		Description string `json:"description"`
+		Color       string `json:"color"`
+	}
 )

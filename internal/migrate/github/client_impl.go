@@ -192,6 +192,17 @@ func (e *Export) FindBranchRuleset(
 	return e.convertBranchRuleset(out, repoSlug), res, err
 }
 
+func (e *Export) ListRepoLabels(
+	ctx context.Context,
+	repoSlug string,
+	opts types.ListOptions,
+) ([]*types.Label, *scm.Response, error) {
+	path := fmt.Sprintf("repos/%s/labels?%s", repoSlug, encodeListOptions(opts))
+	var out []*label
+	res, err := e.do(ctx, "GET", path, nil, &out)
+	return convertLabels(out), res, err
+}
+
 func (e *Export) do(ctx context.Context, method, path string, in, out interface{}) (*scm.Response, error) {
 	req := &scm.Request{
 		Method: method,

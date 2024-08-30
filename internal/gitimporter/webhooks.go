@@ -55,8 +55,10 @@ func (m *Importer) ImportWebhooks(
 
 func (m *Importer) readWebhooks(repoFolder string) (*types.WebhookData, error) {
 	webhookFile := filepath.Join(repoFolder, types.WebhookFileName)
+	var hooks *types.WebhookData
+
 	if _, err := os.Stat(webhookFile); os.IsNotExist(err) {
-		return nil, nil
+		return hooks, nil
 	}
 
 	data, err := ioutil.ReadFile(webhookFile)
@@ -64,7 +66,6 @@ func (m *Importer) readWebhooks(repoFolder string) (*types.WebhookData, error) {
 		return nil, fmt.Errorf("failed to read %q content from %q: %w", types.WebhookFileName, webhookFile, err)
 	}
 
-	var hooks *types.WebhookData
 	if err := json.Unmarshal(data, &hooks); err != nil {
 		return nil, fmt.Errorf("error parsing repo webhooks json: %w", err)
 	}

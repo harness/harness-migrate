@@ -45,6 +45,8 @@ type exportCommand struct {
 	url           string
 
 	checkpoint bool
+
+	flags gitexporter.Flags
 }
 
 func (c *exportCommand) run(*kingpin.ParseContext) error {
@@ -101,9 +103,15 @@ func (c *exportCommand) run(*kingpin.ParseContext) error {
 	fileLogger := &gitexporter.FileLogger{Location: c.file}
 	reporter := make(map[string]*report.Report)
 
+	flags := gitexporter.Flags{
+		NoPR:      c.flags.NoPR,
+		NoWebhook: c.flags.NoWebhook,
+		NoRule:    c.flags.NoRule,
+	}
+
 	e := github.New(client, c.org, repository, checkpointManager, fileLogger, tracer_, reporter)
 
-	exporter := gitexporter.NewExporter(e, c.file, c.user, c.token, tracer_, reporter)
+	exporter := gitexporter.NewExporter(e, c.file, c.user, c.token, tracer_, reporter, flags)
 	return exporter.Export(ctx)
 }
 
@@ -144,6 +152,18 @@ func registerGit(app *kingpin.CmdClause) {
 	cmd.Flag("resume", "resume from last checkpoint").
 		Default("false").
 		BoolVar(&c.checkpoint)
+
+	cmd.Flag("no-pr", "do NOT export pull requests and comments").
+		Default("false").
+		BoolVar(&c.flags.NoPR)
+
+	cmd.Flag("no-webhook", "do NOT export webhooks").
+		Default("false").
+		BoolVar(&c.flags.NoWebhook)
+
+	cmd.Flag("no-rule", "do NOT export branch protection rules").
+		Default("false").
+		BoolVar(&c.flags.NoRule)
 
 	cmd.Flag("debug", "enable debug logging").
 		BoolVar(&c.debug)

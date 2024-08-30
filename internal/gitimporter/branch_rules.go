@@ -38,7 +38,7 @@ func (m *Importer) ImportBranchRules(
 		return fmt.Errorf("failed to read branch rules from %q: %w", repoFolder, err)
 	}
 
-	if in == nil {
+	if len(in) == 0 {
 		m.Tracer.Stop(common.MsgCompleteImportBranchRules, 0, repoRef)
 		return nil
 	}
@@ -61,9 +61,11 @@ func (m *Importer) ImportBranchRules(
 }
 
 func (m *Importer) readBranchRules(repoFolder string) ([]*types.BranchRule, error) {
+	rules := make([]*types.BranchRule, 0)
+
 	branchRulesFile := filepath.Join(repoFolder, types.BranchRulesFileName)
 	if _, err := os.Stat(branchRulesFile); os.IsNotExist(err) {
-		return nil, nil
+		return rules, nil
 	}
 
 	data, err := ioutil.ReadFile(branchRulesFile)
@@ -71,7 +73,6 @@ func (m *Importer) readBranchRules(repoFolder string) ([]*types.BranchRule, erro
 		return nil, fmt.Errorf("failed to read content from %q: %w", branchRulesFile, err)
 	}
 
-	var rules []*types.BranchRule
 	if err := json.Unmarshal(data, &rules); err != nil {
 		return nil, fmt.Errorf("error parsing repo rules json: %w", err)
 	}

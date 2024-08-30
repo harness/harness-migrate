@@ -57,13 +57,17 @@ func (m *Importer) ImportPullRequests(
 
 func (m *Importer) readPRs(prFolder string) ([]*types.PullRequestData, error) {
 	pattern := regexp.MustCompile(`^pr\d+\.json$`)
+	prOut := make([]*types.PullRequestData, 0)
+
+	if _, err := os.Stat(prFolder); os.IsNotExist(err) {
+		return prOut, nil
+	}
 
 	fileEntries, err := os.ReadDir(prFolder)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read %s directory: %w", types.PullRequestDir, err)
 	}
 
-	prOut := make([]*types.PullRequestData, 0)
 	for _, entry := range fileEntries {
 		if entry.IsDir() || !pattern.MatchString(entry.Name()) {
 			continue

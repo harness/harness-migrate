@@ -44,13 +44,13 @@ Application also supports advanced option like `resume` which can help you resum
 
 ## Troubleshooting
 ### General
-### Export fails due to unresolved host
+#### Export fails due to unresolved host
 If project export fails due to unresolved host make sure bitbucket server is reachable from the machine which is running the migrator.
 
-### Missing webhooks or branch rules
+#### Missing webhooks or branch rules
 If you see missing items for any webhooks or branch rules you can refer `ExporterLogs.log` file in root of zip folder.
 
-### Webhooks don't have all the events
+#### Webhooks don't have all the events
 As of now all webhook events are not supported and you can check `ExporterLogs.log` file to get error logs.
 
 

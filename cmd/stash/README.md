@@ -8,19 +8,19 @@ Stash or bitbucket on-prem has multiple entities for which we support migration 
 - Webhooks
 - Branch Rules
 
-Items that are not imported or imported differently:
+Items that would not imported or imported differently:
 - Task lists: Task lists are imported as normal comments
 - Emoji reactions
 - Pull request reviewers and approvers
 - Any attachment
 - LFS objects
-- Webhooks: <Some webhook events are not supported>
+- Webhooks: Some webhook events are not supported. You can check supported triggers [here](https://apidocs.harness.io/tag/webhook#operation/createWebhook)
 
 ### Estimating export duration
 Export will depend on the size of repo and its pull request. A repo which has more pull request but less comments will take more time than one which has more comments and lesser pull requests.
 
 ## Prerequisites
-To import projects from stash, you must have admin access in for the project to successfully import all the supported entities. 
+To export projects from stash, you must have admin access in for the project to successfully export all the supported entities. 
 
 ### Users
 All the users encountered anywhere are stored by email and can be found in users.json in the exported zip file.
@@ -44,8 +44,8 @@ Application also supports advanced option like `resume` which can help you resum
 
 ## Troubleshooting
 ### General
-### Import fails due to unresolved host
-If project import fails due to unresolved host make sure bitbucket server is reachable from the machine which is running migrator.
+### Export fails due to unresolved host
+If project export fails due to unresolved host make sure bitbucket server is reachable from the machine which is running the migrator.
 
 ### Missing webhooks or branch rules
 If you see missing items for any webhooks or branch rules you can refer `ExporterLogs.log` file in root of zip folder.

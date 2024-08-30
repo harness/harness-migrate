@@ -42,6 +42,11 @@ type gitImport struct {
 	fileSizeLimit int64
 
 	filePath string
+
+	// optional flags to skip import repo meta data
+	skipPR      bool
+	skipWebhook bool
+	skipRule    bool
 }
 
 type UserInvite bool
@@ -62,7 +67,15 @@ func (c *gitImport) run(*kingpin.ParseContext) error {
 	c.endpoint, _ = strings.CutSuffix(c.endpoint, "/")
 	importer := gitimporter.NewImporter(
 		c.endpoint, c.harnessSpace, c.harnessRepo, c.harnessToken, c.filePath,
-		importUuid, c.fileSizeLimit, c.skipUsers, c.Gitness, c.trace, tracer_)
+		importUuid, c.Gitness, c.trace,
+		gitimporter.Flags{
+			SkipUsers:     c.skipUsers,
+			FileSizeLimit: c.fileSizeLimit,
+			SkipPR:        c.skipPR,
+			SkipWebhook:   c.skipWebhook,
+			SkipRule:      c.skipRule,
+		},
+		tracer_)
 
 	tracer_.Log("starting operation with id: %s", importUuid)
 	return importer.Import(ctx)
@@ -110,6 +123,21 @@ func registerGitImporter(app *kingpin.CmdClause) {
 		Default("false").
 		Envar("Gitness").
 		BoolVar(&c.Gitness)
+
+	cmd.Flag("skip-pr", "skip importing pull requests and comments").
+		Default("false").
+		Envar("harness_SKIP_PR").
+		BoolVar(&c.skipPR)
+
+	cmd.Flag("skip-webhook", "skip importing webhooks").
+		Default("false").
+		Envar("harness_SKIP_WEBHOOK").
+		BoolVar(&c.skipWebhook)
+
+	cmd.Flag("skip-rule", "skip importing branch protection rules").
+		Default("false").
+		Envar("harness_SKIP_RULES").
+		BoolVar(&c.skipRule)
 
 	cmd.Flag("debug", "enable debug logging").
 		BoolVar(&c.debug)

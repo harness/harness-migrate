@@ -37,20 +37,25 @@ var ErrAbortMigration = errors.New("aborting the migration. please checkout your
 type Importer struct {
 	Harness harness.Client
 
-	HarnessSpace string
-	HarnessRepo  string // optional for single repo import
-	HarnessToken string
-	Endpoint     string
-
-	FileSizeLimit int64
-
+	HarnessSpace    string
+	HarnessRepo     string // optional for single repo import
+	HarnessToken    string
+	Endpoint        string
 	ZipFileLocation string
-	SkipUsers       bool
-	Gitness         bool
 
-	Tracer tracer.Tracer
+	Gitness bool
+	Tracer  tracer.Tracer
 
 	RequestId string
+	flags     Flags
+}
+
+type Flags struct {
+	SkipUsers     bool
+	FileSizeLimit int64
+	SkipPR        bool
+	SkipWebhook   bool
+	SkipRule      bool
 }
 
 func NewImporter(
@@ -60,10 +65,9 @@ func NewImporter(
 	token,
 	location,
 	requestId string,
-	fileSizeLimit int64,
-	skipUsers,
 	gitness,
 	trace bool,
+	flags Flags,
 	tracer tracer.Tracer) *Importer {
 	spaceParts := strings.Split(space, "/")
 
@@ -81,10 +85,9 @@ func NewImporter(
 		Tracer:          tracer,
 		RequestId:       requestId,
 		Endpoint:        baseURL,
-		FileSizeLimit:   fileSizeLimit,
 		Gitness:         gitness,
 		ZipFileLocation: location,
-		SkipUsers:       skipUsers,
+		flags:           flags,
 	}
 }
 
@@ -173,7 +176,7 @@ func (m *Importer) Import(ctx context.Context) error {
 }
 
 func (m *Importer) checkUsers(unzipLocation string) error {
-	if m.SkipUsers {
+	if m.flags.SkipUsers {
 		return nil
 	}
 
@@ -206,7 +209,7 @@ func (m *Importer) checkUsers(unzipLocation string) error {
 func (m *Importer) createRepoAndDoPush(ctx context.Context, repoFolder string, repo *types.Repository) error {
 	hRepo, err := m.CreateRepo(repo, m.HarnessSpace, m.Tracer)
 	if err != nil {
-		return fmt.Errorf("failed to create repo %q: %w", repo.Slug, err)
+		return fmt.Errorf("failed to create repo: %w", err)
 	}
 
 	if repo.IsEmpty {
@@ -220,9 +223,9 @@ func (m *Importer) createRepoAndDoPush(ctx context.Context, repoFolder string, r
 	}
 
 	// update the file-size-limit as push might get declined by the pre-receive hook on server due to large file sizes.
-	if originalLimit < m.FileSizeLimit {
-		m.Tracer.Log("Updating the file-size-limit from %d to %d.", originalLimit, m.FileSizeLimit)
-		err := m.setFileSizeLimit(repoRef, m.FileSizeLimit, m.Tracer)
+	if originalLimit < m.flags.FileSizeLimit {
+		m.Tracer.Log("Updating the file-size-limit from %d to %d.", originalLimit, m.flags.FileSizeLimit)
+		err := m.setFileSizeLimit(repoRef, m.flags.FileSizeLimit, m.Tracer)
 		if err != nil {
 			return fmt.Errorf("failed to set file size limit on repo: %w", err)
 		}
@@ -234,8 +237,8 @@ func (m *Importer) createRepoAndDoPush(ctx context.Context, repoFolder string, r
 	}
 
 	// revert the file-size-limit to it's original value
-	if originalLimit < m.FileSizeLimit {
-		m.Tracer.Log("Reverting the file-size-limit from %d to its original value %d.", m.FileSizeLimit, originalLimit)
+	if originalLimit < m.flags.FileSizeLimit {
+		m.Tracer.Log("Reverting the file-size-limit from %d to its original value %d.", m.flags.FileSizeLimit, originalLimit)
 		err := m.setFileSizeLimit(repoRef, originalLimit, m.Tracer)
 		if err != nil {
 			return fmt.Errorf("failed to set file size limit on repo: %w", err)
@@ -246,16 +249,22 @@ func (m *Importer) createRepoAndDoPush(ctx context.Context, repoFolder string, r
 }
 
 func (m *Importer) importRepoMetaData(_ context.Context, repoRef, repoFolder string) error {
-	if err := m.ImportPullRequests(repoRef, repoFolder, m.Tracer); err != nil {
-		return fmt.Errorf("failed to import pull requests and comments for repo '%s': %w", repoRef, err)
+	if !m.flags.SkipPR {
+		if err := m.ImportPullRequests(repoRef, repoFolder, m.Tracer); err != nil {
+			return fmt.Errorf("failed to import pull requests and comments for repo '%s': %w", repoRef, err)
+		}
 	}
 
-	if err := m.ImportWebhooks(repoRef, repoFolder, m.Tracer); err != nil {
-		return fmt.Errorf("failed to import webhooks for repo '%s': %w", repoRef, err)
+	if !m.flags.SkipWebhook {
+		if err := m.ImportWebhooks(repoRef, repoFolder, m.Tracer); err != nil {
+			return fmt.Errorf("failed to import webhooks for repo '%s': %w", repoRef, err)
+		}
 	}
 
-	if err := m.ImportBranchRules(repoRef, repoFolder, m.Tracer); err != nil {
-		return fmt.Errorf("failed to import branch rules for repo '%s': %w", repoRef, err)
+	if !m.flags.SkipRule {
+		if err := m.ImportBranchRules(repoRef, repoFolder, m.Tracer); err != nil {
+			return fmt.Errorf("failed to import branch rules for repo '%s': %w", repoRef, err)
+		}
 	}
 
 	return nil

@@ -4,7 +4,7 @@ continuous integration pipelines from other providers to Harness CI. You can use
 **Please review [known conversion and migration issues](KNOWN_ISSUES_CONVERT.md
 ) before using this tool.**
 
-# Migrate Continuous Integration Pipelines 
+## Migrate Continuous Integration Pipelines 
 ## Install on Mac
 
 Intel CPU
@@ -130,7 +130,7 @@ $ terraform init
 $ terraform apply
 ```
 
-# Migrate Repositories <a id="repo-migrate"></a>
+## Migrate Repositories <a id="repo-migrate"></a>
 
 Migrating repositoires is a two-step process. 
 

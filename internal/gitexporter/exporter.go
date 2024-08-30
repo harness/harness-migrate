@@ -41,15 +41,25 @@ const (
 	UnknownEmailSuffix = "@unknownemail.harness.io"
 )
 
-type Exporter struct {
-	exporter    Interface
-	zipLocation string
-	ScmLogin    string
-	ScmToken    string
+type (
+	Exporter struct {
+		exporter    Interface
+		zipLocation string
+		ScmLogin    string
+		ScmToken    string
 
-	Tracer tracer.Tracer
-	Report map[string]*report.Report
-}
+		Tracer tracer.Tracer
+		Report map[string]*report.Report
+
+		flags Flags
+	}
+
+	Flags struct {
+		NoPR      bool // to not export pull requests and comments
+		NoWebhook bool // to not export webhooks
+		NoRule    bool // to not export branch protection rules
+	}
+)
 
 func NewExporter(
 	exporter Interface,
@@ -58,6 +68,7 @@ func NewExporter(
 	scmToken string,
 	tracer tracer.Tracer,
 	report map[string]*report.Report,
+	flags Flags,
 ) Exporter {
 	return Exporter{
 		exporter:    exporter,
@@ -66,6 +77,7 @@ func NewExporter(
 		ScmToken:    scmToken,
 		Tracer:      tracer,
 		Report:      report,
+		flags:       flags,
 	}
 }
 
@@ -267,34 +279,40 @@ func (e *Exporter) getData(ctx context.Context, path string) ([]*types.RepoData,
 		}
 
 		// 3. get all webhooks for each repo
-		webhooks, err := e.exporter.ListWebhooks(ctx, repo.RepoSlug, types.WebhookListOptions{})
-		if err != nil {
-			return nil, fmt.Errorf("encountered error in getting webhooks: %v", err)
+		if !e.flags.NoWebhook {
+			webhooks, err := e.exporter.ListWebhooks(ctx, repo.RepoSlug, types.WebhookListOptions{})
+			if err != nil {
+				return nil, fmt.Errorf("encountered error in getting webhooks: %v", err)
+			}
+			repoData[i].Webhooks = webhooks
+			e.Report[repo.RepoSlug].ReportMetric(ReportTypeWebhooks, len(webhooks.ConvertedHooks))
 		}
-		repoData[i].Webhooks = webhooks
-		e.Report[repo.RepoSlug].ReportMetric(ReportTypeWebhooks, len(webhooks.ConvertedHooks))
 
 		// 4. get all branch rules for each repo
-		branchRules, err := e.exporter.ListBranchRules(ctx, repo.RepoSlug, types.ListOptions{Page: 1, Size: 25})
-		if err != nil {
-			return nil, fmt.Errorf("encountered error in getting branch rules: %w", err)
+		if !e.flags.NoRule {
+			branchRules, err := e.exporter.ListBranchRules(ctx, repo.RepoSlug, types.ListOptions{Page: 1, Size: 25})
+			if err != nil {
+				return nil, fmt.Errorf("encountered error in getting branch rules: %w", err)
+			}
+			repoData[i].BranchRules = branchRules
+			e.Report[repo.RepoSlug].ReportMetric(ReportTypeBranchRules, len(branchRules))
 		}
-		repoData[i].BranchRules = branchRules
-		e.Report[repo.RepoSlug].ReportMetric(ReportTypeBranchRules, len(branchRules))
 
 		// 5. get all data for each pr
-		prs, err := e.exporter.ListPullRequests(ctx, repo.RepoSlug,
-			types.PullRequestListOptions{Page: 1, Size: 25, Open: true, Closed: true})
-		if err != nil {
-			return nil, fmt.Errorf("encountered error in getting pr: %w", err)
-		}
-		e.Report[repo.RepoSlug].ReportMetric(ReportTypePRs, len(prs))
+		if !e.flags.NoPR {
+			prs, err := e.exporter.ListPullRequests(ctx, repo.RepoSlug,
+				types.PullRequestListOptions{Page: 1, Size: 25, Open: true, Closed: true})
+			if err != nil {
+				return nil, fmt.Errorf("encountered error in getting pr: %w", err)
+			}
+			e.Report[repo.RepoSlug].ReportMetric(ReportTypePRs, len(prs))
 
-		prData, err := e.exportCommentsForPRs(ctx, prs, repo)
-		if err != nil {
-			return nil, fmt.Errorf("error getting comments for pr: %w", err)
+			prData, err := e.exportCommentsForPRs(ctx, prs, repo)
+			if err != nil {
+				return nil, fmt.Errorf("error getting comments for pr: %w", err)
+			}
+			repoData[i].PullRequestData = prData
 		}
-		repoData[i].PullRequestData = prData
 	}
 
 	return repoData, nil

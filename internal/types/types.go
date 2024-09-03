@@ -68,11 +68,6 @@ type (
 		Closed bool
 	}
 
-	WebhookListOptions struct {
-		Page int
-		Size int
-	}
-
 	RepoResponse struct {
 		scm.Repository
 		RepoSlug string

@@ -34,7 +34,9 @@ type Interface interface {
 
 	PullRequestRefs() []config.RefSpec
 
-	ListWebhooks(ctx context.Context, repoSlug string, opts types.WebhookListOptions) (types.WebhookData, error)
+	ListWebhooks(ctx context.Context, repoSlug string, opts types.ListOptions) (types.WebhookData, error)
 
 	ListBranchRules(ctx context.Context, repoSlug string, opts types.ListOptions) ([]*types.BranchRule, error)
+
+	ListLabels(ctx context.Context, repoSlug string)
 }

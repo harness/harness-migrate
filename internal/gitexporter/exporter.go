@@ -58,6 +58,7 @@ type (
 		NoPR      bool // to not export pull requests and comments
 		NoWebhook bool // to not export webhooks
 		NoRule    bool // to not export branch protection rules
+		NoLable   bool // to not export labels
 	}
 )
 
@@ -280,7 +281,7 @@ func (e *Exporter) getData(ctx context.Context, path string) ([]*types.RepoData,
 
 		// 3. get all webhooks for each repo
 		if !e.flags.NoWebhook {
-			webhooks, err := e.exporter.ListWebhooks(ctx, repo.RepoSlug, types.WebhookListOptions{})
+			webhooks, err := e.exporter.ListWebhooks(ctx, repo.RepoSlug, types.ListOptions{})
 			if err != nil {
 				return nil, fmt.Errorf("encountered error in getting webhooks: %v", err)
 			}
@@ -298,7 +299,12 @@ func (e *Exporter) getData(ctx context.Context, path string) ([]*types.RepoData,
 			e.Report[repo.RepoSlug].ReportMetric(ReportTypeBranchRules, len(branchRules))
 		}
 
-		// 5. get all data for each pr
+		// 5. get all labels
+		if !e.flags.NoLable {
+			labels, err := e.exporter.ListL
+		}
+
+		// 6. get all data for each pr
 		if !e.flags.NoPR {
 			prs, err := e.exporter.ListPullRequests(ctx, repo.RepoSlug,
 				types.PullRequestListOptions{Page: 1, Size: 25, Open: true, Closed: true})

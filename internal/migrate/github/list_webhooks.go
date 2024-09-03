@@ -30,7 +30,7 @@ import (
 func (e *Export) ListWebhooks(
 	ctx context.Context,
 	repoSlug string,
-	options types.WebhookListOptions,
+	options types.ListOptions,
 ) (types.WebhookData, error) {
 	e.tracer.Start(common.MsgStartExportWebhook, repoSlug)
 	var allWebhooks []*scm.Hook

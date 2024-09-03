@@ -151,13 +151,14 @@ func mapReference(reference scm.Reference) externalTypes.Reference {
 	}
 }
 
-func mapLabels(labels []scm.Label) []externalTypes.Label {
-	l := make([]externalTypes.Label, len(labels))
+func mapLabels(labels []scm.Label) []externalTypes.LabelsInput {
+	l := make([]externalTypes.LabelsInput, len(labels))
 	for i, label := range labels {
-		l[i] = externalTypes.Label{
+		l[i] = externalTypes.LabelsInput{
 			Name:  label.Name,
 			Color: label.Color,
 		}
+		// check if label name follows
 	}
 	return l
 }

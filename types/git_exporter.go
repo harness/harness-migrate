@@ -58,26 +58,26 @@ type (
 	Visibility int
 
 	PullRequest struct {
-		Number  int       `json:"number"`
-		Title   string    `json:"title"`
-		Body    string    `json:"body"`
-		SHA     string    `json:"sha"`
-		Ref     string    `json:"ref"`
-		Source  string    `json:"source"`
-		Target  string    `json:"target"`
-		Fork    string    `json:"fork"`
-		Link    string    `json:"link"`
-		Diff    string    `json:"diff"`
-		Draft   bool      `json:"draft"`
-		Closed  bool      `json:"closed"`
-		Merged  bool      `json:"merged"`
-		Merge   string    `json:"merge"`
-		Base    Reference `json:"base"`
-		Head    Reference `json:"head"`
-		Author  User      `json:"author"`
-		Created time.Time `json:"created"`
-		Updated time.Time `json:"updated"`
-		Labels  []Label   `json:"labels"`
+		Number  int           `json:"number"`
+		Title   string        `json:"title"`
+		Body    string        `json:"body"`
+		SHA     string        `json:"sha"`
+		Ref     string        `json:"ref"`
+		Source  string        `json:"source"`
+		Target  string        `json:"target"`
+		Fork    string        `json:"fork"`
+		Link    string        `json:"link"`
+		Diff    string        `json:"diff"`
+		Draft   bool          `json:"draft"`
+		Closed  bool          `json:"closed"`
+		Merged  bool          `json:"merged"`
+		Merge   string        `json:"merge"`
+		Base    Reference     `json:"base"`
+		Head    Reference     `json:"head"`
+		Author  User          `json:"author"`
+		Created time.Time     `json:"created"`
+		Updated time.Time     `json:"updated"`
+		Labels  []LabelsInput `json:"labels"`
 	}
 
 	Label struct {

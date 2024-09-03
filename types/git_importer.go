@@ -59,4 +59,10 @@ type (
 		Type  RuleType `json:"type"`
 		Rules []*Rule  `json:"rules"`
 	}
+
+	LabelsInput struct {
+		Name   string   `json:"name"`
+		Values []string `json:"values"`
+		Color  string   `json:"color"`
+	}
 )

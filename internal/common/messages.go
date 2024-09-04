@@ -60,6 +60,8 @@ const (
 	ErrListWebhook                  = "cannot list webhooks for repository %s: %w"
 	ErrListRepo                     = "cannot fetch repositories due to error :%w"
 	ErrCheckpointDataRead           = "cannot read checkpoint data: %w"
+	ErrCheckpointRepoDataSave       = "cannot save checkpoint repository data for %s: %w"
+	ErrCheckpointRepoPageSave       = "cannot save checkpoint repository page for %s: %w"
 	ErrCheckpointPrDataSave         = "cannot save checkpoint pr data: %w"
 	ErrCheckpointPrPageSave         = "cannot save checkpoint pr page: %w"
 	ErrCheckpointWebhooksDataSave   = "cannot save checkpoint webhook data for '%s': %w"

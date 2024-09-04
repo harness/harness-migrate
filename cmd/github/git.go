@@ -105,6 +105,7 @@ func (c *exportCommand) run(*kingpin.ParseContext) error {
 
 	flags := gitexporter.Flags{
 		NoPR:      c.flags.NoPR,
+		NoComment: c.flags.NoComment,
 		NoWebhook: c.flags.NoWebhook,
 		NoRule:    c.flags.NoRule,
 	}
@@ -156,6 +157,10 @@ func registerGit(app *kingpin.CmdClause) {
 	cmd.Flag("no-pr", "do NOT export pull requests and comments").
 		Default("false").
 		BoolVar(&c.flags.NoPR)
+
+	cmd.Flag("no-comment", "do NOT export pull request comments").
+		Default("false").
+		BoolVar(&c.flags.NoComment)
 
 	cmd.Flag("no-webhook", "do NOT export webhooks").
 		Default("false").

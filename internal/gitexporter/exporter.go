@@ -319,7 +319,7 @@ func (e *Exporter) getData(ctx context.Context, path string) ([]*types.RepoData,
 				continue
 			}
 
-			prData, err := e.exportCommentsForPRs(ctx, prs, repo)
+			prData, err := e.exportCommentsForPRs(ctx, prs, repo, e.Tracer)
 			if err != nil {
 				return nil, fmt.Errorf("error getting comments for pr: %w", err)
 			}
@@ -334,16 +334,16 @@ func (e *Exporter) exportCommentsForPRs(
 	ctx context.Context,
 	prs []types.PRResponse,
 	repo types.RepoResponse,
+	t tracer.Tracer,
 ) ([]*types.PullRequestData, error) {
 	taskPool := util.NewTaskPool(ctx, maxParallelism)
 	err := taskPool.Start()
-
 	if err != nil {
 		return nil, fmt.Errorf("error starting thread pool: %w", err)
 	}
 
 	prData := make([]*types.PullRequestData, len(prs))
-	g := e.startResultChannel(ctx, taskPool, prData)
+	g := e.startResultChannel(ctx, taskPool, prData, t)
 
 	for j, pr := range prs {
 		task := e.createPRTask(j, pr, repo)
@@ -383,13 +383,16 @@ func (e *Exporter) startResultChannel(
 	ctx context.Context,
 	taskPool *util.TaskPool,
 	prData []*types.PullRequestData,
+	tracer tracer.Tracer,
 ) *errgroup.Group {
 	g, _ := errgroup.WithContext(ctx)
 	g.Go(func() error {
 		for result := range taskPool.ResultCh {
 			if result.Err != nil {
-				taskPool.Cancel()
-				return result.Err
+				tracer.LogError(common.ErrGettingComments, result.Err)
+				taskPool.ForceShutdown()
+				//todo: handle error better
+				os.Exit(1)
 			}
 			if result.Data != nil {
 				prData[result.ID] = result.Data.(*types.PullRequestData)

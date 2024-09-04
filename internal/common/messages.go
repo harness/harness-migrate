@@ -86,4 +86,5 @@ const (
 	ErrCannotCreateFolder  = "cannot create folder: %w"
 	ErrFetchingFileData    = "error fetching data for file: %w"
 	ErrWritingFileData     = "error writing data in file: %w"
+	ErrGettingComments     = "encountered error in fetching comments: %v"
 )

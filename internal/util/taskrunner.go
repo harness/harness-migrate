@@ -125,3 +125,9 @@ func (tp *TaskPool) Shutdown() {
 	tp.Cancel()      // Cancel the context to stop all ongoing tasks
 	close(tp.ResultCh)
 }
+
+func (tp *TaskPool) ForceShutdown() {
+	tp.Cancel()
+	close(tp.TaskCh)
+	close(tp.ResultCh)
+}

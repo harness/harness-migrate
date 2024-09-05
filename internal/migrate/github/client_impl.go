@@ -232,6 +232,10 @@ func (e *Export) do(ctx context.Context, method, path string, in, out interface{
 	// snapshot the request rate limit
 	e.github.SetRate(res.Rate)
 
+	if res.Rate.Remaining == 0 {
+		return res, fmt.Errorf("Github rate limit has been reached. please wait for %d until try again.", res.Rate.Reset)
+	}
+	
 	// if an error is encountered, unmarshal and return the
 	// error response.
 	if res.Status > 300 {

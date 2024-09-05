@@ -2,6 +2,8 @@ package common
 
 const (
 	DefaultLimit              = 25
+	RepoCheckpointPage        = "org/%s"
+	RepoCheckpointData        = "org/%s/data"
 	PullRequestCheckpointPage = "%s/pr"
 	PullRequestCheckpointData = "%s/pr/data"
 	PRCommentCheckpointPage   = "%s/%d/comment"

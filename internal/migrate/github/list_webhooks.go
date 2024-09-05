@@ -71,6 +71,16 @@ func (e *Export) ListWebhooks(
 		}
 		allWebhooks = append(allWebhooks, webhooks...)
 
+		err = e.checkpointManager.SaveCheckpoint(checkpointDataKey, allWebhooks)
+		if err != nil {
+			e.tracer.LogError(common.ErrCheckpointWebhooksDataSave, err)
+		}
+
+		err = e.checkpointManager.SaveCheckpoint(checkpointPageKey, resp.Page.Next)
+		if err != nil {
+			e.tracer.LogError(common.ErrCheckpointWebhooksPageSave, repoSlug, err)
+		}
+
 		if resp.Page.Next == 0 {
 			break
 		}

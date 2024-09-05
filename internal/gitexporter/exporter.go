@@ -58,6 +58,7 @@ type (
 		NoPR      bool // to not export pull requests and comments
 		NoWebhook bool // to not export webhooks
 		NoRule    bool // to not export branch protection rules
+		NoComment bool // to not export pull request comments
 	}
 )
 
@@ -306,6 +307,17 @@ func (e *Exporter) getData(ctx context.Context, path string) ([]*types.RepoData,
 				return nil, fmt.Errorf("encountered error in getting pr: %w", err)
 			}
 			e.Report[repo.RepoSlug].ReportMetric(ReportTypePRs, len(prs))
+
+			if e.flags.NoComment {
+				pullreqData := make([]*types.PullRequestData, len(prs))
+				for j := range prs {
+					pullreqData[j] = &types.PullRequestData{
+						PullRequest: prs[j],
+					}
+				}
+				repoData[i].PullRequestData = pullreqData
+				continue
+			}
 
 			prData, err := e.exportCommentsForPRs(ctx, prs, repo, e.Tracer)
 			if err != nil {

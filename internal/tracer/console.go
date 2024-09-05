@@ -26,10 +26,11 @@ import (
 )
 
 type console struct {
-	bar  *progressbar.ProgressBar
-	time time.Time
-	done chan (bool)
-	once sync.Once
+	bar      *progressbar.ProgressBar
+	time     time.Time
+	done     chan (bool)
+	once     sync.Once
+	logLevel LogLevel
 }
 
 // Log logs a message to the console.
@@ -90,10 +91,21 @@ func (c *console) Stop(format string, args ...interface{}) {
 	fmt.Println("")
 }
 
+func (c *console) Debug() Tracer {
+	if c.logLevel == LogLevelDebug {
+		return c
+	}
+	return none{}
+}
+
 // Close stops the progress bar.
 func (c *console) Close() {
 	close(c.done)
 	c.bar.Exit()
+}
+
+func (c *console) WithLevel(level LogLevel) {
+	c.logLevel = level
 }
 
 // start starts the progress bar.

@@ -336,6 +336,8 @@ func (e *Exporter) exportCommentsForPRs(
 	repo types.RepoResponse,
 	t tracer.Tracer,
 ) ([]*types.PullRequestData, error) {
+	e.Tracer.Start(common.MsgStartCommentsFetch, repo.RepoSlug)
+	defer e.Tracer.Stop(common.MsgCompleteCommentsFetch, repo.RepoSlug)
 	taskPool := util.NewTaskPool(ctx, maxParallelism)
 	err := taskPool.Start()
 	if err != nil {

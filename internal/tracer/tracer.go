@@ -14,6 +14,13 @@
 
 package tracer
 
+type LogLevel string
+
+const (
+	LogLevelDebug LogLevel = "debug"
+	LogLevelInfo  LogLevel = "info"
+)
+
 // Tracer defines tracing methods.
 type Tracer interface {
 	// Start the named tracer.
@@ -30,6 +37,11 @@ type Tracer interface {
 
 	// Close the tracer.
 	Close()
+
+	Debug() Tracer
+
+	// WithLevel is used to set tracer log level at creation
+	WithLevel(level LogLevel)
 }
 
 // Default returns the default tracer (noop)
@@ -45,3 +57,7 @@ func (none) Stop(format string, args ...interface{})     {}
 func (none) Log(format string, args ...interface{})      {}
 func (none) LogError(format string, args ...interface{}) {}
 func (none) Close()                                      {}
+func (n none) Debug() Tracer {
+	return n
+}
+func (n none) WithLevel(level LogLevel) {}

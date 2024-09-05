@@ -30,6 +30,8 @@ const (
 	MsgCompleteExportWebhooks    = "Finished export %d webhooks for repository %s."
 	MsgStartExportPrComments     = "Starting export comments for repository %s pull request number %d."
 	MsgCompleteExportPrComments  = "Finished export %d comments for repository %s pull request number %d."
+	MsgStartCommentsFetch        = "Starting fetching comments for PRs in repo %s"
+	MsgCompleteCommentsFetch     = "Finished fetching comments for PRs in repo %s"
 	MsgCheckpointLoadPRComments  = "Finished export %d comments for repository %s pull request number %d from checkpoint."
 	MsgStartExportBranchRules    = "Starting export branch rules for repository %s."
 	MsgFailedExportBranchRules   = "Could not export branch rules for repository %s."

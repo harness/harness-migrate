@@ -20,16 +20,14 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/alecthomas/kingpin/v2"
+	scmstash "github.com/drone/go-scm/scm/driver/stash"
+	"github.com/drone/go-scm/scm/transport"
 	"github.com/harness/harness-migrate/cmd/util"
 	"github.com/harness/harness-migrate/internal/checkpoint"
 	"github.com/harness/harness-migrate/internal/gitexporter"
 	"github.com/harness/harness-migrate/internal/migrate/stash"
 	"github.com/harness/harness-migrate/internal/report"
-	"github.com/harness/harness-migrate/internal/tracer"
-
-	"github.com/alecthomas/kingpin/v2"
-	scmstash "github.com/drone/go-scm/scm/driver/stash"
-	"github.com/drone/go-scm/scm/transport"
 	"golang.org/x/exp/slog"
 )
 
@@ -77,7 +75,7 @@ func (c *exportCommand) run(*kingpin.ParseContext) error {
 	}
 
 	// create the tracer
-	tracer_ := tracer.New()
+	tracer_ := util.CreateTracerWithLevel(c.debug)
 	defer tracer_.Close()
 
 	checkpointManager := checkpoint.NewCheckpointManager(c.file)

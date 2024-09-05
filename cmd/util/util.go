@@ -20,6 +20,7 @@ import (
 	"os"
 
 	"github.com/harness/harness-migrate/internal/migrate"
+	"github.com/harness/harness-migrate/internal/tracer"
 
 	"github.com/drone/go-scm/scm"
 	"github.com/drone/go-scm/scm/driver/bitbucket"
@@ -123,4 +124,12 @@ func defaultTransport(skipVerify bool) http.RoundTripper {
 			InsecureSkipVerify: skipVerify,
 		},
 	}
+}
+
+func CreateTracerWithLevel(debug bool) tracer.Tracer {
+	tracer_ := tracer.New()
+	if debug == true {
+		tracer_.WithLevel(tracer.LogLevelDebug)
+	}
+	return tracer_
 }

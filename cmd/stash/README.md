@@ -51,6 +51,24 @@ If project export fails due to unresolved host make sure bitbucket server is rea
 If you see missing items for any webhooks or branch rules you can refer `ExporterLogs.log` file in root of zip folder.
 
 #### Webhooks don't have all the events
-As of now all webhook events are not supported and you can check `ExporterLogs.log` file to get error logs.
+As of now all webhook events are not supported and you can check `ExporterLogs.log` file to get error logs. Here's how supported events are mapped after import.
 
 
+| Bitbucket Server events | Harness Code events
+|---|---|
+| Repository Push | Branch Created, Branch Updated, Branch Deleted, Tag Created, Tag updated, Tag Deleted|
+| Pull Request Opened |  PR Created, PR Reopened |
+| Pull Request Merged |  PR Merged |
+| Pull Request Modified | PR Updated |
+| Pull Request Declined | PR Closed |
+| Pull Request Source branch updated | PR Branch Updated |
+| Pull Request Comment Added | PR Comment Created |
+
+#### Branch protection rules 
+
+Supported branch models and branch permissions are imported as branch rules as follows:
+| Bitbucket Server rule | Harness Code rule
+|---|---|
+| Prevent all changes | Block branch creation, Block branch deletion, Require pull request|
+| Prevent deletion |Block branch deletion |
+| Prevent rewriting history, Prevent changes without a pull request | Require pull request |

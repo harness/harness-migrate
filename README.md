@@ -1,3 +1,5 @@
+# Harness Migrator
+
 **harness-migrate** is a command line utility to help convert and migrate
 continuous integration pipelines from other providers to Harness CI. You can use this tool to migrate repositories following guidlines [below](#migrate-repositories).
 
@@ -8,7 +10,7 @@ continuous integration pipelines from other providers to Harness CI. You can use
 
 Migrating repositoires is a two-step process. 
 
-1. Export: Use `git-export` to export your repositories from your current provider. Guidlines for [Bitbucket On-perm](cmd/stash/README.md); support for GitHub, and GitLab will be added. The exported data will be saved in a zip file.
+1. Export: Use `git-export` to export your repositories from your current provider. Guidlines for [Bitbucket On-perm](cmd/stash/README.md), [GitHub](cmd/github/README.md); support for Bitbucket and GitLab will be added. The exported data will be saved in a zip file.
 
 2. Import: Import the exported zip file into Harness using `git-import` to create new repositories as explained [here](cmd/gitimporter/README.md).
 

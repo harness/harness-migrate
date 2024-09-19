@@ -29,6 +29,32 @@ All the users encountered anywhere are stored by email and can be found in users
 ### Installing
 You can install the migrator via github releases or run `make build` with latest go version present in your system.
 
+## Branch Protection and Webhooks
+When they are exported, supported Github branch protection rules and webhooks are stored in zip file, which later during import to harness code are mapped according to:
+
+### Webhooks
+| Github events | Harness Code events
+|---|---|
+| Branch or tag creation |	Branch Created, Tag Created |
+| Branch or tag deletion |	Branch Deleted, Tag Deleted |
+| Pull requests | PR created, PR updated, PR closed, PR reopened, PR merged |
+| Pull request review comments, Commit comments	| PR comment created |
+| Pushes | Branch updated, Tag updated, PR branch updated |
+
+
+#### Branch protection rules 
+| Github rule(set) | Harness Code rule
+|---|---|
+| Restrict creations | Block branch creation |
+| Restrict deletions | Block branch deletion |
+| Restrict updates   | Require pull request | 
+| Require linear history |  Require pull request |
+| Require a pull request before merging |  Require pull request |
+| Dismiss stale pull request approvals when new commits are pushed |  Require approval of new changes |
+| Require approval of the most recent reviewable push | Require approval of new changes |
+| Require review from Code Owners | Require review from code owners |
+| Require conversation resolution before merging | Require comment resolution |
+
 ## Commands 
 As a quick start you can run 
 ```
@@ -54,29 +80,5 @@ If you see errors in listing webhooks, make sure the provided token has admin pe
 #### Missing webhooks or branch rules
 If you see missing items for any webhooks or branch rules you can refer `ExporterLogs.log` file in root of zip folder.
 
-
 #### Webhooks don't have all the events
-As of now all webhook events are not supported and you can check `ExporterLogs.log` file to get error logs. Here's how supported events are mapped after import.
-
-| Github events | Harness Code events
-|---|---|
-| Branch or tag creation |	Branch Created, Tag Created |
-| Branch or tag deletion |	Branch Deleted, Tag Deleted |
-| Pull requests | PR created, PR updated, PR closed, PR reopened, PR merged |
-| Pull request review comments, Commit comments	| PR comment created |
-| Pushes | Branch updated, Tag updated, PR branch updated |
-
-
-#### Branch protection rules 
-Supported branch rules and rulesets are imported as branch rules as follows:
-| Github rule(set) | Harness Code rule
-|---|---|
-| Restrict creations | Block branch creation |
-| Restrict deletions | Block branch deletion |
-| Restrict updates   | Require pull request | 
-| Require linear history |  Require pull request |
-| Require a pull request before merging |  Require pull request |
-| -- Dismiss stale pull request approvals when new commits are pushed |  Require approval of new changes |
-| -- Require approval of the most recent reviewable push | Require approval of new changes |
-| -- Require review from Code Owners | Require review from code owners |
-| -- Require conversation resolution before merging | Require comment resolution |
+As of now all webhook events are not supported and you can check `ExporterLogs.log` file to get error logs. 

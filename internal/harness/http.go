@@ -101,25 +101,30 @@ func Open(rawurl, method string, setAuth func(h *http.Header), in, out interface
 		return resp.Body, nil
 	}
 
+	defer resp.Body.Close()
+	// Read and store response body
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("error reading response body: %w", err)
+	}
+
+	// attempt to unmarshal the error into the custom Error structure.
+	resperr := new(Error)
+	if err := json.Unmarshal(body, resperr); err != nil {
+		return nil, fmt.Errorf("error unmarshing response body: %w", err)
+	}
+
 	switch resp.StatusCode {
 	case 401:
-		return nil, ErrUnauthorized
+		return nil, fmt.Errorf("%w: %s", ErrUnauthorized, resperr.Message)
 	case 403:
-		return nil, ErrForbidden
+		return nil, fmt.Errorf("%w: %s", ErrForbidden, resperr.Message)
 	case 404:
-		return nil, ErrNotFound
+		return nil, fmt.Errorf("%w: %s", ErrNotFound, resperr.Message)
 	case 409:
-		return nil, ErrDuplicate
+		return nil, fmt.Errorf("%w: %s", ErrDuplicate, resperr.Message)
 	default:
-		defer resp.Body.Close()
-		out, _ := ioutil.ReadAll(resp.Body)
-		// attempt to unmarshal the error into the
-		// custom Error structure.
-		resperr := new(Error)
-		if jsonerr := json.Unmarshal(out, resperr); jsonerr == nil {
-			return nil, resperr
-		}
 		// else return the error body as a string
-		return nil, fmt.Errorf("client error %d: %s", resp.StatusCode, string(out))
+		return nil, fmt.Errorf("client error %d: %s", resp.StatusCode, resperr.Message)
 	}
 }

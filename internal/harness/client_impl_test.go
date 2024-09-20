@@ -248,7 +248,7 @@ func TestCreateError(t *testing.T) {
 		return
 	}
 
-	got, want := err.Error(), "A project with identifier [foo] and orgIdentifier [bar] is already present"
+	got, want := err.Error(), "client error 400: A project with identifier [foo] and orgIdentifier [bar] is already present"
 	if got != want {
 		t.Errorf("Expect error %s, got %s", want, got)
 	}

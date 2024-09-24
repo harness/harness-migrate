@@ -18,6 +18,7 @@ import (
 	"context"
 
 	"github.com/harness/harness-migrate/internal/types"
+	externalTypes "github.com/harness/harness-migrate/types"
 
 	"github.com/go-git/go-git/v5/config"
 )
@@ -34,7 +35,9 @@ type Interface interface {
 
 	PullRequestRefs() []config.RefSpec
 
-	ListWebhooks(ctx context.Context, repoSlug string, opts types.WebhookListOptions) (types.WebhookData, error)
+	ListWebhooks(ctx context.Context, repoSlug string, opts types.ListOptions) (types.WebhookData, error)
 
 	ListBranchRules(ctx context.Context, repoSlug string, opts types.ListOptions) ([]*types.BranchRule, error)
+
+	ListLabels(ctx context.Context, repoSlug string, opts types.ListOptions) (map[string]externalTypes.Label, error)
 }

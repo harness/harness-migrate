@@ -57,9 +57,14 @@ func (e *Export) ListPullRequestComments(
 		if len(comments) == 0 {
 			break
 		}
-		allComments = append(allComments, common.MapPRComment(comments)...)
 
-		err = e.checkpointManager.SaveCheckpoint(checkpointDataKey, allComments)
+		commentsWithAuthor, err := e.addEmailToAuthorInComments(ctx, common.MapPRComment(comments))
+		if err != nil {
+			return nil, fmt.Errorf("error getting author email: %w", err)
+		}
+		allComments = append(allComments, commentsWithAuthor...)
+
+		err = e.checkpointManager.SaveCheckpoint(checkpointDataKey, commentsWithAuthor)
 		if err != nil {
 			e.tracer.LogError(common.ErrCheckpointPrCommentsDataSave, err)
 		}

@@ -4,9 +4,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/harness/harness-migrate/internal/types"
-
 	"github.com/drone/go-scm/scm"
+	"github.com/harness/harness-migrate/internal/types"
 )
 
 func MapRepository(repos []*scm.Repository) []types.RepoResponse {

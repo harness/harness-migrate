@@ -27,6 +27,7 @@ const (
 	GitDir                        = "git"
 	WebhookFileName               = "webhooks.json"
 	BranchRulesFileName           = "branch_rules.json"
+	LabelsFileName                = "labels.json"
 	UsersFileName                 = "users.json"
 	RuleTypeBranch       RuleType = "branch"
 )
@@ -81,8 +82,10 @@ type (
 	}
 
 	Label struct {
-		Name  string `json:"name"`
-		Color string `json:"color"`
+		Name        string `json:"name"`
+		Value       string `json:"value"`
+		Description string `json:"description"`
+		Color       string `json:"color"`
 	}
 
 	// User represents a user account.
@@ -157,6 +160,7 @@ type (
 		PullRequestData []*PullRequestData `json:"pull_request_data"`
 		BranchRules     []*BranchRule      `json:"branch_rules"`
 		Webhooks        WebhookData        `json:"webhooks"`
+		Labels          []Label            `json:"labels"`
 	}
 
 	PullRequestData struct {

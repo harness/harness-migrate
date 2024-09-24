@@ -242,6 +242,23 @@ func (c *gitnessClient) ImportRules(repoRef string, in *types.RulesInput) error 
 	return nil
 }
 
+func (c *gitnessClient) ImportLabels(repoRef string, in *types.LabelsInput) error {
+	repoRefParts := strings.Split(repoRef, "/")
+	if len(repoRefParts) < 2 {
+		return fmt.Errorf("%d: invalid repo reference ", http.StatusBadRequest)
+	}
+
+	parentRef := strings.Join(repoRefParts[:len(repoRefParts)-1], encodedPathSeparator)
+	uri := fmt.Sprintf("%s/api/v1/migrate/spaces/%s/labels",
+		c.address,
+		parentRef,
+	)
+	if err := c.post(uri, in, nil); err != nil {
+		return err
+	}
+	return nil
+}
+
 func (c *gitnessClient) CheckUsers(in *types.CheckUsersInput) (*types.CheckUsersOutput, error) {
 	out := new(types.CheckUsersOutput)
 	uri := fmt.Sprintf("%s/api/v1/principals/check-emails", c.address)

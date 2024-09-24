@@ -21,6 +21,7 @@ import (
 
 	"github.com/drone/go-scm/scm"
 	"github.com/harness/harness-migrate/internal/types/enum"
+	"github.com/harness/harness-migrate/types"
 )
 
 // Org defines an organization.
@@ -68,15 +69,16 @@ type (
 		Closed bool
 	}
 
-	WebhookListOptions struct {
-		Page int
-		Size int
-	}
-
 	RepoResponse struct {
 		scm.Repository
 		RepoSlug string
 		IsEmpty  bool
+	}
+
+	LabelResponse struct {
+		Name        string
+		Color       string
+		Description string
 	}
 
 	ListOptions struct {
@@ -98,6 +100,7 @@ type (
 		PullRequestData []*PullRequestData
 		Webhooks        WebhookData
 		BranchRules     []*BranchRule
+		Labels          map[string]types.Label
 	}
 
 	Hunk struct {

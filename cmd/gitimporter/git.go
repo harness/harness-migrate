@@ -47,6 +47,7 @@ type gitImport struct {
 	skipPR      bool
 	skipWebhook bool
 	skipRule    bool
+	skipLabel   bool
 }
 
 type UserInvite bool
@@ -74,6 +75,7 @@ func (c *gitImport) run(*kingpin.ParseContext) error {
 			SkipPR:        c.skipPR,
 			SkipWebhook:   c.skipWebhook,
 			SkipRule:      c.skipRule,
+			SkipLabel:     c.skipLabel,
 		},
 		tracer_)
 
@@ -128,6 +130,11 @@ func registerGitImporter(app *kingpin.CmdClause) {
 		Default("false").
 		Envar("harness_SKIP_PR").
 		BoolVar(&c.skipPR)
+
+	cmd.Flag("skip-label", "skip importing labels").
+		Default("false").
+		Envar("harness_SKIP_Labels").
+		BoolVar(&c.skipLabel)
 
 	cmd.Flag("skip-webhook", "skip importing webhooks").
 		Default("false").

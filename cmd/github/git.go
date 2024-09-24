@@ -106,6 +106,7 @@ func (c *exportCommand) run(*kingpin.ParseContext) error {
 		NoComment: c.flags.NoComment,
 		NoWebhook: c.flags.NoWebhook,
 		NoRule:    c.flags.NoRule,
+		NoLabel:   c.flags.NoLabel,
 	}
 
 	e := github.New(client, c.org, repository, checkpointManager, fileLogger, tracer_, reporter)
@@ -167,6 +168,10 @@ func registerGit(app *kingpin.CmdClause) {
 	cmd.Flag("no-rule", "do NOT export branch protection rules").
 		Default("false").
 		BoolVar(&c.flags.NoRule)
+
+	cmd.Flag("no-label", "do NOT export labels").
+		Default("false").
+		BoolVar(&c.flags.NoLabel)
 
 	cmd.Flag("debug", "enable debug logging").
 		BoolVar(&c.debug)

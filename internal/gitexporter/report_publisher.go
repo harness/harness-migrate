@@ -6,6 +6,7 @@ const (
 	ReportTypeWebhooks    = "webhook"
 	ReportTypePRs         = "pull requests"
 	ReportTypeBranchRules = "branch rules"
+	ReportTypeLabels      = "labels"
 	ReportTypeUsers       = "users"
 )
 

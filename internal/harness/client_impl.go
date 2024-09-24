@@ -362,6 +362,18 @@ func (c *client) UpdateRepositoryState(repoRef string, in *UpdateRepositoryState
 	return out, nil
 }
 
+func (c *client) ImportRules(repoRef string, in *types.RulesInput) error {
+	repoRef = strings.ReplaceAll(repoRef, pathSeparator, encodedPathSeparator)
+	uri := fmt.Sprintf("%s/gateway/code/api/v1/migrate/repos/%s/rules",
+		c.address,
+		repoRef,
+	)
+	if err := c.post(uri, in, nil); err != nil {
+		return err
+	}
+	return nil
+}
+
 func (c *client) ImportPRs(repoRef string, in *types.PRsImportInput) error {
 	queryParams, err := getQueryParamsFromRepoRef(repoRef)
 	if err != nil {
@@ -399,16 +411,17 @@ func (c *client) ImportWebhooks(repoRef string, in *types.WebhookInput) error {
 	return nil
 }
 
-func (c *client) ImportRules(repoRef string, in *types.RulesInput) error {
+func (c *client) ImportLabels(repoRef string, in *types.LabelsInput) error {
 	queryParams, err := getQueryParamsFromRepoRef(repoRef)
 	if err != nil {
 		return err
 	}
+	repoRefParts := strings.Split(repoRef, "/")
+	parentRef := strings.Join(repoRefParts[:len(repoRefParts)-1], encodedPathSeparator)
 
-	repoRef = strings.ReplaceAll(repoRef, pathSeparator, encodedPathSeparator)
-	uri := fmt.Sprintf("%s/gateway/code/api/v1/migrate/repos/%s/rules?%s",
+	uri := fmt.Sprintf("%s/gateway/code/api/v1/migrate/spaces/%s/labels?%s",
 		c.address,
-		repoRef,
+		parentRef,
 		queryParams,
 	)
 	if err := c.post(uri, in, nil); err != nil {

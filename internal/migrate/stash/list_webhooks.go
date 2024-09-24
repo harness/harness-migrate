@@ -30,11 +30,14 @@ import (
 func (e *Export) ListWebhooks(
 	ctx context.Context,
 	repoSlug string,
-	options types.WebhookListOptions,
+	options types.ListOptions,
 ) (types.WebhookData, error) {
 	e.tracer.Start(common.MsgStartExportWebhook, repoSlug)
 	var allWebhooks []*scm.Hook
-	opts := scm.ListOptions{Size: 25, Page: 1}
+	opts := scm.ListOptions{
+		Size: options.Size,
+		Page: options.Page,
+	}
 
 	checkpointDataKey := fmt.Sprintf(common.WebhookCheckpointData, repoSlug)
 	val, ok, err := checkpoint.GetCheckpointData[[]*scm.Hook](e.checkpointManager, checkpointDataKey)

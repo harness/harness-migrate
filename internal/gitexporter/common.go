@@ -15,6 +15,8 @@
 package gitexporter
 
 import (
+	"strings"
+
 	"github.com/harness/harness-migrate/internal/types"
 	externalTypes "github.com/harness/harness-migrate/types"
 
@@ -118,7 +120,9 @@ func mapVisibility(visibility scm.Visibility) externalTypes.Visibility {
 	}
 }
 
-func mapPR(request scm.PullRequest) externalTypes.PullRequest {
+func mapPR(request scm.PullRequest,
+	labelsMap map[string]externalTypes.Label,
+) externalTypes.PullRequest {
 	return externalTypes.PullRequest{
 		Number:  request.Number,
 		Title:   request.Title,
@@ -139,7 +143,7 @@ func mapPR(request scm.PullRequest) externalTypes.PullRequest {
 		Author:  externalTypes.User(request.Author),
 		Created: request.Created,
 		Updated: request.Updated,
-		Labels:  mapLabels(request.Labels),
+		Labels:  mapLabels(request.Labels, labelsMap),
 	}
 }
 
@@ -151,14 +155,30 @@ func mapReference(reference scm.Reference) externalTypes.Reference {
 	}
 }
 
-func mapLabels(labels []scm.Label) []externalTypes.Label {
-	l := make([]externalTypes.Label, len(labels))
-	for i, label := range labels {
+func mapLabels(PRlabels []scm.Label, labelsMap map[string]externalTypes.Label) []externalTypes.Label {
+	l := make([]externalTypes.Label, len(PRlabels))
+	for i, label := range PRlabels {
+		if _, exists := labelsMap[label.Name]; exists {
+			l[i] = labelsMap[label.Name]
+			continue
+		}
+		// Gitlab have unique formatting for scoped labels in a form of key::value or key1::key2::value
+		// get the index of the label scope
+		index := strings.LastIndex(label.Name, "::")
+		if index != -1 {
+			key := label.Name[:index]
+			if _, exists := labelsMap[key]; exists {
+				l[i] = labelsMap[key]
+				continue
+			}
+		}
+		// log that PR has a label that hasnt been found in the repo labels
+		// let the server handles the absence of the label?
 		l[i] = externalTypes.Label{
-			Name:  label.Name,
-			Color: label.Color,
+			Name: label.Name,
 		}
 	}
+
 	return l
 }
 

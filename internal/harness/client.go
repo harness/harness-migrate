@@ -94,11 +94,14 @@ type Client interface {
 	// ImportPRs imports pull requests of a repository.
 	ImportPRs(repoRef string, in *types.PRsImportInput) error
 
-	// ImportWebhooks imports webhooks of a repository
+	// ImportWebhooks imports webhooks of a repository.
 	ImportWebhooks(repoRef string, in *types.WebhookInput) error
 
-	// ImportRules imports protection rules of a repository
+	// ImportRules imports protection rules of a repository.
 	ImportRules(repoRef string, in *types.RulesInput) error
+
+	// ImportLabels imports labels of a repository or space.
+	ImportLabels(parentRef string, in *types.LabelsInput) error
 
 	// CheckUsers provides all email id to harness code of users which needs to be checked for existence.
 	CheckUsers(in *types.CheckUsersInput) (*types.CheckUsersOutput, error)

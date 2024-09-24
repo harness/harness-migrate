@@ -23,20 +23,18 @@ import (
 	"regexp"
 
 	"github.com/harness/harness-migrate/internal/common"
-	"github.com/harness/harness-migrate/internal/tracer"
 	"github.com/harness/harness-migrate/types"
 )
 
 func (m *Importer) ImportPullRequests(
 	repoRef string,
 	repoFolder string,
-	tracer tracer.Tracer,
 ) error {
-	tracer.Start(common.MsgStartImportPRs, repoRef)
+	m.Tracer.Start(common.MsgStartImportPRs, repoRef)
 	prDir := filepath.Join(repoFolder, types.PullRequestDir)
 	in, err := m.readPRs(prDir)
 	if err != nil {
-		tracer.Stop(common.ErrImportPRs, repoRef, err)
+		m.Tracer.Stop(common.ErrImportPRs, repoRef, err)
 		return fmt.Errorf("failed to read pull requests and comments from %q: %w", prDir, err)
 	}
 
@@ -45,8 +43,8 @@ func (m *Importer) ImportPullRequests(
 		return nil
 	}
 
-	if err := m.Harness.ImportPRs(repoRef, &types.PRsImportInput{in}); err != nil {
-		tracer.Stop(common.ErrImportPRs, repoRef, err)
+	if err := m.Harness.ImportPRs(repoRef, &types.PRsImportInput{PullRequestData: in}); err != nil {
+		m.Tracer.Stop(common.ErrImportPRs, repoRef, err)
 		return fmt.Errorf("failed to import pull requests and comments for repo '%s' : %w",
 			repoRef, err)
 	}

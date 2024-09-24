@@ -59,6 +59,7 @@ type (
 		NoWebhook bool // to not export webhooks
 		NoRule    bool // to not export branch protection rules
 		NoComment bool // to not export pull request comments
+		NoLabel   bool // to not export repo/space labels
 	}
 )
 
@@ -157,6 +158,11 @@ func (e *Exporter) writeJsonForRepo(repo *externalTypes.RepositoryData, path str
 		return fmt.Errorf("cannot write branch rules: %w", err)
 	}
 
+	err = e.writeLables(repo, pathRepo)
+	if err != nil {
+		return fmt.Errorf("unable to write labels: %w", err)
+	}
+
 	err = e.writePRs(repo, pathRepo)
 	if err != nil {
 		return fmt.Errorf("cannot write PRs: %w", err)
@@ -223,6 +229,21 @@ func (e *Exporter) writeWebhooks(repo *externalTypes.RepositoryData, pathRepo st
 	return nil
 }
 
+func (e *Exporter) writeLables(repo *externalTypes.RepositoryData, pathRepo string) error {
+	if len(repo.Labels) == 0 {
+		return nil
+	}
+	labelJson, err := util.GetJson(repo.Labels)
+	if err != nil {
+		log.Printf("cannot serialize into json: %v", err)
+	}
+	err = util.WriteFile(filepath.Join(pathRepo, externalTypes.LabelsFileName), labelJson)
+	if err != nil {
+		return fmt.Errorf("error writing labels json: %w", err)
+	}
+	return nil
+}
+
 func (e *Exporter) writeUsersJson(usersMap map[string]bool) error {
 	if len(usersMap) == 0 {
 		return nil
@@ -249,7 +270,7 @@ func (e *Exporter) writeUsersJson(usersMap map[string]bool) error {
 func (e *Exporter) getData(ctx context.Context, path string) ([]*types.RepoData, error) {
 	repoData := make([]*types.RepoData, 0)
 
-	// 1. list all the repos for the given org
+	// 1. list all the repos for the given space (org/project/grpup)
 	repositories, err := e.exporter.ListRepositories(ctx, types.ListOptions{Page: 1, Size: 25})
 	if err != nil {
 		return nil, fmt.Errorf("cannot list repositories: %w", err)
@@ -261,7 +282,6 @@ func (e *Exporter) getData(ctx context.Context, path string) ([]*types.RepoData,
 		e.Report[repository.RepoSlug] = report.Init(repository.RepoSlug)
 	}
 
-	// 2. list pr per repo
 	for i, repo := range repositories {
 		repoPath := filepath.Join(path, repo.RepoSlug)
 		err := util.CreateFolder(repoPath)
@@ -269,6 +289,7 @@ func (e *Exporter) getData(ctx context.Context, path string) ([]*types.RepoData,
 			return nil, fmt.Errorf(common.ErrWritingFileData, err)
 		}
 
+		// 2. clone git data for each repo
 		isEmpty, err := e.CloneRepository(ctx, repo.Repository, repoPath, repo.RepoSlug, e.exporter.PullRequestRefs(), e.Tracer)
 		if err != nil {
 			return nil, fmt.Errorf("cannot clone the git repo for %s: %w", repo.RepoSlug, err)
@@ -281,7 +302,7 @@ func (e *Exporter) getData(ctx context.Context, path string) ([]*types.RepoData,
 
 		// 3. get all webhooks for each repo
 		if !e.flags.NoWebhook {
-			webhooks, err := e.exporter.ListWebhooks(ctx, repo.RepoSlug, types.WebhookListOptions{})
+			webhooks, err := e.exporter.ListWebhooks(ctx, repo.RepoSlug, types.ListOptions{})
 			if err != nil {
 				return nil, fmt.Errorf("encountered error in getting webhooks: %v", err)
 			}
@@ -299,7 +320,18 @@ func (e *Exporter) getData(ctx context.Context, path string) ([]*types.RepoData,
 			e.Report[repo.RepoSlug].ReportMetric(ReportTypeBranchRules, len(branchRules))
 		}
 
-		// 5. get all data for each pr
+		// 5. get labels for each repo (independant of their assignment)
+		if !e.flags.NoLabel {
+			labels, err := e.exporter.ListLabels(ctx, repo.RepoSlug,
+				types.ListOptions{Page: 1, Size: 25})
+			if err != nil {
+				return nil, fmt.Errorf("encountered error in getting labels: %w", err)
+			}
+			repoData[i].Labels = labels
+			e.Report[repo.RepoSlug].ReportMetric(ReportTypeLabels, len(labels))
+		}
+
+		// 6. get all data for each pr
 		if !e.flags.NoPR {
 			prs, err := e.exporter.ListPullRequests(ctx, repo.RepoSlug,
 				types.PullRequestListOptions{Page: 1, Size: 25, Open: true, Closed: true})
@@ -492,11 +524,14 @@ func mapRepoData(repoData *types.RepoData) *externalTypes.RepositoryData {
 	d.PullRequestData = make([]*externalTypes.PullRequestData, len(repoData.PullRequestData))
 	for i, prData := range repoData.PullRequestData {
 		d.PullRequestData[i] = new(externalTypes.PullRequestData)
-		d.PullRequestData[i].PullRequest = mapPR(prData.PullRequest.PullRequest)
+		d.PullRequestData[i].PullRequest = mapPR(prData.PullRequest.PullRequest, repoData.Labels)
 		d.PullRequestData[i].Comments = mapPRComment(prData.Comments)
 	}
 
 	d.Webhooks.Hooks = mapHooks(repoData.Webhooks.ConvertedHooks)
+	for _, v := range repoData.Labels {
+		d.Labels = append(d.Labels, v)
+	}
 
 	return d
 }

@@ -59,4 +59,8 @@ type (
 		Type  RuleType `json:"type"`
 		Rules []*Rule  `json:"rules"`
 	}
+
+	LabelsInput struct {
+		Labels []*Label `json:"labels"`
+	}
 )

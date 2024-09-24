@@ -22,19 +22,17 @@ import (
 	"path/filepath"
 
 	"github.com/harness/harness-migrate/internal/common"
-	"github.com/harness/harness-migrate/internal/tracer"
 	"github.com/harness/harness-migrate/types"
 )
 
 func (m *Importer) ImportWebhooks(
 	repoRef string,
 	repoFolder string,
-	tracer tracer.Tracer,
 ) error {
-	tracer.Start(common.MsgStartImportWebhooks, repoRef)
+	m.Tracer.Start(common.MsgStartImportWebhooks, repoRef)
 	in, err := m.readWebhooks(repoFolder)
 	if err != nil {
-		tracer.Stop(common.ErrImportWebhooks, repoRef, err)
+		m.Tracer.Stop(common.ErrImportWebhooks, repoRef, err)
 		return fmt.Errorf("failed to read webhooks from %q: %w", repoFolder, err)
 	}
 
@@ -43,8 +41,8 @@ func (m *Importer) ImportWebhooks(
 		return nil
 	}
 
-	if err := m.Harness.ImportWebhooks(repoRef, &types.WebhookInput{*in}); err != nil {
-		tracer.Stop(common.ErrImportWebhooks, repoRef, err)
+	if err := m.Harness.ImportWebhooks(repoRef, &types.WebhookInput{WebhookData: *in}); err != nil {
+		m.Tracer.Stop(common.ErrImportWebhooks, repoRef, err)
 		return fmt.Errorf("failed to import webhooks for repo '%s' : %w",
 			repoRef, err)
 	}

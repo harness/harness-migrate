@@ -101,6 +101,7 @@ func (c *exportCommand) run(*kingpin.ParseContext) error {
 		NoComment: c.flags.NoComment,
 		NoWebhook: c.flags.NoWebhook,
 		NoRule:    c.flags.NoRule,
+		NoLabel:   true, // stash doesnt support labels
 	}
 	// extract the data
 	e := stash.New(client, c.project, repository, checkpointManager, fileLogger, tracer_, reporter)

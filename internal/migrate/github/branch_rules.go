@@ -150,8 +150,8 @@ func (e *Export) fetchRulesets(ctx context.Context,
 	for _, r := range allRulesets {
 		rule, _, err := e.FindBranchRuleset(ctx, repoSlug, r.ID)
 		if err != nil {
-			e.tracer.LogError(common.ErrFetchBranchRuleset, r.ID, repoSlug, err)
-			return nil, fmt.Errorf(common.ErrFetchBranchRuleset, r.ID, repoSlug, err)
+			e.tracer.LogError(common.ErrListBranchRuleset, r.ID, repoSlug, err)
+			return nil, fmt.Errorf(common.ErrListBranchRuleset, r.ID, repoSlug, err)
 		}
 		allRules = append(allRules, rule)
 	}

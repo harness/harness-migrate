@@ -27,6 +27,7 @@ import (
 	"github.com/harness/harness-migrate/internal/report"
 	"github.com/harness/harness-migrate/internal/tracer"
 	"github.com/harness/harness-migrate/internal/types"
+	externalTypes "github.com/harness/harness-migrate/types"
 
 	"github.com/drone/go-scm/scm"
 )
@@ -192,6 +193,17 @@ func (e *Export) FindBranchRuleset(
 	return e.convertBranchRuleset(out, repoSlug), res, err
 }
 
+func (e *Export) ListRepoLabels(
+	ctx context.Context,
+	repoSlug string,
+	opts types.ListOptions,
+) ([]externalTypes.Label, *scm.Response, error) {
+	path := fmt.Sprintf("repos/%s/labels?%s", repoSlug, encodeListOptions(opts))
+	var out []*types.LabelResponse
+	res, err := e.do(ctx, "GET", path, nil, &out)
+	return convertLabels(out), res, err
+}
+
 func (e *Export) do(ctx context.Context, method, path string, in, out interface{}) (*scm.Response, error) {
 	req := &scm.Request{
 		Method: method,
@@ -235,7 +247,7 @@ func (e *Export) do(ctx context.Context, method, path string, in, out interface{
 	if res.Rate.Remaining == 0 {
 		return res, fmt.Errorf("Github rate limit has been reached. please wait for %d until try again.", res.Rate.Reset)
 	}
-	
+
 	// if an error is encountered, unmarshal and return the
 	// error response.
 	if res.Status > 300 {

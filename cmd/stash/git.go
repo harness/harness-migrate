@@ -32,9 +32,11 @@ import (
 )
 
 type exportCommand struct {
-	debug bool
-	trace bool
-	file  string
+	debug      bool
+	trace      bool
+	noProgress bool
+
+	file string
 
 	project       string
 	srcRepository string
@@ -75,7 +77,7 @@ func (c *exportCommand) run(*kingpin.ParseContext) error {
 	}
 
 	// create the tracer
-	tracer_ := util.CreateTracerWithLevel(c.debug)
+	tracer_ := util.CreateTracerWithLevelAndType(c.debug, c.noProgress)
 	defer tracer_.Close()
 
 	checkpointManager := checkpoint.NewCheckpointManager(c.file)
@@ -171,6 +173,10 @@ func registerGit(app *kingpin.CmdClause) {
 
 	cmd.Flag("trace", "enable trace logging").
 		BoolVar(&c.trace)
+
+	cmd.Flag("no-progress", "disable progress bar logger").
+		Default("false").
+		BoolVar(&c.noProgress)
 }
 
 // defaultTransport provides a default http.Transport.

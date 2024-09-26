@@ -126,10 +126,17 @@ func defaultTransport(skipVerify bool) http.RoundTripper {
 	}
 }
 
-func CreateTracerWithLevel(debug bool) tracer.Tracer {
-	tracer_ := tracer.New()
+func CreateTracerWithLevelAndType(debug bool, noProgress bool) tracer.Tracer {
+	logLevel := tracer.LogLevelInfo
 	if debug == true {
-		tracer_.WithLevel(tracer.LogLevelDebug)
+		logLevel = tracer.LogLevelDebug
 	}
-	return tracer_
+
+	if noProgress == false {
+		tracer_ := tracer.New()
+		tracer_.WithLevel(logLevel)
+		return tracer_
+	}
+
+	return tracer.NewNoProgress(logLevel)
 }

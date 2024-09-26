@@ -21,7 +21,6 @@ import (
 
 	"github.com/harness/harness-migrate/cmd/util"
 	"github.com/harness/harness-migrate/internal/gitimporter"
-	"github.com/harness/harness-migrate/internal/tracer"
 
 	"github.com/alecthomas/kingpin/v2"
 	"github.com/google/uuid"
@@ -29,8 +28,9 @@ import (
 )
 
 type gitImport struct {
-	debug bool
-	trace bool
+	debug      bool
+	trace      bool
+	noProgress bool
 
 	endpoint     string
 	harnessToken string
@@ -60,7 +60,7 @@ func (c *gitImport) run(*kingpin.ParseContext) error {
 	ctx := context.Background()
 	ctx = slog.NewContext(ctx, log)
 
-	tracer_ := tracer.New()
+	tracer_ := util.CreateTracerWithLevelAndType(c.debug, c.noProgress)
 	defer tracer_.Close()
 
 	c.harnessRepo = strings.Trim(c.harnessRepo, " ")
@@ -151,4 +151,8 @@ func registerGitImporter(app *kingpin.CmdClause) {
 
 	cmd.Flag("trace", "enable trace logging").
 		BoolVar(&c.trace)
+
+	cmd.Flag("no-progress", "disable progress bar logger").
+		Default("false").
+		BoolVar(&c.noProgress)
 }

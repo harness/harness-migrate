@@ -73,21 +73,23 @@ func mapWebhook(
 
 	if len(events) != 0 {
 		convertedHook = &scm.Hook{
-			ID:     hook.ID,
-			Name:   DisplayNameToIdentifier(hook.Name, "webhook", hook.ID),
-			Target: hook.Target,
-			Active: hook.Active,
-			Events: enum.ToStringSlice(events),
+			ID:         hook.ID,
+			Name:       DisplayNameToIdentifier(hook.Name, "webhook", hook.ID),
+			Target:     hook.Target,
+			Active:     hook.Active,
+			Events:     enum.ToStringSlice(events),
+			SkipVerify: hook.SkipVerify,
 		}
 	}
 
 	if len(notSupportedEvents) != 0 {
 		notSupportedHook = &scm.Hook{
-			ID:     hook.ID,
-			Name:   hook.Name,
-			Target: hook.Target,
-			Active: hook.Active,
-			Events: notSupportedEvents,
+			ID:         hook.ID,
+			Name:       hook.Name,
+			Target:     hook.Target,
+			Active:     hook.Active,
+			Events:     notSupportedEvents,
+			SkipVerify: hook.SkipVerify,
 		}
 	}
 	return convertedHook, notSupportedHook

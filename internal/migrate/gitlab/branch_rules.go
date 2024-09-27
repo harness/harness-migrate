@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//      http://www.apache.org/licenses/LICENSE-2.0
+//	http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -14,12 +14,17 @@
 
 package gitlab
 
-import "github.com/alecthomas/kingpin/v2"
+import (
+	"context"
 
-// Register the command.
-func Register(app *kingpin.Application) {
-	cmd := app.Command("gitlab", "migrate gitlab data")
-	registerExport(cmd)
-	registerConvert(cmd)
-	registerGit(cmd)
+	"github.com/harness/harness-migrate/internal/codeerror"
+	"github.com/harness/harness-migrate/internal/types"
+)
+
+func (e *Export) ListBranchRules(
+	ctx context.Context,
+	repoSlug string,
+	opts types.ListOptions,
+) ([]*types.BranchRule, error) {
+	return nil, &codeerror.OpNotSupportedError{Name: "branchRules"}
 }

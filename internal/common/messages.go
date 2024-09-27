@@ -20,7 +20,7 @@ const (
 	MsgStartExportPRs            = "Starting export pull requests for repository %s."
 	MsgCompleteExportPRs         = "Finished export %d pull requests for repository %s."
 	MsgCheckpointLoadPr          = "Finished export %d pull requests for repository %s from checkpoint."
-	MsgStartRepoList             = "Starting repositories listing for %s org %s."
+	MsgStartRepoList             = "Starting repositories listing for %s %s: %s."
 	MsgCompleteRepoList          = "Finished repositories listing. Total repos: %d"
 	MsgStartGitClone             = "Cloning git repository for %s."
 	MsgRepoAlreadyExists         = "Cloned git repository for %s already exists."

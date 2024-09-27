@@ -84,5 +84,10 @@ func (e *Export) ListLabels(
 		opts.Page += 1
 	}
 
+	err = e.checkpointManager.SaveCheckpoint(checkpointPageKey, -1)
+	if err != nil {
+		e.tracer.LogError(common.ErrCheckpointPrPageSave, err)
+	}
+
 	return allLabels, nil
 }

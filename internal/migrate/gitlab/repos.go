@@ -1,4 +1,18 @@
-package github
+// Copyright 2023 Harness, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package gitlab
 
 import (
 	"context"
@@ -16,11 +30,11 @@ func (e *Export) ListRepositories(
 	ctx context.Context,
 	params types.ListOptions,
 ) ([]types.RepoResponse, error) {
-	e.tracer.Start(common.MsgStartRepoList, "github", e.org)
+	e.tracer.Start(common.MsgStartRepoList, "gitlab", "group", e.group)
 	opts := scm.ListOptions{Page: params.Page, Size: params.Size}
 	var allRepos []*scm.Repository
 
-	checkpointDataKey := fmt.Sprintf(common.RepoCheckpointData, e.org)
+	checkpointDataKey := fmt.Sprintf(common.RepoCheckpointData, e.group)
 	val, ok, err := checkpoint.GetCheckpointData[[]*scm.Repository](e.checkpointManager, checkpointDataKey)
 	if err != nil {
 		e.tracer.LogError(common.ErrCheckpointDataRead, err)
@@ -29,7 +43,7 @@ func (e *Export) ListRepositories(
 		allRepos = append(allRepos, val...)
 	}
 
-	checkpointPageKey := fmt.Sprintf(common.RepoCheckpointPage, e.org)
+	checkpointPageKey := fmt.Sprintf(common.RepoCheckpointPage, e.group)
 	checkpointPageIntfc, ok := e.checkpointManager.GetCheckpoint(checkpointPageKey)
 	var checkpointPage int
 	if ok && checkpointPageIntfc != nil {
@@ -43,9 +57,9 @@ func (e *Export) ListRepositories(
 		return common.MapRepository(allRepos), nil
 	}
 
-	if e.repository != "" {
-		repoSlug := strings.Join([]string{e.org, e.repository}, "/")
-		repo, _, err := e.github.Repositories.Find(ctx, repoSlug)
+	if e.project != "" {
+		repoSlug := strings.Join([]string{e.group, e.project}, "/")
+		repo, _, err := e.gitlab.Repositories.Find(ctx, repoSlug)
 		if err != nil {
 			e.tracer.LogError(common.ErrListRepo, err)
 			return nil, fmt.Errorf("failed to get the repo %s: %w", repoSlug, err)
@@ -63,25 +77,25 @@ func (e *Export) ListRepositories(
 		}
 
 		e.tracer.Stop(common.MsgCompleteRepoList, 1)
-		return common.MapRepository(allRepos), nil
+		return common.MapRepository([]*scm.Repository{repo}), nil
 	}
 
 	for {
-		repos, resp, err := e.github.Repositories.ListNamespace(ctx, e.org, opts)
+		repos, resp, err := e.gitlab.Repositories.ListNamespace(ctx, e.group, opts)
 		if err != nil {
 			e.tracer.LogError(common.ErrListRepo, err)
-			return nil, fmt.Errorf("failed to get repos for org %s: %w", e.org, err)
+			return nil, fmt.Errorf("failed to get repos for group %s: %w", e.group, err)
 		}
 		allRepos = append(allRepos, repos...)
 
 		err = e.checkpointManager.SaveCheckpoint(checkpointDataKey, allRepos)
 		if err != nil {
-			e.tracer.LogError(common.ErrCheckpointRepoDataSave, e.org, err)
+			e.tracer.LogError(common.ErrCheckpointRepoDataSave, e.group, err)
 		}
 
 		err = e.checkpointManager.SaveCheckpoint(checkpointPageKey, resp.Page.Next)
 		if err != nil {
-			e.tracer.LogError(common.ErrCheckpointRepoPageSave, e.org, err)
+			e.tracer.LogError(common.ErrCheckpointRepoPageSave, e.group, err)
 		}
 
 		if resp.Page.Next == 0 {
@@ -92,7 +106,7 @@ func (e *Export) ListRepositories(
 
 	err = e.checkpointManager.SaveCheckpoint(checkpointPageKey, -1)
 	if err != nil {
-		e.tracer.LogError(common.ErrCheckpointRepoDataSave, e.org, err)
+		e.tracer.LogError(common.ErrCheckpointRepoDataSave, e.group, err)
 	}
 
 	e.tracer.Stop(common.MsgCompleteRepoList, len(allRepos))

@@ -15,8 +15,6 @@
 package gitexporter
 
 import (
-	"strings"
-
 	"github.com/harness/harness-migrate/internal/types"
 	externalTypes "github.com/harness/harness-migrate/types"
 
@@ -160,22 +158,10 @@ func mapLabels(PRlabels []scm.Label, labelsMap map[string]externalTypes.Label) [
 	for i, label := range PRlabels {
 		if _, exists := labelsMap[label.Name]; exists {
 			l[i] = labelsMap[label.Name]
-			continue
-		}
-		// Gitlab have unique formatting for scoped labels in a form of key::value or key1::key2::value
-		// get the index of the label scope
-		index := strings.LastIndex(label.Name, "::")
-		if index != -1 {
-			key := label.Name[:index]
-			if _, exists := labelsMap[key]; exists {
-				l[i] = labelsMap[key]
-				continue
+		} else {
+			l[i] = externalTypes.Label{
+				Name: label.Name,
 			}
-		}
-		// log that PR has a label that hasnt been found in the repo labels
-		// let the server handles the absence of the label?
-		l[i] = externalTypes.Label{
-			Name: label.Name,
 		}
 	}
 

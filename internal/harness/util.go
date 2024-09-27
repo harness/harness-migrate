@@ -25,7 +25,7 @@ var ErrInvalidRef = errors.New("space reference is invalid")
 
 const (
 	pathSeparator        = "/"
-	encodedPathSeparator = "%252F"
+	encodedPathSeparator = "%2F"
 
 	accountIdentifier = "accountIdentifier"
 	projectIdentifier = "projectIdentifier"

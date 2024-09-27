@@ -12,44 +12,45 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package github
+package gitlab
 
 import (
 	"context"
 	"net/http"
+	"net/http/httputil"
 	"strings"
 
-	"github.com/alecthomas/kingpin/v2"
-	"github.com/drone/go-scm/scm"
-	scmgithub "github.com/drone/go-scm/scm/driver/github"
-	"github.com/drone/go-scm/scm/transport/oauth2"
 	"github.com/harness/harness-migrate/cmd/util"
 	"github.com/harness/harness-migrate/internal/checkpoint"
 	"github.com/harness/harness-migrate/internal/gitexporter"
-	"github.com/harness/harness-migrate/internal/migrate/github"
+	"github.com/harness/harness-migrate/internal/migrate/gitlab"
 	report "github.com/harness/harness-migrate/internal/report"
+
+	"github.com/alecthomas/kingpin/v2"
+	"github.com/drone/go-scm/scm"
+	scmgitlab "github.com/drone/go-scm/scm/driver/gitlab"
+	"github.com/drone/go-scm/scm/transport/oauth2"
 	"golang.org/x/exp/slog"
 )
 
-type exportCommand struct {
+type exportGitCommand struct {
 	debug      bool
 	trace      bool
 	noProgress bool
 
 	file string
 
-	org           string
-	srcRepository string
-	user          string
-	token         string
-	url           string
+	group   string
+	project string
+	user    string
+	token   string
+	url     string
 
 	checkpoint bool
-
-	flags gitexporter.Flags
+	flags      gitexporter.Flags
 }
 
-func (c *exportCommand) run(*kingpin.ParseContext) error {
+func (c *exportGitCommand) run(*kingpin.ParseContext) error {
 	// create the logger
 	log := util.CreateLogger(c.debug)
 
@@ -57,20 +58,24 @@ func (c *exportCommand) run(*kingpin.ParseContext) error {
 	ctx := context.Background()
 	ctx = slog.NewContext(ctx, log)
 
-	// create the github client
+	// create the gitlab client
 	var client *scm.Client
 	var err error
 	if c.url != "" {
-		client, err = scmgithub.New(c.url)
+		client, err = scmgitlab.New(c.url)
 		if err != nil {
 			return err
 		}
 	} else {
-		client = scmgithub.NewDefault()
+		client = scmgitlab.NewDefault()
+	}
+
+	if c.trace {
+		client.DumpResponse = httputil.DumpResponse
 	}
 
 	// provide a custom http.Client with a transport
-	// that injects the private github token through
+	// that injects the private gitlab token through
 	// the PRIVATE_TOKEN header variable.
 	t := &oauth2.Transport{
 		Scheme: oauth2.SchemeBearer,
@@ -96,8 +101,8 @@ func (c *exportCommand) run(*kingpin.ParseContext) error {
 	}
 
 	var repository string
-	if c.srcRepository != "" {
-		repository = strings.Trim(c.srcRepository, " ")
+	if c.project != "" {
+		repository = strings.Trim(c.project, " ")
 	}
 
 	fileLogger := &gitexporter.FileLogger{Location: c.file}
@@ -107,11 +112,10 @@ func (c *exportCommand) run(*kingpin.ParseContext) error {
 		NoPR:      c.flags.NoPR,
 		NoComment: c.flags.NoComment,
 		NoWebhook: c.flags.NoWebhook,
-		NoRule:    c.flags.NoRule,
-		NoLabel:   c.flags.NoLabel,
+		NoRule:    true, // revert when supported
 	}
 
-	e := github.New(client, c.org, repository, checkpointManager, fileLogger, tracer_, reporter)
+	e := gitlab.New(client, c.group, repository, checkpointManager, fileLogger, tracer_, reporter)
 
 	exporter := gitexporter.NewExporter(e, c.file, c.user, c.token, tracer_, reporter, flags)
 	return exporter.Export(ctx)
@@ -119,9 +123,9 @@ func (c *exportCommand) run(*kingpin.ParseContext) error {
 
 // helper function registers the export command
 func registerGit(app *kingpin.CmdClause) {
-	c := new(exportCommand)
+	c := new(exportGitCommand)
 
-	cmd := app.Command("git-export", "export github git data").
+	cmd := app.Command("git-export", "export gitlab git data").
 		Hidden().
 		Action(c.run)
 
@@ -129,26 +133,26 @@ func registerGit(app *kingpin.CmdClause) {
 		Default("harness").
 		StringVar(&c.file)
 
-	cmd.Flag("host", "github host url").
-		Envar("github_HOST").
+	cmd.Flag("host", "gitlab host url").
+		Envar("gitlab_HOST").
 		StringVar(&c.url)
 
-	cmd.Flag("org", "github organization").
+	cmd.Flag("group", "gitlab group").
 		Required().
-		Envar("github_ORG").
-		StringVar(&c.org)
+		Envar("gitlab_GROUP").
+		StringVar(&c.group)
 
-	cmd.Flag("repository", "optional name of the repository to export").
-		Envar("github_REPOSITORY").
-		StringVar(&c.srcRepository)
+	cmd.Flag("project", "optional name of the project to export").
+		Envar("gitlab_PROJECT").
+		StringVar(&c.project)
 
-	cmd.Flag("username", "github username").
-		Envar("github_USERNAME").
+	cmd.Flag("username", "gitlab username").
+		Envar("gitlab_USERNAME").
 		StringVar(&c.user)
 
-	cmd.Flag("token", "github token").
+	cmd.Flag("token", "gitlab token").
 		Required().
-		Envar("github_TOKEN").
+		Envar("gitlab_TOKEN").
 		StringVar(&c.token)
 
 	cmd.Flag("resume", "resume from last checkpoint").
@@ -168,7 +172,7 @@ func registerGit(app *kingpin.CmdClause) {
 		BoolVar(&c.flags.NoWebhook)
 
 	cmd.Flag("no-rule", "do NOT export branch protection rules").
-		Default("false").
+		Default("false"). // revert when supported
 		BoolVar(&c.flags.NoRule)
 
 	cmd.Flag("no-label", "do NOT export labels").
@@ -184,5 +188,4 @@ func registerGit(app *kingpin.CmdClause) {
 	cmd.Flag("no-progress", "disable progress bar logger").
 		Default("false").
 		BoolVar(&c.noProgress)
-
 }

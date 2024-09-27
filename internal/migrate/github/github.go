@@ -17,9 +17,9 @@ package github
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/harness/harness-migrate/internal/checkpoint"
+	"github.com/harness/harness-migrate/internal/codeerror"
 	"github.com/harness/harness-migrate/internal/gitexporter"
 	"github.com/harness/harness-migrate/internal/report"
 	"github.com/harness/harness-migrate/internal/tracer"
@@ -59,7 +59,5 @@ func New(
 
 // PullRequestReviewers implements gitexporter.Interface.
 func (e *Export) PullRequestReviewers(ctx context.Context, prNumber int) error {
-	// Mock implementation
-	fmt.Printf("Fetching reviewers for pull request #%d\n", prNumber)
-	return nil
+	return &codeerror.OpNotSupportedError{Name: "pullreqreview"}
 }

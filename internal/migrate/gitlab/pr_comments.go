@@ -12,13 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package github
+package gitlab
 
 import (
 	"context"
 	"fmt"
 
-	"github.com/drone/go-scm/scm"
 	"github.com/harness/harness-migrate/internal/checkpoint"
 	"github.com/harness/harness-migrate/internal/common"
 	"github.com/harness/harness-migrate/internal/types"
@@ -26,14 +25,15 @@ import (
 
 func (e *Export) ListPullRequestComments(
 	ctx context.Context,
-	repoSlug string, prNumber int,
+	repoSlug string,
+	prNumber int,
 	opts types.ListOptions,
 ) ([]*types.PRComment, error) {
-	e.tracer.Debug().Start(common.MsgStartExportPrComments, repoSlug, prNumber)
+	e.tracer.Start(common.MsgStartExportPrComments, repoSlug, prNumber)
 	var allComments []*types.PRComment
 	msgCommentsExport := common.MsgCompleteExportPrComments
 	defer func() {
-		e.tracer.Debug().Stop(msgCommentsExport, len(allComments), repoSlug, prNumber)
+		e.tracer.Stop(msgCommentsExport, len(allComments), repoSlug, prNumber)
 	}()
 
 	checkpointDataKey := fmt.Sprintf(common.PRCommentCheckpointData, repoSlug, prNumber)
@@ -60,37 +60,7 @@ func (e *Export) ListPullRequestComments(
 		return allComments, nil
 	}
 
-	// for fetching PR comments
-	params := scm.ListOptions{Page: opts.Page, Size: opts.Size}
-	for {
-		comments, res, err := e.github.Issues.ListComments(ctx, repoSlug, prNumber, params)
-		if err != nil {
-			e.tracer.LogError(common.ErrListComments, repoSlug, prNumber, err)
-			return nil, fmt.Errorf(common.ErrListComments, repoSlug, prNumber, err)
-		}
-		if len(comments) == 0 {
-			break
-		}
-
-		commentsWithAuthor, err := e.addEmailToAuthorInComments(ctx, common.MapPRComment(comments))
-		if err != nil {
-			return nil, fmt.Errorf("error getting author email: %w", err)
-		}
-		allComments = append(allComments, commentsWithAuthor...)
-
-		err = e.checkpointManager.SaveCheckpoint(checkpointDataKey, commentsWithAuthor)
-		if err != nil {
-			e.tracer.LogError(common.ErrCheckpointPrCommentsDataSave, err)
-		}
-		err = e.checkpointManager.SaveCheckpoint(checkpointPageKey, res.Page.Next)
-		if err != nil {
-			e.tracer.LogError(common.ErrCheckpointPrCommentsPageSave, err)
-		}
-
-		params.Page += 1
-	}
-
-	// for fetching PR review comments
+	// for fetching merge requests comments
 	for {
 		comments, res, err := e.ListPRComments(ctx, repoSlug, prNumber, opts)
 		if err != nil {
@@ -100,6 +70,7 @@ func (e *Export) ListPullRequestComments(
 		if len(comments) == 0 {
 			break
 		}
+
 		commentsWithAuthor, err := e.addEmailToAuthorInComments(ctx, comments)
 		if err != nil {
 			return nil, fmt.Errorf("error getting author email: %w", err)

@@ -1,4 +1,4 @@
-# Git migrator for github
+# Git migrator for Github
 We support migrating these entities from Github:
 - Repository
 - Repository Public/Private status
@@ -42,7 +42,7 @@ When they are exported, supported Github branch protection rules and webhooks ar
 | Pushes | Branch updated, Tag updated, PR branch updated |
 
 
-#### Branch protection rules 
+### Branch protection rules 
 | Github rule(set) | Harness Code rule
 |---|---|
 | Restrict creations | Block branch creation |

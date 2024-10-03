@@ -170,23 +170,20 @@ type (
 	Merge struct {
 		StrategiesAllowed []string
 		DeleteBranch      bool
-	}
-
-	StatusChecks struct {
-		RequireIdentifiers []string
+		Block             bool
 	}
 
 	PullReq struct {
 		Approvals
 		Comments
 		Merge
-		StatusChecks
 	}
 
 	Lifecycle struct {
-		CreateForbidden bool
-		DeleteForbidden bool
-		UpdateForbidden bool
+		CreateForbidden      bool
+		DeleteForbidden      bool
+		UpdateForbidden      bool
+		UpdateForceForbidden bool
 	}
 
 	User struct {

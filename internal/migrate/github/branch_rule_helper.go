@@ -66,8 +66,7 @@ func (e *Export) convertBranchRule(from branchProtectionRule, repo string) []*ty
 		rule.DeleteForbidden = true
 	}
 	if from.AllowsForcePushes {
-		warningMsg = fmt.Sprintf(logMessage, enum.LogLevelWarning, "force push allowances", from.Pattern, repo)
-		logs = append(logs, warningMsg)
+		rule.Lifecycle.UpdateForceForbidden = false
 	}
 	if from.BlocksCreations {
 		rule.Lifecycle.CreateForbidden = true

@@ -96,6 +96,24 @@ func (e *Export) ListRepoLabels(
 	return convertLabels(out), res, err
 }
 
+func (e *Export) ListBranchRulesInternal(ctx context.Context,
+	repoSlug string,
+	mergeRequestRules mergeRequestRules,
+	opts types.ListOptions,
+) ([]*types.BranchRule, *scm.Response, error) {
+	path := fmt.Sprintf("api/v4/projects/%s/protected_branches?%s", encode(repoSlug), encodeListOptions(opts))
+	var out []*branchRule
+	res, err := e.do(ctx, "GET", path, nil, &out)
+	return e.convertBranchRules(ctx, out, mergeRequestRules, repoSlug), res, err
+}
+
+func (e *Export) GetProject(ctx context.Context, repoSlug string) (project, error) {
+	path := fmt.Sprintf("api/v4/projects/%s", encode(repoSlug))
+	var out project
+	_, err := e.do(ctx, "GET", path, nil, &out)
+	return out, err
+}
+
 func (e *Export) GetUserByUserName(
 	ctx context.Context,
 	userName string,
@@ -108,6 +126,20 @@ func (e *Export) GetUserByUserName(
 	}
 
 	return out[0], res, err
+}
+
+func (e *Export) GetUserByID(
+	ctx context.Context,
+	userID int,
+) (*user, *scm.Response, error) {
+	path := fmt.Sprintf("api/v4/users/%d", userID)
+	var out *user
+	res, err := e.do(ctx, "GET", path, nil, &out)
+	if err != nil {
+		return nil, res, fmt.Errorf("failed to find user: %w", err)
+	}
+
+	return out, res, err
 }
 
 func (e *Export) do(ctx context.Context, method, path string, in, out interface{}) (*scm.Response, error) {

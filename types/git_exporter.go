@@ -201,6 +201,7 @@ type (
 	Merge struct {
 		StrategiesAllowed []string `json:"strategies_allowed,omitempty"`
 		DeleteBranch      bool     `json:"delete_branch,omitempty"`
+		Block             bool     `json:"block,omitempty"`
 	}
 
 	StatusChecks struct {
@@ -208,17 +209,17 @@ type (
 	}
 
 	PullReq struct {
-		Approvals    Approvals    `json:"approvals,omitempty"`
-		Comments     Comments     `json:"comments,omitempty"`
-		Merge        Merge        `json:"merge,omitempty"`
-		StatusChecks StatusChecks `json:"status_checks,omitempty"`
+		Approvals Approvals `json:"approvals,omitempty"`
+		Comments  Comments  `json:"comments,omitempty"`
+		Merge     Merge     `json:"merge,omitempty"`
 	}
 
 	// Lifecycle represents the lifecycle rules for branches.
 	Lifecycle struct {
-		CreateForbidden bool `json:"create_forbidden,omitempty"`
-		DeleteForbidden bool `json:"delete_forbidden,omitempty"`
-		UpdateForbidden bool `json:"update_forbidden,omitempty"`
+		CreateForbidden      bool `json:"create_forbidden,omitempty"`
+		DeleteForbidden      bool `json:"delete_forbidden,omitempty"`
+		UpdateForbidden      bool `json:"update_forbidden,omitempty"`
+		UpdateForceForbidden bool `json:"update_force_forbidden,omitempty"`
 	}
 )
 

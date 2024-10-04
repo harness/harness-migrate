@@ -54,6 +54,7 @@ When they are exported, supported Github branch protection rules and webhooks ar
 | Require approval of the most recent reviewable push | Require approval of new changes |
 | Require review from Code Owners | Require review from code owners |
 | Require conversation resolution before merging | Require comment resolution |
+| Block force pushes | Block force push |
 
 ## Commands 
 As a quick start you can run 

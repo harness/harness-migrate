@@ -57,6 +57,7 @@ type (
 
 	user struct {
 		types.User
+		UserName    string `json:"username"`
 		PublicEmail string `json:"public_email"`
 	}
 

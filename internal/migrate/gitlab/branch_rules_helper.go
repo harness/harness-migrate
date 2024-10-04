@@ -17,8 +17,10 @@ package gitlab
 import (
 	"context"
 	"fmt"
+	"log"
 	"strconv"
 
+	"github.com/harness/harness-migrate/internal/gitexporter"
 	"github.com/harness/harness-migrate/internal/migrate"
 	"github.com/harness/harness-migrate/internal/types"
 	"github.com/harness/harness-migrate/internal/types/enum"
@@ -43,6 +45,59 @@ func (e *Export) convertBranchRule(
 
 	bypass := types.Bypass{}
 
+	// by default Gitlab's protected branches prevent merge if not chosen otherwise
+	blockMerge := true
+
+	for _, mergeRule := range from.MergeAccess {
+		if mergeRule.AccessLevel > levelNoAccess {
+			blockMerge = false
+		}
+
+		if mergeRule.AccessLevel == levelAdmin {
+			bypass.RepoOwners = true
+		}
+
+		if mergeRule.GroupID != nil || mergeRule.DeployeKeyID != nil {
+			warningMsg = fmt.Sprintf("[%s] Skipped adding group IDs and/or deploy key IDs to bypass list for branch %q rule"+
+				" of project %q as we do not support it as of now.", enum.LogLevelWarning, from.Name, prj)
+			logs = append(logs, warningMsg)
+		}
+
+		if mergeRule.UserID != nil {
+			email, err := e.FindEmailByUserID(ctx, *mergeRule.UserID)
+			if err != nil {
+				e.tracer.LogError("failed to get user email with ID %d for branch rule bypass list: %w", mergeRule.UserID, err)
+				continue
+			}
+			bypass.UserEmails = append(bypass.UserEmails, email)
+		}
+	}
+
+	for _, pushRule := range from.PushAccess {
+		if pushRule.AccessLevel > levelNoAccess {
+			blockMerge = false
+		}
+
+		if pushRule.AccessLevel == levelAdmin {
+			bypass.RepoOwners = true
+		}
+
+		if pushRule.GroupID != nil || pushRule.DeployeKeyID != nil {
+			warningMsg = fmt.Sprintf("[%s] Skipped adding group IDs and/or deploy key IDs to bypass list for branch %q rule"+
+				" of project %q as we do not support it as of now.", enum.LogLevelWarning, from.Name, prj)
+			logs = append(logs, warningMsg)
+		}
+
+		if pushRule.UserID != nil {
+			email, err := e.FindEmailByUserID(ctx, *pushRule.UserID)
+			if err != nil {
+				e.tracer.LogError("failed to get user email with ID %d for branch rule bypass list: %w", pushRule.UserID, err)
+				continue
+			}
+			bypass.UserEmails = append(bypass.UserEmails, email)
+		}
+	}
+
 	pullReq := types.PullReq{
 		Approvals: types.Approvals{
 			RequireCodeOwners: from.CodeOwnerRequired,
@@ -53,63 +108,8 @@ func (e *Export) convertBranchRule(
 		Merge: types.Merge{
 			StrategiesAllowed: mapMergeMethod(MRRules),
 			DeleteBranch:      MRRules.DeleteBranch,
+			Block:             blockMerge,
 		},
-	}
-
-	// by default Gitlab's protected branches prevent merge
-	if len(from.MergeAccess) == 0 {
-		pullReq.Block = true
-	}
-
-	for _, mergeRule := range from.MergeAccess {
-		if mergeRule.AccessLevel == levelNoAccess {
-			pullReq.Block = true
-		} else {
-			// Other Access Levels are "Developer, Maintainer, Admin"
-			// From Gitlab docs:
-			// "the most permissive rule determines the level of protection for the branch"
-			// https://docs.gitlab.com/ee/user/project/repository/branches/protected.html
-			pullReq.Block = false
-		}
-		if mergeRule.GroupID != nil || mergeRule.DeployeKeyID != nil {
-			warningMsg = fmt.Sprintf("[%s] Skipped adding group IDs and/or deploy key IDs to bypass list for branch %q rule"+
-				" of project %q as we do not support it as of now.", enum.LogLevelWarning, from.Name, prj)
-			logs = append(logs, warningMsg)
-		}
-
-		if mergeRule.UserID != nil {
-			user, _, err := e.GetUserByID(ctx, *mergeRule.UserID)
-			if err != nil {
-				e.tracer.LogError("failed to get user email with ID %d for branch rule bypass list: %w", mergeRule.UserID, err)
-				continue
-			}
-			bypass.UserEmails = append(bypass.UserEmails, user.PublicEmail)
-		}
-
-		if mergeRule.AccessLevel == levelAdmin {
-			bypass.RepoOwners = true
-		}
-	}
-
-	for _, pushRule := range from.PushAccess {
-		if pushRule.GroupID != nil || pushRule.DeployeKeyID != nil {
-			warningMsg = fmt.Sprintf("[%s] Skipped adding group IDs and/or deploy key IDs to bypass list for branch %q rule"+
-				" of project %q as we do not support it as of now.", enum.LogLevelWarning, from.Name, prj)
-			logs = append(logs, warningMsg)
-		}
-
-		if pushRule.UserID != nil {
-			user, _, err := e.GetUserByID(ctx, *pushRule.UserID)
-			if err != nil {
-				e.tracer.LogError("failed to get user email with ID %d for branch rule bypass list: %w", pushRule.UserID, err)
-				continue
-			}
-			bypass.UserEmails = append(bypass.UserEmails, user.PublicEmail)
-		}
-
-		if pushRule.AccessLevel == levelAdmin {
-			bypass.RepoOwners = true
-		}
 	}
 
 	definition := types.Definition{
@@ -121,7 +121,7 @@ func (e *Export) convertBranchRule(
 		},
 	}
 
-	return &types.BranchRule{
+	ruleOut := &types.BranchRule{
 		ID:         from.Id,
 		Name:       migrate.DisplayNameToIdentifier(from.Name, "rule", strconv.Itoa(from.Id)),
 		State:      enum.RuleStateActive, // all gitlab rules are active
@@ -130,22 +130,35 @@ func (e *Export) convertBranchRule(
 			IncludedPatterns: []string{from.Name},
 		},
 	}
+
+	for _, l := range logs {
+		if err := e.fileLogger.Log(l); err != nil {
+			log.Default().Printf("failed to log the not supported branch rules for project %q: %v", prj, err)
+			return ruleOut
+		}
+	}
+
+	e.report[prj].ReportErrors(gitexporter.ReportTypeBranchRules, from.Name, logs)
+	return ruleOut
 }
 
 func mapMergeMethod(from mergeRequestRules) []string {
-	strategiesAllowed := []string{"merge"}
+	strategiesAllowed := []string{}
+
+	switch from.MergeMethod {
+	case mergeMethodMerge:
+		strategiesAllowed = append(strategiesAllowed, "merge")
+	case mergeMethodRebase:
+		strategiesAllowed = append(strategiesAllowed, []string{"merge", "rebase"}...)
+	case mergeMethodFastForward:
+		strategiesAllowed = append(strategiesAllowed, []string{"rebase", "fast-forward"}...)
+	}
+
 	switch from.SquashOption {
 	case squashOptionAlways:
 		return []string{"squash"}
 	case squashOptionOn, squashOptionOff:
 		strategiesAllowed = append(strategiesAllowed, "squash")
-	}
-
-	switch from.MergeMethod {
-	case mergeMethodRebase:
-		strategiesAllowed = append(strategiesAllowed, "rebase")
-	case mergeMethodFastForward:
-		strategiesAllowed = append(strategiesAllowed, []string{"rebase", "fast-forward"}...)
 	}
 
 	return strategiesAllowed

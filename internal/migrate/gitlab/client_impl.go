@@ -26,6 +26,7 @@ import (
 	"github.com/harness/harness-migrate/internal/checkpoint"
 	"github.com/harness/harness-migrate/internal/common"
 	"github.com/harness/harness-migrate/internal/gitexporter"
+	"github.com/harness/harness-migrate/internal/harness"
 	"github.com/harness/harness-migrate/internal/report"
 	"github.com/harness/harness-migrate/internal/tracer"
 	"github.com/harness/harness-migrate/internal/types"
@@ -46,7 +47,7 @@ type (
 		fileLogger *gitexporter.FileLogger
 		report     map[string]*report.Report
 
-		userMap map[string]types.User
+		userMap map[string]user
 	}
 )
 
@@ -119,10 +120,14 @@ func (e *Export) GetUserByUserName(
 	userName string,
 ) (*types.User, *scm.Response, error) {
 	path := fmt.Sprintf("api/v4/users?username=%s", userName)
-	out := []*types.User{}
+	var out []*types.User
 	res, err := e.do(ctx, "GET", path, nil, &out)
 	if err != nil {
 		return nil, res, fmt.Errorf("failed to find user: %w", err)
+	}
+
+	if len(out) == 0 {
+		return nil, res, fmt.Errorf("user response is empty: %w", harness.ErrNotFound)
 	}
 
 	return out[0], res, err
@@ -137,6 +142,9 @@ func (e *Export) GetUserByID(
 	res, err := e.do(ctx, "GET", path, nil, &out)
 	if err != nil {
 		return nil, res, fmt.Errorf("failed to find user: %w", err)
+	}
+	if res.Status == 404 {
+		return nil, res, fmt.Errorf("user not found: %w", harness.ErrNotFound)
 	}
 
 	return out, res, err

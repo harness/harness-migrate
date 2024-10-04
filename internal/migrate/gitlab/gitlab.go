@@ -24,7 +24,6 @@ import (
 	"github.com/harness/harness-migrate/internal/gitexporter"
 	"github.com/harness/harness-migrate/internal/report"
 	"github.com/harness/harness-migrate/internal/tracer"
-	"github.com/harness/harness-migrate/internal/types"
 )
 
 func New(
@@ -36,8 +35,8 @@ func New(
 	tracer tracer.Tracer,
 	report map[string]*report.Report,
 ) *Export {
-	ckpt := make(map[string]types.User)
-	c, ok, err := checkpoint.GetCheckpointData[map[string]types.User](checkpointer, CheckpointKeyUsers)
+	ckpt := make(map[string]user)
+	c, ok, err := checkpoint.GetCheckpointData[map[string]user](checkpointer, CheckpointKeyUsers)
 	if err != nil {
 		tracer.LogError("cannot load checkpoint userdata: %v", err)
 	}

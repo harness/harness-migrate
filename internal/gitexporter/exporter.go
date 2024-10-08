@@ -131,7 +131,7 @@ func (e *Exporter) Export(ctx context.Context) error {
 	}
 
 	err = deleteFiles(path)
-	if err != nil {
+	if err != nil && !os.IsNotExist(err) {
 		log.Printf("error cleaning up files: %v", err)
 	}
 
@@ -368,9 +368,13 @@ func (e *Exporter) exportCommentsForPRs(
 	repo types.RepoResponse,
 	t tracer.Tracer,
 ) ([]*types.PullRequestData, error) {
+	if len(prs) == 0 {
+		return make([]*types.PullRequestData, 0), nil
+	}
+
 	e.Tracer.Start(common.MsgStartCommentsFetch, repo.RepoSlug)
 	defer e.Tracer.Stop(common.MsgCompleteCommentsFetch, repo.RepoSlug)
-	taskPool := util.NewTaskPool(ctx, maxParallelism)
+	taskPool := util.NewTaskPool(ctx, max(maxParallelism, len(prs)))
 	err := taskPool.Start()
 	if err != nil {
 		return nil, fmt.Errorf("error starting thread pool: %w", err)

@@ -103,15 +103,11 @@ func Open(rawurl, method string, setAuth func(h *http.Header), in, out interface
 
 	defer resp.Body.Close()
 	// Read and store response body
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("error reading response body: %w", err)
-	}
 
 	// attempt to unmarshal the error into the custom Error structure.
 	resperr := new(Error)
-	if err := json.Unmarshal(body, resperr); err != nil {
-		return nil, fmt.Errorf("error unmarshing response body: %w", err)
+	if err := json.NewDecoder(resp.Body).Decode(resperr); err != nil {
+		return nil, fmt.Errorf("failed to decode error response, status code:%d: %w", resp.StatusCode, err)
 	}
 
 	switch resp.StatusCode {

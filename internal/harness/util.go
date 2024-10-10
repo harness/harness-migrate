@@ -25,7 +25,7 @@ var ErrInvalidRef = errors.New("space reference is invalid")
 
 const (
 	pathSeparator        = "/"
-	encodedPathSeparator = "%2F"
+	encodedPathSeparator = "%252F"
 
 	accountIdentifier = "accountIdentifier"
 	projectIdentifier = "projectIdentifier"
@@ -34,14 +34,15 @@ const (
 	spacePath         = "space_path"
 )
 
-func getQueryParamsFromRepoRef(repoRef string) (string, error) {
+// getQueryParamsFromRepoRef returns the encoded query params from the repoRef and escaped version of repoRef
+func getQueryParamsFromRepoRef(repoRef string) (string, string, error) {
 	params := url.Values{}
 	s := strings.TrimSuffix(repoRef, "/+")
 	repoRefParts := strings.Split(s, "/")
 
 	// valid repoRef: "Acc/Repo", "Acc/Org/Repo", "Acc/Org/Projct/Repo"
 	if len(repoRefParts) < 2 || len(repoRefParts) > 4 {
-		return "", fmt.Errorf("%w. reference %s has %d segments, want 2-4",
+		return "", "", fmt.Errorf("%w. reference %s has %d segments, want 2-4",
 			ErrInvalidRef, repoRef, len(repoRefParts))
 	}
 
@@ -58,5 +59,5 @@ func getQueryParamsFromRepoRef(repoRef string) (string, error) {
 		params.Set(projectIdentifier, repoRefParts[2])
 	}
 
-	return params.Encode(), nil
+	return params.Encode(), strings.Join(repoRefParts, encodedPathSeparator), nil
 }

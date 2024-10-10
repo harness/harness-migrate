@@ -106,9 +106,7 @@ func Open(rawurl, method string, setAuth func(h *http.Header), in, out interface
 
 	// attempt to unmarshal the error into the custom Error structure.
 	resperr := new(Error)
-	if err := json.NewDecoder(resp.Body).Decode(resperr); err != nil {
-		return nil, fmt.Errorf("failed to decode error response, status code:%d: %w", resp.StatusCode, err)
-	}
+	json.NewDecoder(resp.Body).Decode(resperr)
 
 	switch resp.StatusCode {
 	case 401:

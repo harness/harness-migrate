@@ -158,6 +158,19 @@ func IsErrConflict(err error) bool {
 		strings.Contains(err.Error(), "already exists")
 }
 
+func GetRepoDirFromRepoSlug(repoSlug string) string {
+	// keep the zip structure similar among all SCM providers in a form of parent-ref/repo-name
+	// Github and Bitbucket Server hierarchy is org/repo and project/repo
+	// Gitlab supports groups/subgroup1/subgroup2/project
+	repoDir := repoSlug
+	repoPathParts := strings.Split(repoSlug, "/")
+	if len(repoPathParts) > 2 {
+		parentDir := strings.Join(repoPathParts[:len(repoPathParts)-1], "_")
+		repoDir = strings.Join([]string{parentDir, repoPathParts[len(repoPathParts)-1]}, "/")
+	}
+	return repoDir
+}
+
 func CreateFolder(path string) error {
 	return os.MkdirAll(path, os.ModePerm)
 }

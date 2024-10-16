@@ -73,7 +73,7 @@ As a quick start you can run
 ```
 ./migrator gitlab git-export --group <group name/including subgroups> --project <project-name> --host <host-url> --username <gitlab-username> --token <token> <zip-folder-path> 
 ```
-where you have to replace all values enclosed in brackets `<>`. You can pass Gitlab Personal Access Token or Group/Project Access token given your use cases.
+where you have to replace all values enclosed in brackets `<>`. You can pass Gitlab Personal Access Token or Group/Project Access token given your use cases. Please include subgroups for `--group` arg if you are exporting an individual project otherwise only include the group name (w/o subgroups).
 
 You can also provide more advanced options. You can look at those via help: 
 ```

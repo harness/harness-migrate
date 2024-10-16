@@ -63,7 +63,7 @@ func (c *gitImport) run(*kingpin.ParseContext) error {
 	tracer_ := util.CreateTracerWithLevelAndType(c.debug, c.noProgress)
 	defer tracer_.Close()
 
-	c.harnessRepo = strings.Trim(c.harnessRepo, " ")
+	c.harnessRepo = strings.Trim(c.harnessRepo, "/")
 	importUuid := uuid.New().String()
 	c.endpoint, _ = strings.CutSuffix(c.endpoint, "/")
 	importer := gitimporter.NewImporter(

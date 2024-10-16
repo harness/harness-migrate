@@ -102,8 +102,10 @@ func (c *exportGitCommand) run(*kingpin.ParseContext) error {
 
 	var repository string
 	if c.project != "" {
-		repository = strings.Trim(c.project, " ")
+		repository = strings.Trim(c.project, "/")
 	}
+
+	c.group = strings.Trim(c.group, "/")
 
 	fileLogger := &gitexporter.FileLogger{Location: c.file}
 	reporter := make(map[string]*report.Report)

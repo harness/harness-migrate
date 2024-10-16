@@ -140,10 +140,14 @@ func (e *Exporter) Export(ctx context.Context) error {
 }
 
 func (e *Exporter) writeJsonForRepo(repo *externalTypes.RepositoryData, path string) error {
-	repoJson, _ := util.GetJson(repo.Repository)
+	repoJson, err := util.GetJson(repo.Repository)
+	if err != nil {
+		return fmt.Errorf("cannot serialize repository info data into json: %w", err)
+	}
 
-	pathRepo := filepath.Join(path, repo.Repository.Slug)
-	err := util.WriteFile(filepath.Join(pathRepo, externalTypes.InfoFileName), repoJson)
+	repoDir := util.GetRepoDirFromRepoSlug(repo.Repository.Slug)
+	pathRepo := filepath.Join(path, repoDir)
+	err = util.WriteFile(filepath.Join(pathRepo, externalTypes.InfoFileName), repoJson)
 	if err != nil {
 		return fmt.Errorf("error writing info file: %w", err)
 	}
@@ -186,8 +190,7 @@ func (e *Exporter) writePRs(repo *externalTypes.RepositoryData, pathRepo string)
 	for i, data := range prDataInSize {
 		prJson, err := util.GetJson(data)
 		if err != nil {
-			// todo: fix this
-			log.Printf("cannot serialize into json: %v", err)
+			return fmt.Errorf("cannot serialize pull requests data into json: %w", err)
 		}
 		prFilePath := fmt.Sprintf(prFileName, i)
 
@@ -220,7 +223,7 @@ func (e *Exporter) writeWebhooks(repo *externalTypes.RepositoryData, pathRepo st
 	}
 	hooksJson, err := util.GetJson(repo.Webhooks)
 	if err != nil {
-		log.Printf("cannot serialize into json: %v", err)
+		log.Printf("cannot serialize webhooks data into json: %v", err)
 	}
 	err = util.WriteFile(filepath.Join(pathRepo, externalTypes.WebhookFileName), hooksJson)
 	if err != nil {
@@ -235,7 +238,7 @@ func (e *Exporter) writeLables(repo *externalTypes.RepositoryData, pathRepo stri
 	}
 	labelJson, err := util.GetJson(repo.Labels)
 	if err != nil {
-		log.Printf("cannot serialize into json: %v", err)
+		log.Printf("cannot serialize labels data into json: %v", err)
 	}
 	err = util.WriteFile(filepath.Join(pathRepo, externalTypes.LabelsFileName), labelJson)
 	if err != nil {
@@ -258,7 +261,7 @@ func (e *Exporter) writeUsersJson(usersMap map[string]bool) error {
 	}
 	usersJson, err := util.GetJson(usersInput)
 	if err != nil {
-		log.Printf("cannot serialize into json: %v", err)
+		log.Printf("cannot serialize users data into json: %v", err)
 	}
 	err = util.WriteFile(filepath.Join(e.zipLocation, externalTypes.UsersFileName), usersJson)
 	if err != nil {
@@ -270,7 +273,7 @@ func (e *Exporter) writeUsersJson(usersMap map[string]bool) error {
 func (e *Exporter) getData(ctx context.Context, path string) ([]*types.RepoData, error) {
 	repoData := make([]*types.RepoData, 0)
 
-	// 1. list all the repos for the given space (org/project/grpup)
+	// 1. list all the repos for the given space (org, project, or group given the SCM provider)
 	repositories, err := e.exporter.ListRepositories(ctx, types.ListOptions{Page: 1, Size: 25})
 	if err != nil {
 		return nil, fmt.Errorf("cannot list repositories: %w", err)
@@ -283,7 +286,8 @@ func (e *Exporter) getData(ctx context.Context, path string) ([]*types.RepoData,
 	}
 
 	for i, repo := range repositories {
-		repoPath := filepath.Join(path, repo.RepoSlug)
+		repoDir := util.GetRepoDirFromRepoSlug(repo.RepoSlug)
+		repoPath := filepath.Join(path, repoDir)
 		err := util.CreateFolder(repoPath)
 		if err != nil {
 			return nil, fmt.Errorf(common.ErrWritingFileData, err)

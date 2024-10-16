@@ -112,7 +112,7 @@ func (c *exportGitCommand) run(*kingpin.ParseContext) error {
 		NoPR:      c.flags.NoPR,
 		NoComment: c.flags.NoComment,
 		NoWebhook: c.flags.NoWebhook,
-		NoRule:    true, // revert when supported
+		NoRule:    c.flags.NoRule,
 	}
 
 	e := gitlab.New(client, c.group, repository, checkpointManager, fileLogger, tracer_, reporter)

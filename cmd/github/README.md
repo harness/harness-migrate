@@ -47,13 +47,14 @@ When they are exported, supported Github branch protection rules and webhooks ar
 |---|---|
 | Restrict creations | Block branch creation |
 | Restrict deletions | Block branch deletion |
-| Restrict updates   | Require pull request | 
+| Restrict updates   | Block branch update | 
 | Require linear history |  Require pull request |
 | Require a pull request before merging |  Require pull request |
 | Dismiss stale pull request approvals when new commits are pushed |  Require approval of new changes |
 | Require approval of the most recent reviewable push | Require approval of new changes |
 | Require review from Code Owners | Require review from code owners |
 | Require conversation resolution before merging | Require comment resolution |
+| Block force pushes | Block force push |
 
 ## Commands 
 As a quick start you can run 

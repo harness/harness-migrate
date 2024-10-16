@@ -77,10 +77,9 @@ func mapBranchRuleDefinition(d types.Definition) externalTypes.Definition {
 	return externalTypes.Definition{
 		Bypass: externalTypes.Bypass(d.Bypass),
 		PullReq: externalTypes.PullReq{
-			Approvals:    externalTypes.Approvals(d.Approvals),
-			Comments:     externalTypes.Comments(d.Comments),
-			Merge:        externalTypes.Merge(d.Merge),
-			StatusChecks: externalTypes.StatusChecks(d.StatusChecks),
+			Approvals: externalTypes.Approvals(d.Approvals),
+			Comments:  externalTypes.Comments(d.Comments),
+			Merge:     externalTypes.Merge(d.Merge),
 		},
 		Lifecycle: externalTypes.Lifecycle(d.Lifecycle),
 	}

@@ -26,6 +26,7 @@ import (
 	"github.com/harness/harness-migrate/internal/checkpoint"
 	"github.com/harness/harness-migrate/internal/common"
 	"github.com/harness/harness-migrate/internal/gitexporter"
+	"github.com/harness/harness-migrate/internal/harness"
 	"github.com/harness/harness-migrate/internal/report"
 	"github.com/harness/harness-migrate/internal/tracer"
 	"github.com/harness/harness-migrate/internal/types"
@@ -46,7 +47,7 @@ type (
 		fileLogger *gitexporter.FileLogger
 		report     map[string]*report.Report
 
-		userMap map[string]types.User
+		userMap map[string]user
 	}
 )
 
@@ -96,18 +97,56 @@ func (e *Export) ListRepoLabels(
 	return convertLabels(out), res, err
 }
 
+func (e *Export) ListBranchRulesInternal(ctx context.Context,
+	repoSlug string,
+	opts types.ListOptions,
+) ([]*types.BranchRule, *scm.Response, error) {
+	path := fmt.Sprintf("api/v4/projects/%s/protected_branches?%s", encode(repoSlug), encodeListOptions(opts))
+	var out []*branchRule
+	res, err := e.do(ctx, "GET", path, nil, &out)
+	return e.convertBranchRules(ctx, out, repoSlug), res, err
+}
+
+func (e *Export) GetMergeRequestRules(ctx context.Context, repoSlug string) (*types.BranchRule, error) {
+	path := fmt.Sprintf("api/v4/projects/%s", encode(repoSlug))
+	var out project
+	_, err := e.do(ctx, "GET", path, nil, &out)
+	return e.convertMergeRequestRule(out.mergeRequestRules), err
+}
+
 func (e *Export) GetUserByUserName(
 	ctx context.Context,
 	userName string,
 ) (*types.User, *scm.Response, error) {
 	path := fmt.Sprintf("api/v4/users?username=%s", userName)
-	out := []*types.User{}
+	var out []*types.User
 	res, err := e.do(ctx, "GET", path, nil, &out)
 	if err != nil {
 		return nil, res, fmt.Errorf("failed to find user: %w", err)
 	}
 
+	if len(out) == 0 {
+		return nil, res, fmt.Errorf("user response is empty: %w", harness.ErrNotFound)
+	}
+
 	return out[0], res, err
+}
+
+func (e *Export) GetUserByID(
+	ctx context.Context,
+	userID int,
+) (*user, *scm.Response, error) {
+	path := fmt.Sprintf("api/v4/users/%d", userID)
+	var out *user
+	res, err := e.do(ctx, "GET", path, nil, &out)
+	if err != nil {
+		return nil, res, fmt.Errorf("failed to find user: %w", err)
+	}
+	if res.Status == 404 {
+		return nil, res, fmt.Errorf("user not found: %w", harness.ErrNotFound)
+	}
+
+	return out, res, err
 }
 
 func (e *Export) do(ctx context.Context, method, path string, in, out interface{}) (*scm.Response, error) {

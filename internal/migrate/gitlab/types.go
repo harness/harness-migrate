@@ -14,7 +14,32 @@
 
 package gitlab
 
-import "time"
+import (
+	"time"
+
+	"github.com/harness/harness-migrate/internal/types"
+)
+
+type (
+	squashOption string
+	mergeMethod  string
+	level        int
+)
+
+const (
+	squashOptionOn     squashOption = "default_on"
+	squashOptionOff    squashOption = "default_off"
+	squashOptionNever  squashOption = "never"
+	squashOptionAlways squashOption = "always"
+
+	mergeMethodMerge       mergeMethod = "merge"
+	mergeMethodRebase      mergeMethod = "rebase_merge"
+	mergeMethodFastForward mergeMethod = "ff"
+
+	levelNoAccess level = 0
+	levelAdmin    level = 60
+	// skipping Access Level 30: Developer and 40 Maintainer as we dont support migrating roles
+)
 
 type (
 	Error struct {
@@ -28,6 +53,12 @@ type (
 		Username  string `json:"username"`
 		State     string `json:"state"`
 		AvatarURL string `json:"avatar_url"`
+	}
+
+	user struct {
+		types.User
+		UserName    string `json:"username"`
+		PublicEmail string `json:"public_email"`
 	}
 
 	mergeRequest struct {
@@ -104,6 +135,37 @@ type (
 	discussion struct {
 		Id    string        `json:"id"`
 		Notes []codeComment `json:"notes"`
+	}
+
+	accessLevel struct {
+		Id           int    `json:"id"`
+		AccessLevel  level  `json:"access_level"`
+		Description  string `json:"access_level_description"`
+		DeployeKeyID *int   `json:"deploy_key_id"`
+		UserID       *int   `json:"user_id"`
+		GroupID      *int   `json:"group_id"`
+	}
+
+	branchRule struct {
+		Id                int            `json:"id"`
+		Name              string         `json:"name"`
+		PushAccess        []*accessLevel `json:"push_access_levels"`
+		MergeAccess       []*accessLevel `json:"merge_access_levels"`
+		UnprotectAccess   []*accessLevel `json:"unprotect_access_levels"`
+		AllowForcePush    bool           `json:"allow_force_push"`
+		CodeOwnerRequired bool           `json:"code_owner_approval_required"`
+	}
+
+	project struct {
+		Id int `json:"id"`
+		mergeRequestRules
+	}
+
+	mergeRequestRules struct {
+		DeleteBranch           bool         `json:"remove_source_branch_after_merge"`
+		RequireResolveComments bool         `json:"only_allow_merge_if_all_discussions_are_resolved"`
+		SquashOption           squashOption `json:"squash_option"`
+		MergeMethod            mergeMethod  `json:"merge_method"`
 	}
 )
 

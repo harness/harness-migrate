@@ -66,14 +66,14 @@ func (e *Export) convertBranchRule(from branchProtectionRule, repo string) []*ty
 		rule.DeleteForbidden = true
 	}
 	if from.AllowsForcePushes {
-		warningMsg = fmt.Sprintf(logMessage, enum.LogLevelWarning, "force push allowances", from.Pattern, repo)
-		logs = append(logs, warningMsg)
+		rule.Lifecycle.UpdateForceForbidden = false
 	}
 	if from.BlocksCreations {
 		rule.Lifecycle.CreateForbidden = true
 	}
 	if from.BypassPullRequestAllowances.TotalCount > 0 {
 		actorNotUser := false
+		rule.UpdateForbidden = true
 		for _, actor := range from.BypassPullRequestAllowances.Edges {
 			if actor.Node.Actor.Email != "" {
 				rule.Bypass.UserEmails = append(rule.Bypass.UserEmails, actor.Node.Actor.Email)
@@ -134,20 +134,21 @@ func (e *Export) convertBranchRule(from branchProtectionRule, repo string) []*ty
 	if from.RestrictsPushes {
 		r := &types.BranchRule{
 			ID:    from.DatabaseID,
-			Name:  migrate.DisplayNameToIdentifier(from.Pattern, "rule", from.ID),
+			Name:  migrate.DisplayNameToIdentifier(from.Pattern, "", "pushrule_"+from.ID),
 			State: enum.RuleStateActive,
 			Pattern: types.Pattern{
 				IncludedPatterns: []string{from.Pattern},
 			},
 		}
 		r.UpdateForbidden = true
+		r.Definition.Merge.Block = true
 		if !from.IsAdminEnforced {
 			r.Definition.Bypass.RepoOwners = true
 		}
 		actorNotUser := false
 		for _, actor := range from.PushAllowances.Edges {
 			if actor.Node.Actor.Email != "" {
-				rule.Bypass.UserEmails = append(rule.Bypass.UserEmails, actor.Node.Actor.Email)
+				r.Bypass.UserEmails = append(r.Bypass.UserEmails, actor.Node.Actor.Email)
 			} else {
 				actorNotUser = true
 			}
@@ -235,6 +236,8 @@ func (e *Export) mapRuleDefinition(from *detailedRuleSet, repo string) types.Def
 			definition.CreateForbidden = true
 		case "update":
 			definition.UpdateForbidden = true
+			definition.PullReq.Merge.Block = true
+			definition.Lifecycle.UpdateForceForbidden = true
 		case "deletion":
 			definition.DeleteForbidden = true
 		case "required_linear_history":

@@ -5,9 +5,9 @@ We support migrating these entities from Gitlab:
 - Merge requests
 - Merge requests comments
 - Webhooks
+- Branch Protection Rules
 
 Items that would not imported or imported differently:
-- Branch Protection Rules
 - Labels
 - Emoji reactions
 - Merge request reviewers and approvers
@@ -30,6 +30,9 @@ You can install the migrator via github releases or run `make build` with latest
 ## Webhooks
 When they are exported, supported Gitlab webhooks are stored in zip file, which later during import to harness code are mapped according to:
 
+### Branch Protection and Webhooks
+When they are exported, supported Gitlab branch protection rules and webhooks are stored in zip file, which later during import to harness code are mapped according to:
+
 ### Webhooks
 | Gitlab events | Harness Code events
 |---|---|
@@ -37,6 +40,30 @@ When they are exported, supported Gitlab webhooks are stored in zip file, which 
 | Tag Push events |	Tag Created, Tag Updated, Tag Deleted |
 | Comments | PR comment created |
 | Merge request events	| PR created, PR updated, PR closed, PR reopened, PR merged  |
+
+### Branch protection rules 
+| Gitlab branch protection rule | Harness Code rule
+|---|---|
+| Allowed to push and merge | Require pull request |
+| Allowed to merge | Block branch update |
+| Allow Force Push   | Dont Block force push | 
+| All threads must be resolved |  Require comment resolution |
+| Enable "Delete source branch" option by default |  Auto delete branch on merge |
+| Require approval from code owners |  Require review from code owners |
+
+Here's how Merge requests settings applies as branch rule:
+| Gitlab merge method | Harness Code merge strategies (allowed)
+|---|---|
+| Merge, Squash is not required | Merge, Squash and merge|
+| Merge, Squash commits "Required" when merging | Squash and merge |
+| Merge commit with semi-linear history | Merge, Rebase, Squash and merge |
+| Fast-forward merge | Rebase, Fast-forward, Squash and merge |
+
+GitLab allows users to bypass branch protection rules based on their roles or specific user/group settings. After migration, users will be transferred, but roles won’t be. 
+
+Note Gitlab branch protection rules follow the "most permissive" rule if multiple rules can apply to a single branch. Harness Code follows the "Apply all" rule.
+
+Group-level merge request approvals need to be set manually after the migration. Refer to `Require a minimum number of reviewers` rule in the [Docs](https://developer.harness.io/docs/code-repository/config-repos/rules/#available-rules).
 
 #### Merge Request Comments
 Code comments attached to specific lines will be visible in the "Changes" tab of the pull request, not in the "Conversation" tab.

@@ -102,9 +102,6 @@ func Open(rawurl, method string, setAuth func(h *http.Header), in, out interface
 	}
 
 	defer resp.Body.Close()
-	// Read and store response body
-
-	// attempt to unmarshal the error into the custom Error structure.
 	resperr := new(Error)
 	json.NewDecoder(resp.Body).Decode(resperr)
 

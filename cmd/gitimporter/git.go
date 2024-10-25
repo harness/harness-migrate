@@ -44,10 +44,10 @@ type gitImport struct {
 	filePath string
 
 	// optional flags to skip import repo meta data
-	skipPR      bool
-	skipWebhook bool
-	skipRule    bool
-	skipLabel   bool
+	noPR      bool
+	noWebhook bool
+	noRule    bool
+	noLabel   bool
 }
 
 type UserInvite bool
@@ -72,10 +72,10 @@ func (c *gitImport) run(*kingpin.ParseContext) error {
 		gitimporter.Flags{
 			SkipUsers:     c.skipUsers,
 			FileSizeLimit: c.fileSizeLimit,
-			SkipPR:        c.skipPR,
-			SkipWebhook:   c.skipWebhook,
-			SkipRule:      c.skipRule,
-			SkipLabel:     c.skipLabel,
+			NoPR:          c.noPR,
+			NoWebhook:     c.noWebhook,
+			NoRule:        c.noRule,
+			NoLabel:       c.noLabel,
 		},
 		tracer_)
 
@@ -126,25 +126,21 @@ func registerGitImporter(app *kingpin.CmdClause) {
 		Envar("Gitness").
 		BoolVar(&c.Gitness)
 
-	cmd.Flag("skip-pr", "skip importing pull requests and comments").
+	cmd.Flag("no-pr", "do Not import pull requests and comments").
 		Default("false").
-		Envar("harness_SKIP_PR").
-		BoolVar(&c.skipPR)
+		BoolVar(&c.noPR)
 
-	cmd.Flag("skip-label", "skip importing labels").
+	cmd.Flag("no-label", "do Not import labels").
 		Default("false").
-		Envar("harness_SKIP_Labels").
-		BoolVar(&c.skipLabel)
+		BoolVar(&c.noLabel)
 
-	cmd.Flag("skip-webhook", "skip importing webhooks").
+	cmd.Flag("no-webhook", "do Not import webhooks").
 		Default("false").
-		Envar("harness_SKIP_WEBHOOK").
-		BoolVar(&c.skipWebhook)
+		BoolVar(&c.noWebhook)
 
-	cmd.Flag("skip-rule", "skip importing branch protection rules").
+	cmd.Flag("no-rule", "do Not import branch protection rules").
 		Default("false").
-		Envar("harness_SKIP_RULES").
-		BoolVar(&c.skipRule)
+		BoolVar(&c.noRule)
 
 	cmd.Flag("debug", "enable debug logging").
 		BoolVar(&c.debug)

@@ -34,7 +34,7 @@ import (
 )
 
 type Export struct {
-	github     *scm.Client
+	bitbucket  *scm.Client
 	workspace  string
 	repository string
 
@@ -91,14 +91,13 @@ func (e *Export) do(ctx context.Context, method, path string, in, out interface{
 	}
 
 	// execute the http request
-	res, err := e.github.Do(ctx, req)
+	res, err := e.bitbucket.Do(ctx, req)
 	if err != nil {
 		return nil, err
 	}
 	defer res.Body.Close()
 
-	// parse the github request id.
-	res.ID = res.Header.Get("X-GitHub-Request-Id")
+	res.ID = res.Header.Get("X-Request-Id")
 
 	// parse the github rate limit details.
 	res.Rate.Limit, _ = strconv.Atoi(
@@ -112,7 +111,7 @@ func (e *Export) do(ctx context.Context, method, path string, in, out interface{
 	)
 
 	// snapshot the request rate limit
-	e.github.SetRate(res.Rate)
+	e.bitbucket.SetRate(res.Rate)
 
 	if res.Rate.Remaining == 0 {
 		return res, fmt.Errorf("Github rate limit has been reached. please wait for %d until try again.", res.Rate.Reset)

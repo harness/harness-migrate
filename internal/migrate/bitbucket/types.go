@@ -17,7 +17,13 @@ package bitbucket
 import "time"
 
 type (
+	Error struct {
+		Message string `json:"message"`
+		Detail  string `json:"detail"`
+	}
+
 	comments struct {
+		pagination
 		Values []codeComment `json:"values"`
 	}
 
@@ -54,4 +60,16 @@ type (
 		DestRev      string `json:"dest_rev"`
 		ContextLines string `json:"context_lines"`
 	}
+
+	// pagination is Bitbucket pagination properties in list responses.
+	pagination struct {
+		PageLen int    `json:"pagelen"`
+		Page    int    `json:"page"`
+		Size    int    `json:"size"`
+		Next    string `json:"next"`
+	}
 )
+
+func (e *Error) Error() string {
+	return e.Message
+}

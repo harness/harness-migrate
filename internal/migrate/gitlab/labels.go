@@ -31,6 +31,9 @@ func (e *Export) ListLabels(
 ) (map[string]externalTypes.Label, error) {
 	e.tracer.Start(common.MsgStartExportLabels, repoSlug)
 	allLabels := make(map[string]externalTypes.Label)
+	defer func() {
+		e.tracer.Stop(common.MsgCompleteExportLabels, len(allLabels), repoSlug)
+	}()
 
 	checkpointDataKey := fmt.Sprintf(common.LabelCheckpointData, repoSlug)
 	val, ok, err := checkpoint.GetCheckpointData[map[string]externalTypes.Label](e.checkpointManager, checkpointDataKey)

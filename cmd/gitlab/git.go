@@ -139,7 +139,7 @@ func registerGit(app *kingpin.CmdClause) {
 		Envar("gitlab_HOST").
 		StringVar(&c.url)
 
-	cmd.Flag("group", "gitlab group").
+	cmd.Flag("group", "gitlab group followed by subgroups").
 		Required().
 		Envar("gitlab_GROUP").
 		StringVar(&c.group)

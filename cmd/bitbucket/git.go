@@ -38,7 +38,7 @@ type exportCommand struct {
 
 	file string
 
-	org           string
+	workspace     string
 	srcRepository string
 	user          string
 	token         string
@@ -100,7 +100,7 @@ func (c *exportCommand) run(*kingpin.ParseContext) error {
 		repository = strings.Trim(c.srcRepository, "/")
 	}
 
-	c.org = strings.Trim(c.org, "/")
+	c.workspace = strings.Trim(c.workspace, "/")
 
 	fileLogger := &gitexporter.FileLogger{Location: c.file}
 	reporter := make(map[string]*report.Report)
@@ -113,7 +113,7 @@ func (c *exportCommand) run(*kingpin.ParseContext) error {
 		NoLabel:   c.flags.NoLabel,
 	}
 
-	e := github.New(client, c.org, repository, checkpointManager, fileLogger, tracer_, reporter)
+	e := github.New(client, c.workspace, repository, checkpointManager, fileLogger, tracer_, reporter)
 
 	exporter := gitexporter.NewExporter(e, c.file, c.user, c.token, tracer_, reporter, flags)
 	return exporter.Export(ctx)
@@ -135,10 +135,10 @@ func registerGit(app *kingpin.CmdClause) {
 		Envar("bitbucket_HOST").
 		StringVar(&c.url)
 
-	cmd.Flag("org", "bitbucket organization").
+	cmd.Flag("workspace", "bitbucket workspace followed by project").
 		Required().
-		Envar("bitbucket_ORG").
-		StringVar(&c.org)
+		Envar("bitbucket_WORKSPACE").
+		StringVar(&c.workspace)
 
 	cmd.Flag("repository", "optional name of the repository to export").
 		Envar("bitbucket_REPOSITORY").

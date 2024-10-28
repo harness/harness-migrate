@@ -17,6 +17,9 @@ package github
 import (
 	"context"
 	"fmt"
+	"net/url"
+	"strconv"
+	"strings"
 
 	"github.com/harness/harness-migrate/internal/checkpoint"
 	"github.com/harness/harness-migrate/internal/common"
@@ -24,6 +27,8 @@ import (
 
 	"github.com/drone/go-scm/scm"
 )
+
+const maxPR = 51
 
 func (e *Export) ListPullRequests(
 	ctx context.Context,
@@ -37,6 +42,7 @@ func (e *Export) ListPullRequests(
 		Open:   params.Open,
 		Closed: params.Closed,
 	}
+
 	var allPrs []types.PRResponse
 	msgPrExport := common.MsgCompleteExportPRs
 	defer func() {
@@ -73,7 +79,25 @@ func (e *Export) ListPullRequests(
 			e.tracer.LogError(common.ErrListPr, err)
 			return nil, fmt.Errorf("cannot list prs: %w", err)
 		}
+		// 		TEMPORARY
+		// filter out already fetched prs
+		//
+		totalPages := 1
+		linkHeader := resp.Header.Get("Link")
+		if linkHeader != "" {
+			totalPages = parseLastPageFromLink(linkHeader)
+		}
+
+		skipToPage := (maxPR / params.Size) + 1
+		if skipToPage < totalPages {
+			opts.Page = skipToPage
+		}
+
 		mappedPrs := common.MapPullRequest(prs)
+
+		// TMP: Filter out already fetched PRs
+		mappedPrs = filterNewPRs(mappedPrs, maxPR)
+
 		mappedPrsWithAuthor, err := e.addEmailToPRAuthor(ctx, mappedPrs)
 		if err != nil {
 			return nil, fmt.Errorf("cannot add email to author: %w", err)
@@ -114,4 +138,41 @@ func (e *Export) addEmailToPRAuthor(ctx context.Context, prs []types.PRResponse)
 		prs[i] = pr
 	}
 	return prs, nil
+}
+
+// filterNewPRs filters PRs that have a number greater than the last processed PR number
+func filterNewPRs(prs []types.PRResponse, lastPRNumber int) []types.PRResponse {
+	var newPRs []types.PRResponse
+	for _, pr := range prs {
+		if pr.Number > lastPRNumber {
+			newPRs = append(newPRs, pr)
+		}
+	}
+	return newPRs
+}
+
+func parseLastPageFromLink(linkHeader string) int {
+	// Find the link with rel="last"
+	links := strings.Split(linkHeader, ",")
+	for _, link := range links {
+		parts := strings.Split(strings.TrimSpace(link), ";")
+		if len(parts) < 2 {
+			continue
+		}
+		// Look for `rel="last"`
+		if strings.Contains(parts[1], `rel="last"`) {
+			// Extract the page number from the URL
+			u, err := url.Parse(parts[0][1 : len(parts[0])-1]) // Remove angle brackets
+			if err != nil {
+				return 1
+			}
+			page := u.Query().Get("page")
+			totalPages, err := strconv.Atoi(page)
+			if err != nil {
+				return 1
+			}
+			return totalPages
+		}
+	}
+	return 1
 }

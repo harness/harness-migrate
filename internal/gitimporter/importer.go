@@ -281,14 +281,14 @@ func (m *Importer) importRepoMetaData(_ context.Context, repoRef, repoFolder str
 
 // Cleanup cleans up the repo best effort.
 func (m *Importer) cleanup(repoRef string) {
-	m.Tracer.Start(common.MsgStartRepoCleanup, repoRef)
-	err := m.Harness.DeleteRepository(repoRef)
-	if err != nil {
-		m.Tracer.LogError(common.ErrCleanupRepo, err)
-		return
-	}
+	// m.Tracer.Start(common.MsgStartRepoCleanup, repoRef)
+	// err := m.Harness.DeleteRepository(repoRef)
+	// if err != nil {
+	// 	m.Tracer.LogError(common.ErrCleanupRepo, err)
+	// 	return
+	// }
 
-	m.Tracer.Stop(common.MsgCompleteRepoCleanup, repoRef)
+	// m.Tracer.Stop(common.MsgCompleteRepoCleanup, repoRef)
 }
 
 // notRecoverableError checks if error is not recoverable, otherwise migration can continue

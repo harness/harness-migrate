@@ -28,7 +28,11 @@ import (
 	"github.com/drone/go-scm/scm"
 )
 
-const maxPR = 51
+// IMPORT STEP 1
+const skipUpTo = 13
+
+// IMPORT STEP 2
+const maxPR = 52
 
 func (e *Export) ListPullRequests(
 	ctx context.Context,
@@ -36,6 +40,9 @@ func (e *Export) ListPullRequests(
 	params types.PullRequestListOptions,
 ) ([]types.PRResponse, error) {
 	e.tracer.Start(common.MsgStartExportPRs, repoSlug)
+	// IMPORT STEP 1
+	// params.Open = false
+
 	opts := scm.PullRequestListOptions{
 		Page:   params.Page,
 		Size:   params.Size,
@@ -79,7 +86,7 @@ func (e *Export) ListPullRequests(
 			e.tracer.LogError(common.ErrListPr, err)
 			return nil, fmt.Errorf("cannot list prs: %w", err)
 		}
-		// 		TEMPORARY
+		// 		TEMPORARY FOR IMPORT STEP 2
 		// filter out already fetched prs
 		//
 		totalPages := 1
@@ -95,8 +102,11 @@ func (e *Export) ListPullRequests(
 
 		mappedPrs := common.MapPullRequest(prs)
 
-		// TMP: Filter out already fetched PRs
-		mappedPrs = filterNewPRs(mappedPrs, maxPR)
+		// TEMPORARY FOR IMPORT STEP 1
+		// mappedPrs = filterPRs(mappedPrs, skipUpTo)
+
+		// TEMPORARY FOR IMPORT STEP 2
+		mappedPrs = filterPRs(mappedPrs, maxPR)
 
 		mappedPrsWithAuthor, err := e.addEmailToPRAuthor(ctx, mappedPrs)
 		if err != nil {
@@ -140,8 +150,8 @@ func (e *Export) addEmailToPRAuthor(ctx context.Context, prs []types.PRResponse)
 	return prs, nil
 }
 
-// filterNewPRs filters PRs that have a number greater than the last processed PR number
-func filterNewPRs(prs []types.PRResponse, lastPRNumber int) []types.PRResponse {
+// filterPRs filters PRs that have a number greater than the last processed PR number
+func filterPRs(prs []types.PRResponse, lastPRNumber int) []types.PRResponse {
 	var newPRs []types.PRResponse
 	for _, pr := range prs {
 		if pr.Number > lastPRNumber {

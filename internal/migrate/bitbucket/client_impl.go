@@ -47,7 +47,7 @@ type Export struct {
 	userMap map[string]types.User
 }
 
-func (e *Export) ListPRComments(
+func (e *Export) ListPullRequestComments(
 	ctx context.Context,
 	repoSlug string,
 	prNumber int,

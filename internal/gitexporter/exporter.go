@@ -23,7 +23,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/harness/harness-migrate/internal/checkpoint"
 	"github.com/harness/harness-migrate/internal/common"
 	"github.com/harness/harness-migrate/internal/report"
 	"github.com/harness/harness-migrate/internal/tracer"
@@ -37,7 +36,7 @@ const (
 	maxChunkSize       = 25 * 1024 * 1024 // 25 MB
 	prFileName         = "pr%d.json"
 	zipFileName        = "harness.zip"
-	maxParallelism     = 20 // TODO: make this configurable by the user
+	maxParallelism     = 10 // TODO: make this configurable by the user
 	UnknownEmailSuffix = "@unknownemail.harness.io"
 )
 
@@ -85,7 +84,8 @@ func NewExporter(
 
 // Export calls exporter methods in order and serialize an object for import.
 func (e *Exporter) Export(ctx context.Context) error {
-	path := filepath.Join(".", e.zipLocation)
+	//path := filepath.Join(".", e.zipLocation)
+	path := e.zipLocation
 	err := util.CreateFolder(path)
 	if err != nil {
 		return fmt.Errorf(common.ErrCannotCreateFolder, err)
@@ -113,10 +113,10 @@ func (e *Exporter) Export(ctx context.Context) error {
 		return fmt.Errorf("error writing users json: %w", err)
 	}
 
-	err = checkpoint.CleanupCheckpoint(path)
-	if err != nil {
-		log.Printf("error cleaning checkpoint: %v", err)
-	}
+	// err = checkpoint.CleanupCheckpoint(path)
+	// if err != nil {
+	// 	log.Printf("error cleaning checkpoint: %v", err)
+	// }
 
 	err = zipFolder(path)
 	if err != nil {
@@ -294,11 +294,12 @@ func (e *Exporter) getData(ctx context.Context, path string) ([]*types.RepoData,
 		}
 
 		// 2. clone git data for each repo
-		isEmpty, err := e.CloneRepository(ctx, repo.Repository, repoPath, repo.RepoSlug, e.exporter.PullRequestRefs(), e.Tracer)
-		if err != nil {
-			return nil, fmt.Errorf("cannot clone the git repo for %s: %w", repo.RepoSlug, err)
-		}
+		// isEmpty, err := e.CloneRepository(ctx, repo.Repository, repoPath, repo.RepoSlug, e.exporter.PullRequestRefs(), e.Tracer)
+		// if err != nil {
+		// 	return nil, fmt.Errorf("cannot clone the git repo for %s: %w", repo.RepoSlug, err)
+		// }
 
+		isEmpty := false
 		if isEmpty {
 			repoData[i].Repository.IsEmpty = true
 			continue
@@ -355,6 +356,12 @@ func (e *Exporter) getData(ctx context.Context, path string) ([]*types.RepoData,
 				continue
 			}
 
+			// batch := 100
+			// subPRs := make([]types.PRResponse, batch)
+			// for i, pr := range prs {
+			// 	subPRs[i] = pr
+			// }
+
 			prData, err := e.exportCommentsForPRs(ctx, prs, repo, e.Tracer)
 			if err != nil {
 				return nil, fmt.Errorf("error getting comments for pr: %w", err)
@@ -378,7 +385,7 @@ func (e *Exporter) exportCommentsForPRs(
 
 	e.Tracer.Start(common.MsgStartCommentsFetch, repo.RepoSlug)
 	defer e.Tracer.Stop(common.MsgCompleteCommentsFetch, repo.RepoSlug)
-	taskPool := util.NewTaskPool(ctx, max(maxParallelism, len(prs)))
+	taskPool := util.NewTaskPool(ctx, min(maxParallelism, len(prs)))
 	err := taskPool.Start()
 	if err != nil {
 		return nil, fmt.Errorf("error starting thread pool: %w", err)
@@ -409,6 +416,7 @@ func (e *Exporter) createPRTask(j int, pr types.PRResponse, repo types.RepoRespo
 			case <-ctx.Done():
 				return nil, ctx.Err()
 			default:
+				//time.Sleep(time.Second)
 				comments, err := e.exporter.ListPullRequestComments(ctx, repo.RepoSlug, pr.Number,
 					types.ListOptions{Page: 1, Size: 25})
 				if err != nil {

@@ -41,12 +41,12 @@ func (e *Export) ListPullRequests(
 ) ([]types.PRResponse, error) {
 	e.tracer.Start(common.MsgStartExportPRs, repoSlug)
 	// IMPORT STEP 1
-	// params.Open = false
+	//params.Open = false
 
 	opts := scm.PullRequestListOptions{
 		Page:   params.Page,
 		Size:   params.Size,
-		Open:   params.Open,
+		Open:   false, //params.Open,
 		Closed: params.Closed,
 	}
 
@@ -89,24 +89,24 @@ func (e *Export) ListPullRequests(
 		// 		TEMPORARY FOR IMPORT STEP 2
 		// filter out already fetched prs
 		//
-		totalPages := 1
-		linkHeader := resp.Header.Get("Link")
-		if linkHeader != "" {
-			totalPages = parseLastPageFromLink(linkHeader)
-		}
+		// totalPages := 1
+		// linkHeader := resp.Header.Get("Link")
+		// if linkHeader != "" {
+		// 	totalPages = parseLastPageFromLink(linkHeader)
+		// }
 
-		skipToPage := (maxPR / params.Size) + 1
-		if skipToPage < totalPages {
-			opts.Page = skipToPage
-		}
+		// skipToPage := (maxPR / params.Size) + 1
+		// if skipToPage < totalPages {
+		// 	opts.Page = skipToPage
+		// }
 
 		mappedPrs := common.MapPullRequest(prs)
 
 		// TEMPORARY FOR IMPORT STEP 1
-		// mappedPrs = filterPRs(mappedPrs, skipUpTo)
+		mappedPrs = filterPRs(mappedPrs, skipUpTo)
 
 		// TEMPORARY FOR IMPORT STEP 2
-		mappedPrs = filterPRs(mappedPrs, maxPR)
+		//mappedPrs = filterPRs(mappedPrs, maxPR)
 
 		mappedPrsWithAuthor, err := e.addEmailToPRAuthor(ctx, mappedPrs)
 		if err != nil {

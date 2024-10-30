@@ -378,7 +378,7 @@ func (e *Exporter) exportCommentsForPRs(
 
 	e.Tracer.Start(common.MsgStartCommentsFetch, repo.RepoSlug)
 	defer e.Tracer.Stop(common.MsgCompleteCommentsFetch, repo.RepoSlug)
-	taskPool := util.NewTaskPool(ctx, max(maxParallelism, len(prs)))
+	taskPool := util.NewTaskPool(ctx, min(maxParallelism, len(prs)))
 	err := taskPool.Start()
 	if err != nil {
 		return nil, fmt.Errorf("error starting thread pool: %w", err)

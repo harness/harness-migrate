@@ -130,7 +130,16 @@ func registerGitImporter(app *kingpin.CmdClause) {
 		Default("false").
 		BoolVar(&c.noPR)
 
+	// keeping the old flags before making them obsolete
+	cmd.Flag("skip-pr", "skip importing pull requests and comments (alias for --no-pr)").
+		Default("false").
+		BoolVar(&c.noPR)
+
 	cmd.Flag("no-label", "do Not import labels").
+		Default("false").
+		BoolVar(&c.noLabel)
+
+	cmd.Flag("skip-label", "skip importing labels (alias for --no-label)").
 		Default("false").
 		BoolVar(&c.noLabel)
 
@@ -138,7 +147,15 @@ func registerGitImporter(app *kingpin.CmdClause) {
 		Default("false").
 		BoolVar(&c.noWebhook)
 
+	cmd.Flag("skip-webhook", "skip importing webhooks (alias for --no-webhook)").
+		Default("false").
+		BoolVar(&c.noWebhook)
+
 	cmd.Flag("no-rule", "do Not import branch protection rules").
+		Default("false").
+		BoolVar(&c.noRule)
+
+	cmd.Flag("skip-rule", "skip importing branch protection rules (alias for --no-rule)").
 		Default("false").
 		BoolVar(&c.noRule)
 

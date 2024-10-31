@@ -36,7 +36,7 @@ const (
 	maxChunkSize       = 25 * 1024 * 1024 // 25 MB
 	prFileName         = "pr%d.json"
 	zipFileName        = "harness.zip"
-	maxParallelism     = 10 // TODO: make this configurable by the user
+	maxParallelism     = 20 // TODO: make this configurable by the user
 	UnknownEmailSuffix = "@unknownemail.harness.io"
 )
 

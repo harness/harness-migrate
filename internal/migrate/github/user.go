@@ -33,8 +33,13 @@ func (e *Export) FindEmailByUsername(ctx context.Context, username string) (stri
 		return user.Email, nil
 	}
 
-	u, _, err := e.GetUserByUserName(ctx, username)
-	if err != nil {
+	u, res, err := e.GetUserByUserName(ctx, username)
+	if res.Status == 404 {
+		u = &types.User{
+			ID:    unknownUserId,
+			Email: getDefaultEmail("ghost"),
+		}
+	} else if err != nil {
 		return "", err
 	}
 

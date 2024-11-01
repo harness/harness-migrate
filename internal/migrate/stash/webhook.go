@@ -131,6 +131,8 @@ func mapEvents(triggers []string) ([]enum.WebhookTrigger, []string) {
 			events = append(events, enum.WebhookTriggerPullReqBranchUpdated)
 		case "pr:comment:added":
 			events = append(events, enum.WebhookTriggerPullReqCommentCreated)
+		case "pr:reviewer:unapproved", "pr:reviewer:updated", "pr:reviewer:needs_work", "pr:reviewer:approved":
+			events = append(events, enum.WebhookTriggerReviewSubmitted)
 		default:
 			notSupportedEvents = append(notSupportedEvents, v)
 		}

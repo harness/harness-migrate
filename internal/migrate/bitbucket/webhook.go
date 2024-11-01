@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package github
+package bitbucket
 
 import (
 	"context"
@@ -63,7 +63,7 @@ func (e *Export) ListWebhooks(
 	}
 
 	for {
-		webhooks, resp, err := e.github.Repositories.ListHooks(ctx, repoSlug, opts)
+		webhooks, resp, err := e.bitbucket.Repositories.ListHooks(ctx, repoSlug, opts)
 		if err != nil {
 			e.tracer.LogError(common.ErrListWebhook, repoSlug, err)
 			e.tracer.Stop(common.ErrListWebhooks, repoSlug, err)
@@ -117,22 +117,20 @@ func mapEvents(triggers []string) ([]enum.WebhookTrigger, []string) {
 
 	for _, v := range triggers {
 		switch v {
-		case "create":
-			events = append(events, enum.WebhookTriggerBranchCreated, enum.WebhookTriggerTagCreated)
-		case "delete":
-			events = append(events, enum.WebhookTriggerBranchDeleted, enum.WebhookTriggerTagDeleted)
-		case "pull_request":
-			events = append(events, enum.WebhookTriggerPullReqCreated, enum.WebhookTriggerPullReqReopened,
-				enum.WebhookTriggerPullReqClosed, enum.WebhookTriggerPullReqUpdated, enum.WebhookTriggerPullReqMerged)
-		case "pull_request_review_comment", "commit_comment":
+		case "repo:push":
+			events = append(events, enum.WebhookTriggerBranchCreated, enum.WebhookTriggerBranchDeleted, enum.WebhookTriggerBranchUpdated,
+				enum.WebhookTriggerTagCreated, enum.WebhookTriggerTagDeleted, enum.WebhookTriggerTagUpdated, enum.WebhookTriggerPullReqBranchUpdated)
+		case "repo:commit_comment_created", "pullrequest:comment_created":
 			events = append(events, enum.WebhookTriggerPullReqCommentCreated)
-		case "push":
-			events = append(events, enum.WebhookTriggerPullReqBranchUpdated, enum.WebhookTriggerBranchUpdated,
-				enum.WebhookTriggerTagUpdated)
-		case "pull_request_review":
+		case "pullrequest:created":
+			events = append(events, enum.WebhookTriggerPullReqCreated, enum.WebhookTriggerPullReqReopened)
+		case "pullrequest:updated":
+			events = append(events, enum.WebhookTriggerPullReqUpdated, enum.WebhookTriggerPullReqBranchUpdated)
+		case "pullrequest:fulfilled":
+			events = append(events, enum.WebhookTriggerPullReqMerged)
+		case "pullrequest:approved", "pullrequest:rejected", "pullrequest:changes_request_created",
+			"pullrequest:unapproved", "pullrequest:changes_request_removed":
 			events = append(events, enum.WebhookTriggerReviewSubmitted)
-		case "label":
-			events = append(events, enum.WebhookTriggerPullReqLabelAssigned)
 		default:
 			notSupportedEvents = append(notSupportedEvents, v)
 		}

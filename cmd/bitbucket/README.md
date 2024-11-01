@@ -1,17 +1,13 @@
-# Git migrator for Github
-We support migrating these entities from Github:
+# Git migrator for Bitbucket
+We support migrating these entities from Bitbucket:
 - Repository
 - Repository Public/Private status
 - Pull requests
 - Pull request comments
-- Pull request review comments
-- Labels
 - Webhooks
 - Branch Rules
 
 Items that would not imported or imported differently:
-- Task lists: Task lists are imported as normal comments
-- Emoji reactions
 - Pull request reviewers and approvers
 - Any attachment
 - LFS objects
@@ -21,31 +17,29 @@ Items that would not imported or imported differently:
 Export will depend on the size of repo and its pull request. A repo which has more pull request but less comments will take more time than one which has more comments and lesser pull requests.
 
 ## Prerequisites
-To export projects from Github, you must have admin write access in for the project to successfully export all the supported entities. 
+To export workspaces from Bitbucket, you must have admin write access in for the workspace to successfully export all the supported entities. 
 
 ### Users
-All the users encountered anywhere are stored by email and can be found in users.json in the exported zip file.
+All the users encountered anywhere are stored by email and can be found in users.json in the exported zip file. You need to use a workplace access token to list user email addresses.
 
 ### Installing
 You can install the migrator via github releases or run `make build` with latest go version present in your system.
 
 ## Branch Protection and Webhooks
-When they are exported, supported Github branch protection rules and webhooks are stored in zip file, which later during import to harness code are mapped according to:
+When they are exported, supported Bitbucket branch protection rules and webhooks are stored in zip file, which later during import to harness code are mapped according to:
 
 ### Webhooks
-| Github events | Harness Code events
+| Bitbucket events | Harness Code events
 |---|---|
-| Branch or tag creation |	Branch Created, Tag Created |
-| Branch or tag deletion |	Branch Deleted, Tag Deleted |
-| Pull requests | PR created, PR updated, PR closed, PR reopened, PR merged |
-| Pull request review comments, Commit comments	| PR comment created |
-| Pushes | Branch updated, Tag updated, PR branch updated |
-| Labels | PR Label Assigned |
-| Pull request reviews| PR Review Submitted|
-
+| Repository Push |	Branch Created, Branch Updated, Branch Deleted, Tag Created, Tag updated, Tag Deleted, PR branch updated |
+| Repository Commit comment created, Pull request Comment created |  PR comment created |
+| Pull request Created | PR created |
+| Pull request Updated | PR updated, PR branch updated|
+| Pull request Merged | PR merged|
+| Pull request Approved, Approval removed, Changes Request created/removed, Declined| PR Review Submitted|
 
 ### Branch protection rules 
-| Github rule(set) | Harness Code rule
+| Bitbucket rule(set) | Harness Code rule
 |---|---|
 | Restrict creations | Block branch creation |
 | Restrict deletions | Block branch deletion |
@@ -61,21 +55,21 @@ When they are exported, supported Github branch protection rules and webhooks ar
 ## Commands 
 As a quick start you can run 
 ```
-./migrator github git-export --project <project name> --repository <repo-name> --host <host-url> --username <github-username> --token <token> <zip-folder-path> 
+./migrator bitbucket git-export --workspace <workspace name> --repository <repo-name> --host <host-url> --username <bitbucket-username> --token <token> <zip-folder-path> 
 ```
 where you have to replace all values enclosed in brackets `<>`.
 
 You can also provide more advanced options. You can look at those via help: 
 ```
-./migrator github git-export --help
+./migrator bitbucket git-export --help
 ```
 
 Application also supports advanced option like `resume` which can help you resume run from last successful run and avoid overhead of re-running the same commands.
 
 ## Troubleshooting
 ### General
-#### Export fails due to reach the Github rate limit
-If project export fails due to reaching the Github API rate limit, you could wait for an hour and re-run the migrator or exclude exporting metadata (options available are `--no-pr, --no-comment, --no-webhook, and --no-rule`)
+#### Export fails due to reach the Bitbucket rate limit
+If project export fails due to reaching the Bitbucket API rate limit, you could wait for an hour and re-run the migrator or exclude exporting metadata (options available are `--no-pr, --no-comment, --no-webhook, and --no-rule`)
 
 #### Export fails due to missing permission
 If you see errors in listing webhooks, make sure the provided token has admin permission.

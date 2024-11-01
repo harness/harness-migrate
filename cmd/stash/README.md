@@ -36,13 +36,14 @@ When they are exported, supported Stash branch protection rules and webhooks are
 ### Webhooks
 | Bitbucket Server events | Harness Code events
 |---|---|
-| Repository Push | Branch Created, Branch Updated, Branch Deleted, Tag Created, Tag updated, Tag Deleted|
+| Repository Push | Branch Created, Branch Updated, Branch Deleted, Tag Created, Tag updated, Tag Deleted |
 | Pull Request Opened |  PR Created, PR Reopened |
 | Pull Request Merged |  PR Merged |
 | Pull Request Modified | PR Updated |
 | Pull Request Declined | PR Closed |
 | Pull Request Source branch updated | PR Branch Updated |
 | Pull Request Comment Added | PR Comment Created |
+| Pull request Reviewers updated, Approved, Unapproved, Needs work | PR Review Submitted | 
 
 ### Branch protection rules 
 | Bitbucket Server rule | Harness Code rule

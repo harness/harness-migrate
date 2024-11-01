@@ -19,6 +19,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/url"
 	"strconv"
 
@@ -28,7 +29,6 @@ import (
 	"github.com/harness/harness-migrate/internal/report"
 	"github.com/harness/harness-migrate/internal/tracer"
 	"github.com/harness/harness-migrate/internal/types"
-	externalTypes "github.com/harness/harness-migrate/types"
 
 	"github.com/drone/go-scm/scm"
 )
@@ -47,13 +47,23 @@ type Export struct {
 	userMap map[string]types.User
 }
 
+func (e *Export) GetUserByUUID(
+	ctx context.Context,
+	uuid string,
+) (*types.User, *scm.Response, error) {
+	path := fmt.Sprintf("2.0/user/emails", uuid)
+	out := &types.User{}
+	res, err := e.do(ctx, "GET", path, nil, &out)
+	return out, res, err
+}
+
 func (e *Export) ListPullRequestComments(
 	ctx context.Context,
 	repoSlug string,
 	prNumber int,
 	opts types.ListOptions,
 ) ([]*types.PRComment, *scm.Response, error) {
-	path := fmt.Sprintf("repositories/%s/pullrequests/%d/comments?%s", repoSlug, prNumber, encodeListOptions(opts))
+	path := fmt.Sprintf("/2.0/repositories/%s/pullrequests/%d/comments?%s", repoSlug, prNumber, encodeListOptions(opts))
 	var out comments
 	res, err := e.do(ctx, "GET", path, nil, &out)
 	return convertPRCommentsList(out.Values), res, err
@@ -64,14 +74,6 @@ func (e *Export) ListBranchRulesInternal(
 	repoSlug string,
 	opts types.ListOptions,
 ) ([]*types.BranchRule, *scm.Response, error) {
-}
-
-func (e *Export) ListRepoLabels(
-	ctx context.Context,
-	repoSlug string,
-	opts types.ListOptions,
-) ([]externalTypes.Label, *scm.Response, error) {
-
 }
 
 func (e *Export) do(ctx context.Context, method, path string, in, out interface{}) (*scm.Response, error) {
@@ -97,34 +99,36 @@ func (e *Export) do(ctx context.Context, method, path string, in, out interface{
 	}
 	defer res.Body.Close()
 
-	res.ID = res.Header.Get("X-Request-Id")
-
 	// parse the github rate limit details.
 	res.Rate.Limit, _ = strconv.Atoi(
 		res.Header.Get("X-RateLimit-Limit"),
 	)
-	res.Rate.Remaining, _ = strconv.Atoi(
-		res.Header.Get("X-RateLimit-Remaining"),
-	)
-	res.Rate.Reset, _ = strconv.ParseInt(
-		res.Header.Get("X-RateLimit-Reset"), 10, 64,
+	nearLimit, _ := strconv.ParseBool(
+		res.Header.Get("X-RateLimit-NearLimit"),
 	)
 
-	// snapshot the request rate limit
-	e.bitbucket.SetRate(res.Rate)
-
-	if res.Rate.Remaining == 0 {
-		return res, fmt.Errorf("Github rate limit has been reached. please wait for %d until try again.", res.Rate.Reset)
+	if nearLimit {
+		e.tracer.Debug().Log("Near Bitbucket rate limit. Less than 20%% of the requests remained.")
 	}
+
 	// if an error is encountered, unmarshal and return the
 	// error response.
-	if res.Status > 300 {
+	if res.Status == 401 {
+		return res, scm.ErrNotAuthorized
+	} else if res.Status > 300 {
 		err := new(Error)
 		json.NewDecoder(res.Body).Decode(err)
 		return res, err
 	}
 
 	if out == nil {
+		return res, nil
+	}
+
+	// if raw output is expected, copy to the provided
+	// buffer and exit.
+	if w, ok := out.(io.Writer); ok {
+		io.Copy(w, res.Body)
 		return res, nil
 	}
 

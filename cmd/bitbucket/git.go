@@ -135,7 +135,7 @@ func registerGit(app *kingpin.CmdClause) {
 		Envar("bitbucket_HOST").
 		StringVar(&c.url)
 
-	cmd.Flag("workspace", "bitbucket workspace followed by project").
+	cmd.Flag("workspace", "bitbucket workspace").
 		Required().
 		Envar("bitbucket_WORKSPACE").
 		StringVar(&c.workspace)

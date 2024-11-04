@@ -130,10 +130,10 @@ func (e *Exporter) Export(ctx context.Context) error {
 		log.Printf("error cleaning up folder: %v", err)
 	}
 
-	err = deleteFiles(path)
-	if err != nil && !os.IsNotExist(err) {
-		log.Printf("error cleaning up files: %v", err)
-	}
+	// err = deleteFiles(path)
+	// if err != nil && !os.IsNotExist(err) {
+	// 	log.Printf("error cleaning up files: %v", err)
+	// }
 
 	publishReport(e.Report)
 	return nil
@@ -356,10 +356,12 @@ func (e *Exporter) getData(ctx context.Context, path string) ([]*types.RepoData,
 				continue
 			}
 
-			// batch := 100
-			// subPRs := make([]types.PRResponse, batch)
-			// for i, pr := range prs {
-			// 	subPRs[i] = pr
+			// stopPRAt := 7200 // this is the stoping pr number so from 61k to 12k (around 40k+ prs)
+			// var subPRs []types.PRResponse
+			// for _, pr := range prs {
+			// 	if pr.Number <= stopPRAt {
+			// 		subPRs = append(subPRs, pr)
+			// 	}
 			// }
 
 			prData, err := e.exportCommentsForPRs(ctx, prs, repo, e.Tracer)

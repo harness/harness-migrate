@@ -29,7 +29,7 @@ import (
 )
 
 // IMPORT STEP 1
-const skipUpTo = 13
+const skipUpTo = 61298
 
 // IMPORT STEP 2
 const maxPR = 52
@@ -46,7 +46,7 @@ func (e *Export) ListPullRequests(
 	opts := scm.PullRequestListOptions{
 		Page:   params.Page,
 		Size:   params.Size,
-		Open:   false, //params.Open,
+		Open:   params.Open, //params.Open,
 		Closed: params.Closed,
 	}
 
@@ -127,6 +127,7 @@ func (e *Export) ListPullRequests(
 		if resp.Page.Next == 0 {
 			break
 		}
+
 		opts.Page = resp.Page.Next
 	}
 

@@ -43,6 +43,18 @@ func (m *Importer) ImportPullRequests(
 		return nil
 	}
 
+	// from := 11999
+	// tryFor := 4 // this is the stoping pr number so from 61k to 12k (around 40k+ prs)
+	// var subPRs []*types.PullRequestData
+	// for _, pr := range in {
+	// 	if pr.PullRequest.Number <= from && pr.PullRequest.Number >= tryFor {
+	// 		subPRs = append(subPRs, &types.PullRequestData{
+	// 			PullRequest: pr.PullRequest,
+	// 			Comments:    pr.Comments,
+	// 		})
+	// 	}
+	// }
+
 	if err := m.Harness.ImportPRs(repoRef, &types.PRsImportInput{PullRequestData: in}); err != nil {
 		m.Tracer.Stop(common.ErrImportPRs, repoRef, err)
 		return fmt.Errorf("failed to import pull requests and comments for repo '%s' : %w",

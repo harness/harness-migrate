@@ -26,7 +26,7 @@ import (
 	"github.com/harness/harness-migrate/cmd/util"
 	"github.com/harness/harness-migrate/internal/checkpoint"
 	"github.com/harness/harness-migrate/internal/gitexporter"
-	"github.com/harness/harness-migrate/internal/migrate/github"
+	"github.com/harness/harness-migrate/internal/migrate/bitbucket"
 	report "github.com/harness/harness-migrate/internal/report"
 	"golang.org/x/exp/slog"
 )
@@ -113,7 +113,7 @@ func (c *exportCommand) run(*kingpin.ParseContext) error {
 		NoLabel:   c.flags.NoLabel,
 	}
 
-	e := github.New(client, c.workspace, repository, checkpointManager, fileLogger, tracer_, reporter)
+	e := bitbucket.New(client, c.workspace, repository, checkpointManager, fileLogger, tracer_, reporter)
 
 	exporter := gitexporter.NewExporter(e, c.file, c.user, c.token, tracer_, reporter, flags)
 	return exporter.Export(ctx)

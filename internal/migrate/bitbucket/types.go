@@ -14,7 +14,11 @@
 
 package bitbucket
 
-import "time"
+import (
+	"time"
+
+	"github.com/harness/harness-migrate/internal/types"
+)
 
 type (
 	Error struct {
@@ -46,6 +50,7 @@ type (
 
 	// user represents the user who made the comment.
 	user struct {
+		types.User
 		Type        string `json:"type"`
 		UUID        string `json:"uuid"`
 		DisplayName string `json:"display_name"`
@@ -59,6 +64,41 @@ type (
 		SrcRev       string `json:"src_rev"`
 		DestRev      string `json:"dest_rev"`
 		ContextLines string `json:"context_lines"`
+	}
+
+	branchRule struct {
+		Kind            kind   `json:"kind"`
+		EntityType      string `json:"entity_type"`
+		BranchMatchKind string `json:"branch_match_kind"`
+		Pattern         string `json:"pattern"`
+	}
+
+	kind struct {
+		Push                              *bypass       `json:"push"`
+		RestrictMerges                    *bypass       `json:"restrict_merges"`
+		Force                             *valueWrapper `json:"force"`
+		Delete                            *valueWrapper `json:"delete"`
+		RequireApprovalsToMerge           *valueWrapper `json:"require_approvals_to_merge"`
+		RequireTasksToBeCompleted         *valueWrapper `json:"require_tasks_to_be_completed"`
+		ResetPullRequestApprovalsOnChange *valueWrapper `json:"reset_pullrequest_approvals_on_change"`
+		ResetPRChangesRequestedOnChange   *valueWrapper `json:"reset_pullrequest_changes_requested_on_change"`
+		RequireCommitsBehind              *valueWrapper `json:"require_commits_behind"`
+		RequireNoChangesRequested         *valueWrapper `json:"require_no_changes_requested"`
+		RequireDefaultReviewerApprovals   *valueWrapper `json:"require_default_reviewer_approvals_to_merge"`
+		EnforceMergeChecks                *valueWrapper `json:"enforce_merge_checks"`
+	}
+
+	valueWrapper struct {
+		Value *int `json:"value"`
+	}
+
+	bypass struct {
+		Users  []user  `json:"users"`
+		Groups []group `json:"groups"`
+	}
+
+	group struct {
+		Name string `json:"name"`
 	}
 
 	// pagination is Bitbucket pagination properties in list responses.

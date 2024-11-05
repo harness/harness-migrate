@@ -14,11 +14,17 @@
 
 package bitbucket
 
-import "github.com/alecthomas/kingpin/v2"
+import (
+	"context"
 
-func Register(app *kingpin.Application) {
-	cmd := app.Command("bitbucket", "migrate bitbucket data")
-	//registerImport(cmd)
-	registerConvert(cmd)
-	registerGit(cmd)
+	"github.com/harness/harness-migrate/internal/types"
+	externalTypes "github.com/harness/harness-migrate/types"
+)
+
+func (e *Export) ListLabels(
+	ctx context.Context,
+	repoSlug string,
+	opts types.ListOptions,
+) (map[string]externalTypes.Label, error) {
+	return nil, nil
 }

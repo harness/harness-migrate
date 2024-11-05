@@ -74,8 +74,8 @@ func getSide(inline *inline) string {
 func extractSnippetInfo(diffHunk string) types.Hunk {
 	lines := strings.Split(diffHunk, "\n")
 	return types.Hunk{
-		Header: lines[2],
-		Lines:  lines[2:],
+		Header: lines[0],
+		Lines:  lines[1:],
 	}
 }
 

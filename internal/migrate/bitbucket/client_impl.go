@@ -44,7 +44,7 @@ type Export struct {
 	fileLogger *gitexporter.FileLogger
 	report     map[string]*report.Report
 
-	userMap map[string]types.User
+	userMap map[string]user
 }
 
 func (e *Export) GetUserByUUID(
@@ -62,11 +62,11 @@ func (e *Export) ListPullRequestComments(
 	repoSlug string,
 	prNumber int,
 	opts types.ListOptions,
-) ([]*types.PRComment, *scm.Response, error) {
+) ([]*types.PRComment, error) {
 	path := fmt.Sprintf("/2.0/repositories/%s/pullrequests/%d/comments?%s", repoSlug, prNumber, encodeListOptions(opts))
 	var out comments
-	res, err := e.do(ctx, "GET", path, nil, &out)
-	return convertPRCommentsList(out.Values), res, err
+	_, err := e.do(ctx, "GET", path, nil, &out)
+	return convertPRCommentsList(out.Values), err
 }
 
 func (e *Export) ListBranchRulesInternal(
@@ -74,6 +74,10 @@ func (e *Export) ListBranchRulesInternal(
 	repoSlug string,
 	opts types.ListOptions,
 ) ([]*types.BranchRule, *scm.Response, error) {
+	path := fmt.Sprintf("/2.0/repositories/%s/branch-restrictions?%s", repoSlug, encodeListOptions(opts))
+	var out []*branchRule
+	res, err := e.do(ctx, "GET", path, nil, &out)
+	return e.convertBranchRules(ctx, out, repoSlug), res, err
 }
 
 func (e *Export) do(ctx context.Context, method, path string, in, out interface{}) (*scm.Response, error) {
@@ -99,7 +103,7 @@ func (e *Export) do(ctx context.Context, method, path string, in, out interface{
 	}
 	defer res.Body.Close()
 
-	// parse the github rate limit details.
+	// parse the bitbucket rate limit details.
 	res.Rate.Limit, _ = strconv.Atoi(
 		res.Header.Get("X-RateLimit-Limit"),
 	)

@@ -16,10 +16,8 @@ package bitbucket
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/harness/harness-migrate/internal/gitexporter"
-	"github.com/harness/harness-migrate/internal/types"
 )
 
 const (
@@ -28,40 +26,41 @@ const (
 )
 
 func (e *Export) FindEmailByUUID(ctx context.Context, uuid string) (string, error) {
-	user, ok := e.userMap[uuid]
-	if ok {
-		return user.Email, nil
-	}
+	// user, ok := e.userMap[uuid]
+	// if ok {
+	// 	return user.Email, nil
+	// }
 
-	u, _, err := e.GetUserByUUID(ctx, uuid)
-	if err != nil {
-		return "", err
-	}
+	// u, _, err := e.GetUserByUUID(ctx, uuid)
+	// if err != nil {
+	// 	return "", err
+	// }
 
-	if u == nil {
-		u = &types.User{
-			ID:    unknownUserId,
-			Email: getDefaultEmail(uuid),
-		}
+	// if u == nil {
+	// 	u = &user{
+	// 		ID:    unknownUserId,
+	// 		Email: getDefaultEmail(uuid),
+	// 	}
 
-		if err := e.fileLogger.Log("no info found for user %s using %s as fallback email", uuid, u.Email); err != nil {
-			return "", fmt.Errorf("cannot log file for unknown user, error: %w", err)
-		}
-	}
+	// 	if err := e.fileLogger.Log("no info found for user %s using %s as fallback email", uuid, u.Email); err != nil {
+	// 		return "", fmt.Errorf("cannot log file for unknown user, error: %w", err)
+	// 	}
+	// }
 
-	if u.Email == "" {
-		u.Email = getDefaultEmail(uuid)
-		if err := e.fileLogger.Log("no primary email found for user %s using %s as fallback email", uuid, u.Email); err != nil {
-			return "", fmt.Errorf("cannot log file for unknown email, error: %w", err)
-		}
-	}
+	// if u.Email == "" {
+	// 	u.Email = getDefaultEmail(uuid)
+	// 	if err := e.fileLogger.Log("no primary email found for user %s using %s as fallback email", uuid, u.Email); err != nil {
+	// 		return "", fmt.Errorf("cannot log file for unknown email, error: %w", err)
+	// 	}
+	// }
 
-	e.userMap[uuid] = *u
-	if err := e.checkpointManager.SaveCheckpoint(CheckpointKeyUsers, e.userMap); err != nil {
-		return "", fmt.Errorf("cannot get checkpoint, error: %w", err)
-	}
+	// e.userMap[uuid] = *u
+	// if err := e.checkpointManager.SaveCheckpoint(CheckpointKeyUsers, e.userMap); err != nil {
+	// 	return "", fmt.Errorf("cannot get checkpoint, error: %w", err)
+	// }
 
-	return u.Email, nil
+	//return u.Email, nil
+	return uuid, nil
 }
 
 func getDefaultEmail(username string) string {

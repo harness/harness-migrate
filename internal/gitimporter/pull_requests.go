@@ -43,19 +43,20 @@ func (m *Importer) ImportPullRequests(
 		return nil
 	}
 
-	// from := 11999
-	// tryFor := 4 // this is the stoping pr number so from 61k to 12k (around 40k+ prs)
-	// var subPRs []*types.PullRequestData
-	// for _, pr := range in {
-	// 	if pr.PullRequest.Number <= from && pr.PullRequest.Number >= tryFor {
-	// 		subPRs = append(subPRs, &types.PullRequestData{
-	// 			PullRequest: pr.PullRequest,
-	// 			Comments:    pr.Comments,
-	// 		})
-	// 	}
-	// }
+	from := 7726 // 60646, 59645, 58744, 57743, 56742, 55741, 54740, 53739, 50738, 47737, 44736,41735,38734,35733,32232,28731,25230,21729,17728,12727,7726
+	tryFor := 14 // 59646, 58745, 57744, 56743, 55742, 54741, 53740, 50739, 47738, 44737, 41736,38735,35734,32233,28732,25231,21730, 17729,12728, 7727,14
+	//listpr := []int{30484, 30448, 30444, 30329, 30158, 30104, 30103, 30075, 30074, 29994}
+	var subPRs []*types.PullRequestData
+	for _, pr := range in {
+		if pr.PullRequest.Number <= from && pr.PullRequest.Number >= tryFor {
+			subPRs = append(subPRs, &types.PullRequestData{
+				PullRequest: pr.PullRequest,
+				Comments:    pr.Comments,
+			})
+		}
+	}
 
-	if err := m.Harness.ImportPRs(repoRef, &types.PRsImportInput{PullRequestData: in}); err != nil {
+	if err := m.Harness.ImportPRs(repoRef, &types.PRsImportInput{PullRequestData: subPRs}); err != nil {
 		m.Tracer.Stop(common.ErrImportPRs, repoRef, err)
 		return fmt.Errorf("failed to import pull requests and comments for repo '%s' : %w",
 			repoRef, err)

@@ -15,6 +15,9 @@
 package bitbucket
 
 import (
+	"fmt"
+	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/drone/go-scm/scm"
@@ -35,7 +38,7 @@ func convertPRComment(from codeComment) *types.PRComment {
 		return nil
 	}
 	var metadata *types.CodeComment
-
+	fmt.Printf("CODE COMMENT INLINE: %v", from.Inline)
 	if from.Inline != nil { // Check if the comment is on a file
 		metadata = &types.CodeComment{
 			Path:         from.Inline.Path,
@@ -73,6 +76,7 @@ func getSide(inline *inline) string {
 
 func extractSnippetInfo(diffHunk string) types.Hunk {
 	lines := strings.Split(diffHunk, "\n")
+	fmt.Printf("DIFF HUNK %v  %v", diffHunk, lines)
 	return types.Hunk{
 		Header: lines[0],
 		Lines:  lines[1:],
@@ -80,6 +84,45 @@ func extractSnippetInfo(diffHunk string) types.Hunk {
 }
 
 func extractHunkInfo(inline *inline) string {
-	// update old line range if from is nil
-	return common.FormatHunkHeader(*inline.From, 1, *inline.To, 1, inline.ContextLines)
+	re := regexp.MustCompile(`@@ -(\d+),(\d+) \+(\d+),(\d+) @@`)
+
+	oldLine := 0
+	newLine := 0
+	oldSpan := 1
+	newSpan := 1
+	var err error
+
+	// Find the first match
+	matches := re.FindStringSubmatch(inline.ContextLines)
+	if len(matches) != 5 {
+		return ""
+	}
+
+	// Parse each number from the match results
+	oldLine, err = strconv.Atoi(matches[1])
+	if err != nil {
+		fmt.Print("ERROR %w", err)
+		return common.FormatHunkHeader(oldLine, oldSpan, newLine, newSpan, inline.ContextLines)
+	}
+
+	oldSpan, err = strconv.Atoi(matches[2])
+	if err != nil {
+		fmt.Print("ERROR %w", err)
+		return common.FormatHunkHeader(oldLine, oldSpan, newLine, newSpan, inline.ContextLines)
+	}
+
+	newLine, err = strconv.Atoi(matches[3])
+	if err != nil {
+		fmt.Print("ERROR %w", err)
+		return common.FormatHunkHeader(oldLine, oldSpan, newLine, newSpan, inline.ContextLines)
+	}
+
+	newSpan, err = strconv.Atoi(matches[4])
+	if err != nil {
+		fmt.Print("ERROR %w", err)
+		return common.FormatHunkHeader(oldLine, oldSpan, newLine, newSpan, inline.ContextLines)
+	}
+
+	fmt.Printf("OLD SPAM NEW SPAN %d %d %d %d", oldLine, oldSpan, newLine, newSpan)
+	return common.FormatHunkHeader(oldLine, oldSpan, newLine, newSpan, inline.ContextLines)
 }

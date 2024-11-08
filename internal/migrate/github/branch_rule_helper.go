@@ -51,11 +51,10 @@ func (e *Export) convertBranchRule(from branchProtectionRule, repo string) []*ty
 	var logs []string
 	var warningMsg string
 	var rules []*types.BranchRule
-	// randomize is set as true as rulesets might have same pattern
 
 	rule := &types.BranchRule{
 		ID:    from.DatabaseID,
-		Name:  migrate.DisplayNameToIdentifier(from.Pattern, "rule", from.ID),
+		Name:  migrate.DisplayNameToIdentifier(from.Pattern),
 		State: enum.RuleStateActive,
 		Pattern: types.Pattern{
 			IncludedPatterns: []string{from.Pattern},
@@ -134,7 +133,7 @@ func (e *Export) convertBranchRule(from branchProtectionRule, repo string) []*ty
 	if from.RestrictsPushes {
 		r := &types.BranchRule{
 			ID:    from.DatabaseID,
-			Name:  migrate.DisplayNameToIdentifier(from.Pattern, "", "pushrule_"+from.ID),
+			Name:  migrate.DisplayNameToIdentifier(from.Pattern),
 			State: enum.RuleStateActive,
 			Pattern: types.Pattern{
 				IncludedPatterns: []string{from.Pattern},
@@ -182,7 +181,7 @@ func (e *Export) convertBranchRuleset(from *detailedRuleSet, repo string) *types
 	excludedPatterns, _ := mapPatterns(from.Conditions.RefName.Exclude)
 	return &types.BranchRule{
 		ID:         from.ID,
-		Name:       migrate.DisplayNameToIdentifier(from.Name, "ruleset", strconv.Itoa(from.ID)),
+		Name:       migrate.DisplayNameToIdentifier(from.Target),
 		State:      mapRuleEnforcement(from.Enforcement),
 		Definition: e.mapRuleDefinition(from, repo),
 		Pattern: types.Pattern{

@@ -18,7 +18,6 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"strconv"
 
 	"github.com/harness/harness-migrate/internal/gitexporter"
 	"github.com/harness/harness-migrate/internal/migrate"
@@ -29,7 +28,7 @@ import (
 func (e *Export) convertMergeRequestRule(from mergeRequestRules) *types.BranchRule {
 	return &types.BranchRule{
 		ID:    0,
-		Name:  migrate.DisplayNameToIdentifier("", "merge_request", "rule"),
+		Name:  migrate.DisplayNameToIdentifier("merge_rule"),
 		State: enum.RuleStateActive,
 		Pattern: types.Pattern{
 			IncludedPatterns: []string{}, // set no pattern to apply on all branches
@@ -67,7 +66,7 @@ func (e *Export) convertBranchRule(
 
 	rule := &types.BranchRule{
 		ID:    from.Id,
-		Name:  migrate.DisplayNameToIdentifier(from.Name, "rule", strconv.Itoa(from.Id)),
+		Name:  migrate.DisplayNameToIdentifier(from.Name),
 		State: enum.RuleStateActive, // all gitlab rules are active
 		Pattern: types.Pattern{
 			IncludedPatterns: []string{from.Name},
@@ -116,7 +115,7 @@ func (e *Export) convertBranchRule(
 	if len(from.PushAccess) > 0 {
 		r := &types.BranchRule{
 			ID:    from.Id,
-			Name:  migrate.DisplayNameToIdentifier(from.Name, "", "pushrule_"+strconv.Itoa(from.Id)),
+			Name:  migrate.DisplayNameToIdentifier(from.Name),
 			State: enum.RuleStateActive, // all gitlab rules are active
 			Pattern: types.Pattern{
 				IncludedPatterns: []string{from.Name},

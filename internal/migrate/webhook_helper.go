@@ -74,7 +74,7 @@ func mapWebhook(
 	if len(events) != 0 {
 		convertedHook = &scm.Hook{
 			ID:         hook.ID,
-			Name:       DisplayNameToIdentifier(hook.Name, "webhook", hook.ID),
+			Name:       DisplayNameToIdentifier(hook.Name),
 			Target:     hook.Target,
 			Active:     hook.Active,
 			Events:     enum.ToStringSlice(events),

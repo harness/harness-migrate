@@ -17,12 +17,15 @@ package migrate
 import (
 	"fmt"
 	"strings"
+	"time"
+
+	gonanoid "github.com/matoous/go-nanoid"
 )
 
 const maxIdentifierLength = 100
 
 // DisplayNameToIdentifier converts display name to a unique identifier.
-func DisplayNameToIdentifier(displayName, prefix, suffix string) string {
+func DisplayNameToIdentifier(displayName string) string {
 	const placeholder = '_'
 	const specialChars = ".-_"
 	// remove / replace any illegal characters
@@ -62,12 +65,7 @@ func DisplayNameToIdentifier(displayName, prefix, suffix string) string {
 		identifier = identifier[0:maxIdentifierLength]
 	}
 
-	if len(identifier) == 0 {
-		return fmt.Sprintf("%s%c%s", prefix, placeholder, suffix)
-	}
-
-	// adding suffix to make sure the identifier would be unique
-	return fmt.Sprintf("%s%c%s", identifier, placeholder, suffix)
+	return randomizeIdentifier(identifier)
 }
 
 func sanitizeConsecutiveChars(in string, charSet string) string {
@@ -89,4 +87,21 @@ func sanitizeConsecutiveChars(in string, charSet string) string {
 	}
 
 	return out.String()
+}
+
+func randomizeIdentifier(identifier string) string {
+	const alphabet = "abcdefghijklmnopqrstuvwxyz0123456789"
+	const length = 4
+	const maxLength = maxIdentifierLength - length - 1 // max length of identifier to fit random suffix
+
+	if len(identifier) > maxLength {
+		identifier = identifier[0:maxLength]
+	}
+
+	suffix, err := gonanoid.Generate(alphabet, length)
+	if err != nil {
+		suffix = fmt.Sprintf("%d", time.Now().UnixMilli()%10000)
+	}
+
+	return identifier + "_" + suffix
 }

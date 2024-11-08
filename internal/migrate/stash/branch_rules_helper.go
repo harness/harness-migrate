@@ -92,7 +92,7 @@ func (e *Export) convertBranchRule(
 
 	return &types.BranchRule{
 		ID:         from.ID,
-		Name:       migrate.DisplayNameToIdentifier(from.Matcher.DisplayID, "rule", strconv.Itoa(from.ID)),
+		Name:       migrate.DisplayNameToIdentifier(from.Matcher.DisplayID),
 		State:      enum.RuleStateActive,
 		Definition: mapRuleDefinition(from.Type, from.Users),
 		Pattern: types.Pattern{

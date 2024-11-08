@@ -114,7 +114,6 @@ func (e *Export) convertBranchRule(from branchProtectionRule, repo string) []*ty
 		logs = append(logs, warningMsg)
 	}
 	if from.RequiresConversationResolution {
-		rule.UpdateForbidden = true
 		rule.RequireResolveAll = true
 	}
 	if from.RequiresDeployments {

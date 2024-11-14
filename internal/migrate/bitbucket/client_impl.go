@@ -63,7 +63,7 @@ func (e *Export) ListPullRequestComments(
 	prNumber int,
 	opts types.ListOptions,
 ) ([]*types.PRComment, error) {
-	path := fmt.Sprintf("/2.0/repositories/%s/pullrequests/%d/comments?%s", repoSlug, prNumber, encodeListOptions(opts))
+	path := fmt.Sprintf("/2.0/repositories/%s/pullrequests/%d/comments?%s&fields=%s", repoSlug, prNumber, encodeListOptions(opts), commentFields)
 	var out comments
 	_, err := e.do(ctx, "GET", path, nil, &out)
 	return convertPRCommentsList(out.Values), err

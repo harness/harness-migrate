@@ -25,6 +25,8 @@ import (
 	"github.com/harness/harness-migrate/internal/types"
 )
 
+const commentFields = "values.id,values.content.raw,values.user.uuid,values.user.display_name,values.created_on,values.updated_on,values.inline.*"
+
 func convertPRCommentsList(from []codeComment) []*types.PRComment {
 	var to []*types.PRComment
 	for _, v := range from {

@@ -19,12 +19,11 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"regexp"
-	"strconv"
 	"strings"
 
 	"github.com/drone/go-scm/scm"
 	"github.com/harness/harness-migrate/internal/common"
+	"github.com/harness/harness-migrate/internal/migrate"
 	"github.com/harness/harness-migrate/internal/types"
 )
 
@@ -38,8 +37,6 @@ const (
 )
 
 const logMessage = "[%s] Skipped mapping %q branch rule for pattern %q of repo %q as we do not support it as of now."
-
-var regExpHunkHeader = regexp.MustCompile(`^@@ -([0-9]+)(,([0-9]+))? \+([0-9]+)(,([0-9]+))? @@( (.+))?$`)
 
 func convertPRCommentsList(from []*codeComment, repo string, pr int) []*types.PRComment {
 	var to []*types.PRComment
@@ -209,7 +206,7 @@ func processHunk(rawHunk string, fnLine func(oldLine, newLine int, change change
 		return errors.New("hunk header missing")
 	}
 	hunkHeader := scan.Text()
-	hunk, ok := parseDiffHunkHeader(hunkHeader)
+	hunk, ok := migrate.ParseDiffHunkHeader(hunkHeader)
 	if !ok {
 		return fmt.Errorf("invalid diff hunk header: %s", hunkHeader)
 	}
@@ -241,31 +238,4 @@ func processHunk(rawHunk string, fnLine func(oldLine, newLine int, change change
 	}
 
 	return nil
-}
-
-func parseDiffHunkHeader(line string) (HunkHeader, bool) {
-	groups := regExpHunkHeader.FindStringSubmatch(line)
-	if groups == nil {
-		return HunkHeader{}, false
-	}
-
-	oldLine, _ := strconv.Atoi(groups[1])
-	oldSpan := 1
-	if groups[3] != "" {
-		oldSpan, _ = strconv.Atoi(groups[3])
-	}
-
-	newLine, _ := strconv.Atoi(groups[4])
-	newSpan := 1
-	if groups[6] != "" {
-		newSpan, _ = strconv.Atoi(groups[6])
-	}
-
-	return HunkHeader{
-		OldLine: oldLine,
-		OldSpan: oldSpan,
-		NewLine: newLine,
-		NewSpan: newSpan,
-		Text:    groups[8],
-	}, true
 }

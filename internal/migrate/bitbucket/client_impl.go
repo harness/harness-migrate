@@ -75,7 +75,7 @@ func (e *Export) ListBranchRulesInternal(
 	opts types.ListOptions,
 ) ([]*types.BranchRule, *scm.Response, error) {
 	path := fmt.Sprintf("/2.0/repositories/%s/branch-restrictions?%s", repoSlug, encodeListOptions(opts))
-	var out []*branchRule
+	var out rules
 	res, err := e.do(ctx, "GET", path, nil, &out)
 	return e.convertBranchRules(ctx, out, repoSlug), res, err
 }

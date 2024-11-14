@@ -27,9 +27,9 @@ import (
 
 const logMessage = "[%s] Skipped mapping %q branch rule for pattern %q of repo %q as we do not support it as of now."
 
-func (e *Export) convertBranchRules(ctx context.Context, from []*branchRule, repo string) []*types.BranchRule {
+func (e *Export) convertBranchRules(ctx context.Context, from rules, repo string) []*types.BranchRule {
 	var rules []*types.BranchRule
-	for _, rule := range from {
+	for _, rule := range from.Values {
 		rules = append(rules, e.convertBranchRule(ctx, rule, repo)...)
 	}
 	return rules
@@ -37,7 +37,7 @@ func (e *Export) convertBranchRules(ctx context.Context, from []*branchRule, rep
 
 func (e *Export) convertBranchRule(
 	ctx context.Context,
-	from *branchRule,
+	from branchRule,
 	repo string,
 ) []*types.BranchRule {
 	var rules []*types.BranchRule
@@ -52,56 +52,56 @@ func (e *Export) convertBranchRule(
 		},
 	}
 
-	if from.Kind.Force != nil {
+	if from.Force != nil {
 		rule.UpdateForceForbidden = true
 	}
 
-	if from.Kind.Delete != nil {
+	if from.Delete != nil {
 		rule.DeleteForbidden = true
 	}
 
-	if from.Kind.RequireTasksToBeCompleted != nil {
+	if from.RequireTasksToBeCompleted != nil {
 		rule.UpdateForbidden = true
 		rule.RequireResolveAll = true
 	}
 
-	if from.Kind.RequireApprovalsToMerge != nil {
+	if from.RequireApprovalsToMerge != nil {
 		rule.UpdateForbidden = true
-		rule.RequireMinimumCount = *from.Kind.RequireApprovalsToMerge.Value
+		rule.RequireMinimumCount = *from.RequireApprovalsToMerge.Value
 	}
 
-	if from.Kind.ResetPullRequestApprovalsOnChange != nil {
+	if from.ResetPullRequestApprovalsOnChange != nil {
 		rule.UpdateForbidden = true
 		rule.RequireLatestCommit = true
 	}
 
-	if from.Kind.RequireNoChangesRequested != nil {
+	if from.RequireNoChangesRequested != nil {
 		rule.RequireNoChangeRequest = true
 	}
 
-	if from.Kind.RequireDefaultReviewerApprovals != nil {
+	if from.RequireDefaultReviewerApprovals != nil {
 		rule.RequireCodeOwners = true
 	}
 
-	if from.Kind.RequireCommitsBehind != nil {
+	if from.RequireCommitsBehind != nil {
 		warningMsg = fmt.Sprintf(logMessage, enum.LogLevelWarning, "Maximum number of commits behind", from.Pattern, repo)
 		logs = append(logs, warningMsg)
 	}
 
-	if from.Kind.ResetPRChangesRequestedOnChange != nil {
+	if from.ResetPRChangesRequestedOnChange != nil {
 		warningMsg = fmt.Sprintf(logMessage, enum.LogLevelWarning, "Reset requested changes when the source branch is modified", from.Pattern, repo)
 		logs = append(logs, warningMsg)
 	}
 
-	if from.Kind.EnforceMergeChecks != nil {
+	if from.EnforceMergeChecks != nil {
 		warningMsg = fmt.Sprintf("[%s] Skipped adding enforced status checks. Please create the status checks' pipelines in branch rule %q for repo %q and reconfigure the branch rule.",
 			enum.LogLevelWarning, from.Pattern, repo)
 		logs = append(logs, warningMsg)
 	}
 
-	if from.Kind.Push != nil {
+	if from.Push != nil {
 		rule.UpdateForbidden = true
-		for _, usr := range from.Kind.Push.Users {
+		for _, usr := range from.Push.Users {
 			email, err := e.FindEmailByUUID(ctx, usr.UUID)
 			if err != nil {
 				e.tracer.LogError("failed to get user email with UUID %d for branch rule bypass list: %w", usr.UUID, err)
@@ -109,7 +109,7 @@ func (e *Export) convertBranchRule(
 			}
 			rule.Bypass.UserEmails = append(rule.Bypass.UserEmails, email)
 
-			if len(from.Kind.Push.Groups) != 0 {
+			if len(from.Push.Groups) != 0 {
 				warningMsg = fmt.Sprintf("[%s] Skipped adding group IDs to bypass list for branch %q rule"+
 					" of repository %q as we do not support it as of now.", enum.LogLevelWarning, from.Pattern, repo)
 				logs = append(logs, warningMsg)
@@ -118,7 +118,7 @@ func (e *Export) convertBranchRule(
 	}
 	rules = append(rules, rule)
 
-	if from.Kind.RestrictMerges != nil {
+	if from.RestrictMerges != nil {
 		r := &types.BranchRule{
 			Name:  migrate.DisplayNameToIdentifier(from.Pattern, "mergerule", ""),
 			State: enum.RuleStateActive,
@@ -130,7 +130,7 @@ func (e *Export) convertBranchRule(
 		r.PullReq.Merge.Block = true
 		r.UpdateForceForbidden = true
 
-		for _, usr := range from.Kind.Push.Users {
+		for _, usr := range from.Push.Users {
 			email, err := e.FindEmailByUUID(ctx, usr.UUID)
 			if err != nil {
 				e.tracer.LogError("failed to get user email with UUID %d for branch rule bypass list: %w", usr.UUID, err)
@@ -138,7 +138,7 @@ func (e *Export) convertBranchRule(
 			}
 			r.Bypass.UserEmails = append(r.Bypass.UserEmails, email)
 		}
-		if len(from.Kind.Push.Groups) != 0 {
+		if len(from.Push.Groups) != 0 {
 			warningMsg = fmt.Sprintf("[%s] Skipped adding group IDs to bypass list for branch %q rule"+
 				" of repository %q as we do not support it as of now.", enum.LogLevelWarning, from.Pattern, repo)
 			logs = append(logs, warningMsg)

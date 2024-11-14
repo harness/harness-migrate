@@ -43,7 +43,6 @@ type (
 			ID int `json:"id"`
 		} `json:"parent"`
 		User    user    `json:"user"`
-		Deleted bool    `json:"deleted"`
 		Inline  *inline `json:"inline"`
 		Pending bool    `json:"pending"`
 	}
@@ -64,16 +63,25 @@ type (
 		SrcRev       string `json:"src_rev"`
 		DestRev      string `json:"dest_rev"`
 		ContextLines string `json:"context_lines"`
+		Outdated     bool   `json:"outdated"`
+	}
+
+	rules struct {
+		Values []branchRule `json:"values"`
+		pagination
 	}
 
 	branchRule struct {
-		Kind            kind   `json:"kind"`
-		EntityType      string `json:"entity_type"`
-		BranchMatchKind string `json:"branch_match_kind"`
-		Pattern         string `json:"pattern"`
-	}
+		ID              int     `json:"id"`
+		Kind            string  `json:"kind"`
+		Value           *int    `json:"value,omitempty"`
+		BranchMatchKind string  `json:"branch_match_kind"`
+		Type            string  `json:"type"`
+		Pattern         string  `json:"pattern"`
+		Users           []user  `json:"users"`
+		Groups          []group `json:"groups"`
+		BranchType      string  `json:"branch_type,omitempty"`
 
-	kind struct {
 		Push                              *bypass       `json:"push"`
 		RestrictMerges                    *bypass       `json:"restrict_merges"`
 		Force                             *valueWrapper `json:"force"`

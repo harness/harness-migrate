@@ -38,7 +38,7 @@ func convertPRComment(from codeComment) *types.PRComment {
 		return nil
 	}
 	var metadata *types.CodeComment
-	fmt.Printf("CODE COMMENT INLINE: %v", from.Inline)
+
 	if from.Inline != nil { // Check if the comment is on a file
 		metadata = &types.CodeComment{
 			Path:         from.Inline.Path,
@@ -47,7 +47,7 @@ func convertPRComment(from codeComment) *types.PRComment {
 			HunkHeader:   extractHunkInfo(from.Inline),
 			SourceSHA:    from.Inline.SrcRev,
 			MergeBaseSHA: from.Inline.DestRev,
-			Outdated:     from.Deleted,
+			Outdated:     from.Inline.Outdated,
 		}
 	}
 
@@ -76,7 +76,6 @@ func getSide(inline *inline) string {
 
 func extractSnippetInfo(diffHunk string) types.Hunk {
 	lines := strings.Split(diffHunk, "\n")
-	fmt.Printf("DIFF HUNK %v  %v", diffHunk, lines)
 	return types.Hunk{
 		Header: lines[0],
 		Lines:  lines[1:],
@@ -101,25 +100,21 @@ func extractHunkInfo(inline *inline) string {
 	// Parse each number from the match results
 	oldLine, err = strconv.Atoi(matches[1])
 	if err != nil {
-		fmt.Print("ERROR %w", err)
 		return common.FormatHunkHeader(oldLine, oldSpan, newLine, newSpan, inline.ContextLines)
 	}
 
 	oldSpan, err = strconv.Atoi(matches[2])
 	if err != nil {
-		fmt.Print("ERROR %w", err)
 		return common.FormatHunkHeader(oldLine, oldSpan, newLine, newSpan, inline.ContextLines)
 	}
 
 	newLine, err = strconv.Atoi(matches[3])
 	if err != nil {
-		fmt.Print("ERROR %w", err)
 		return common.FormatHunkHeader(oldLine, oldSpan, newLine, newSpan, inline.ContextLines)
 	}
 
 	newSpan, err = strconv.Atoi(matches[4])
 	if err != nil {
-		fmt.Print("ERROR %w", err)
 		return common.FormatHunkHeader(oldLine, oldSpan, newLine, newSpan, inline.ContextLines)
 	}
 

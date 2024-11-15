@@ -27,7 +27,7 @@ import (
 	"github.com/harness/harness-migrate/internal/types"
 )
 
-const commentFields = "values.id,values.type,values.content.raw,values.user.uuid,values.user.display_name,values.created_on,values.updated_on,values.inline.*"
+const commentFields = "values.id,values.type,values.parent.id,values.content.raw,values.user.uuid,values.user.display_name,values.created_on,values.updated_on,values.inline.*"
 
 func convertPRCommentsList(from []codeComment, prNumber int, repoSlug string) []*types.PRComment {
 	var to []*types.PRComment
@@ -43,15 +43,20 @@ func convertPRComment(from codeComment, prNumber int, repo string) *types.PRComm
 	}
 	var metadata *types.CodeComment
 
+	isReply := false
+	if from.Parent.ID != 0 {
+		isReply = true
+	}
+
 	if from.Inline != nil {
-		hunkHeader, err := extractHunkInfo(from.Inline)
+		hunkHeader, err := extractHunkInfo(from.Inline, isReply)
 		if err != nil {
 			log.Default().Printf("Failed to export code comment %d on PR %d of repo %s as a PR comment: %v", from.ID, prNumber, repo, err)
 		} else {
 			metadata = &types.CodeComment{
 				Path:         from.Inline.Path,
 				CodeSnippet:  extractSnippetInfo(from.Inline.ContextLines),
-				Side:         "NEW",
+				Side:         getSide(from.Inline),
 				HunkHeader:   hunkHeader,
 				SourceSHA:    from.Inline.SrcRev,
 				MergeBaseSHA: from.Inline.DestRev,
@@ -78,14 +83,42 @@ func convertPRComment(from codeComment, prNumber int, repo string) *types.PRComm
 
 func extractSnippetInfo(diffHunk string) types.Hunk {
 	lines := strings.Split(diffHunk, "\n")
+	if len(lines) < 4 {
+		return types.Hunk{}
+	}
 	return types.Hunk{
-		Header: lines[0],
-		Lines:  lines[1:],
+		Header: lines[2],
+		Lines:  lines[3:],
 	}
 }
 
-func extractHunkInfo(inline *inline) (string, error) {
-	scan := bufio.NewScanner(strings.NewReader(inline.ContextLines))
+func getSide(inline *inline) string {
+	if inline.From != nil {
+		return "OLD"
+	}
+	return "NEW"
+}
+
+func extractHunkInfo(inline *inline, isReply bool) (string, error) {
+	// reply comments dont need hunkheader, only parents do.
+	if isReply {
+		return "", nil
+	}
+
+	var (
+		oldLine int
+		oldSpan int
+		newLine int
+		newSpan int
+	)
+
+	// get the first 4k of the diff if it's too large.
+	context := inline.ContextLines
+	if len(context) > 4096 {
+		context = context[:4096]
+	}
+
+	scan := bufio.NewScanner(strings.NewReader(context))
 
 	// Look for the line containing the hunk header
 	var hunkHeader string
@@ -106,5 +139,16 @@ func extractHunkInfo(inline *inline) (string, error) {
 		return "", fmt.Errorf("invalid diff hunk header: %s", hunkHeader)
 	}
 
-	return common.FormatHunkHeader(hunk.OldLine, hunk.OldSpan, hunk.NewLine, hunk.NewSpan, ""), nil
+	oldLine = hunk.OldLine
+	if inline.From != nil {
+		oldLine = *inline.From
+		oldSpan = 1
+	}
+	newLine = hunk.NewLine
+	if inline.To != nil {
+		newLine = *inline.To
+		newSpan = 1
+	}
+
+	return common.FormatHunkHeader(oldLine, oldSpan, newLine, newSpan, ""), nil
 }

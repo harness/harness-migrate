@@ -115,6 +115,7 @@ func (c *exportCommand) run(*kingpin.ParseContext) error {
 
 	e := bitbucket.New(client, c.workspace, repository, checkpointManager, fileLogger, tracer_, reporter)
 
+	c.user = "x-token-auth" // this is needed for the git clone operation to work
 	exporter := gitexporter.NewExporter(e, c.file, c.user, c.token, tracer_, reporter, flags)
 	return exporter.Export(ctx)
 }
@@ -143,10 +144,6 @@ func registerGit(app *kingpin.CmdClause) {
 	cmd.Flag("repository", "optional name of the repository to export").
 		Envar("bitbucket_REPOSITORY").
 		StringVar(&c.srcRepository)
-
-	cmd.Flag("username", "bitbucket username").
-		Envar("bitbucket_USERNAME").
-		StringVar(&c.user)
 
 	cmd.Flag("token", "bitbucket token").
 		Required().

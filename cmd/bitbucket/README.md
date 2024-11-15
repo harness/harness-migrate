@@ -9,6 +9,7 @@ We support migrating these entities from Bitbucket:
 
 Items that would not imported or imported differently:
 - Pull request reviewers and approvers
+- Pending tasks/comments
 - Any attachment
 - LFS objects
 - Webhooks: Some webhook events are not supported. You can check supported triggers [here](https://apidocs.harness.io/tag/webhook#operation/createWebhook)
@@ -68,6 +69,9 @@ Application also supports advanced option like `resume` which can help you resum
 
 ## Troubleshooting
 ### General
+#### Missing tasks or comments on the pull requests
+Please make sure to `Finish Review` on open pull requests before starting the export. Pending comments and task will not be exported.
+
 #### Export fails due to reach the Bitbucket rate limit
 If project export fails due to reaching the Bitbucket API rate limit, you could wait for an hour and re-run the migrator or exclude exporting metadata (options available are `--no-pr, --no-comment, --no-webhook, and --no-rule`)
 

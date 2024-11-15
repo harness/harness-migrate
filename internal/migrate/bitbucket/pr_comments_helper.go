@@ -15,41 +15,48 @@
 package bitbucket
 
 import (
+	"bufio"
+	"errors"
 	"fmt"
-	"regexp"
-	"strconv"
+	"log"
 	"strings"
 
 	"github.com/drone/go-scm/scm"
 	"github.com/harness/harness-migrate/internal/common"
+	"github.com/harness/harness-migrate/internal/migrate"
 	"github.com/harness/harness-migrate/internal/types"
 )
 
-const commentFields = "values.id,values.content.raw,values.user.uuid,values.user.display_name,values.created_on,values.updated_on,values.inline.*"
+const commentFields = "values.id,values.type,values.content.raw,values.user.uuid,values.user.display_name,values.created_on,values.updated_on,values.inline.*"
 
-func convertPRCommentsList(from []codeComment) []*types.PRComment {
+func convertPRCommentsList(from []codeComment, prNumber int, repoSlug string) []*types.PRComment {
 	var to []*types.PRComment
 	for _, v := range from {
-		to = append(to, convertPRComment(v))
+		to = append(to, convertPRComment(v, prNumber, repoSlug))
 	}
 	return to
 }
 
-func convertPRComment(from codeComment) *types.PRComment {
+func convertPRComment(from codeComment, prNumber int, repo string) *types.PRComment {
 	if from.Type != "pullrequest_comment" {
 		return nil
 	}
 	var metadata *types.CodeComment
 
-	if from.Inline != nil { // Check if the comment is on a file
-		metadata = &types.CodeComment{
-			Path:         from.Inline.Path,
-			CodeSnippet:  extractSnippetInfo(from.Inline.ContextLines),
-			Side:         getSide(from.Inline),
-			HunkHeader:   extractHunkInfo(from.Inline),
-			SourceSHA:    from.Inline.SrcRev,
-			MergeBaseSHA: from.Inline.DestRev,
-			Outdated:     from.Inline.Outdated,
+	if from.Inline != nil {
+		hunkHeader, err := extractHunkInfo(from.Inline)
+		if err != nil {
+			log.Default().Printf("Failed to export code comment %d on PR %d of repo %s as a PR comment: %v", from.ID, prNumber, repo, err)
+		} else {
+			metadata = &types.CodeComment{
+				Path:         from.Inline.Path,
+				CodeSnippet:  extractSnippetInfo(from.Inline.ContextLines),
+				Side:         "NEW",
+				HunkHeader:   hunkHeader,
+				SourceSHA:    from.Inline.SrcRev,
+				MergeBaseSHA: from.Inline.DestRev,
+				Outdated:     from.Inline.Outdated,
+			}
 		}
 	}
 
@@ -69,13 +76,6 @@ func convertPRComment(from codeComment) *types.PRComment {
 	}
 }
 
-func getSide(inline *inline) string {
-	if inline.From == nil {
-		return "NEW"
-	}
-	return "OLD"
-}
-
 func extractSnippetInfo(diffHunk string) types.Hunk {
 	lines := strings.Split(diffHunk, "\n")
 	return types.Hunk{
@@ -84,42 +84,27 @@ func extractSnippetInfo(diffHunk string) types.Hunk {
 	}
 }
 
-func extractHunkInfo(inline *inline) string {
-	re := regexp.MustCompile(`@@ -(\d+),(\d+) \+(\d+),(\d+) @@`)
+func extractHunkInfo(inline *inline) (string, error) {
+	scan := bufio.NewScanner(strings.NewReader(inline.ContextLines))
 
-	oldLine := 0
-	newLine := 0
-	oldSpan := 1
-	newSpan := 1
-	var err error
-
-	// Find the first match
-	matches := re.FindStringSubmatch(inline.ContextLines)
-	if len(matches) != 5 {
-		return ""
+	// Look for the line containing the hunk header
+	var hunkHeader string
+	for scan.Scan() {
+		line := scan.Text()
+		if strings.HasPrefix(line, "@@") {
+			hunkHeader = line
+			break
+		}
 	}
 
-	// Parse each number from the match results
-	oldLine, err = strconv.Atoi(matches[1])
-	if err != nil {
-		return common.FormatHunkHeader(oldLine, oldSpan, newLine, newSpan, inline.ContextLines)
+	if hunkHeader == "" {
+		return "", errors.New("hunk header missing")
 	}
 
-	oldSpan, err = strconv.Atoi(matches[2])
-	if err != nil {
-		return common.FormatHunkHeader(oldLine, oldSpan, newLine, newSpan, inline.ContextLines)
+	hunk, ok := migrate.ParseDiffHunkHeader(hunkHeader)
+	if !ok {
+		return "", fmt.Errorf("invalid diff hunk header: %s", hunkHeader)
 	}
 
-	newLine, err = strconv.Atoi(matches[3])
-	if err != nil {
-		return common.FormatHunkHeader(oldLine, oldSpan, newLine, newSpan, inline.ContextLines)
-	}
-
-	newSpan, err = strconv.Atoi(matches[4])
-	if err != nil {
-		return common.FormatHunkHeader(oldLine, oldSpan, newLine, newSpan, inline.ContextLines)
-	}
-
-	fmt.Printf("OLD SPAM NEW SPAN %d %d %d %d", oldLine, oldSpan, newLine, newSpan)
-	return common.FormatHunkHeader(oldLine, oldSpan, newLine, newSpan, inline.ContextLines)
+	return common.FormatHunkHeader(hunk.OldLine, hunk.OldSpan, hunk.NewLine, hunk.NewSpan, ""), nil
 }

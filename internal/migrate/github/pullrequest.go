@@ -29,10 +29,10 @@ import (
 )
 
 // IMPORT STEP 1
-const skipUpTo = 61298
+const skipUpTo = 60646
 
 // IMPORT STEP 2
-const maxPR = 52
+const maxPR = 60647
 
 func (e *Export) ListPullRequests(
 	ctx context.Context,
@@ -124,7 +124,7 @@ func (e *Export) ListPullRequests(
 			e.tracer.LogError(common.ErrCheckpointPrPageSave, err)
 		}
 
-		if resp.Page.Next == 0 {
+		if resp.Page.Next == 0 || prs[len(prs)-1].Number <= maxPR {
 			break
 		}
 

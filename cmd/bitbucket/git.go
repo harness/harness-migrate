@@ -12,45 +12,44 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package gitlab
+package bitbucket
 
 import (
 	"context"
 	"net/http"
-	"net/http/httputil"
 	"strings"
-
-	"github.com/harness/harness-migrate/cmd/util"
-	"github.com/harness/harness-migrate/internal/checkpoint"
-	"github.com/harness/harness-migrate/internal/gitexporter"
-	"github.com/harness/harness-migrate/internal/migrate/gitlab"
-	report "github.com/harness/harness-migrate/internal/report"
 
 	"github.com/alecthomas/kingpin/v2"
 	"github.com/drone/go-scm/scm"
-	scmgitlab "github.com/drone/go-scm/scm/driver/gitlab"
+	scmbitbucket "github.com/drone/go-scm/scm/driver/bitbucket"
 	"github.com/drone/go-scm/scm/transport/oauth2"
+	"github.com/harness/harness-migrate/cmd/util"
+	"github.com/harness/harness-migrate/internal/checkpoint"
+	"github.com/harness/harness-migrate/internal/gitexporter"
+	"github.com/harness/harness-migrate/internal/migrate/bitbucket"
+	report "github.com/harness/harness-migrate/internal/report"
 	"golang.org/x/exp/slog"
 )
 
-type exportGitCommand struct {
+type exportCommand struct {
 	debug      bool
 	trace      bool
 	noProgress bool
 
 	file string
 
-	group   string
-	project string
-	user    string
-	token   string
-	url     string
+	workspace     string
+	srcRepository string
+	user          string
+	token         string
+	url           string
 
 	checkpoint bool
-	flags      gitexporter.Flags
+
+	flags gitexporter.Flags
 }
 
-func (c *exportGitCommand) run(*kingpin.ParseContext) error {
+func (c *exportCommand) run(*kingpin.ParseContext) error {
 	// create the logger
 	log := util.CreateLogger(c.debug)
 
@@ -58,24 +57,20 @@ func (c *exportGitCommand) run(*kingpin.ParseContext) error {
 	ctx := context.Background()
 	ctx = slog.NewContext(ctx, log)
 
-	// create the gitlab client
+	// create the bitbucket cloud client
 	var client *scm.Client
 	var err error
 	if c.url != "" {
-		client, err = scmgitlab.New(c.url)
+		client, err = scmbitbucket.New(c.url)
 		if err != nil {
 			return err
 		}
 	} else {
-		client = scmgitlab.NewDefault()
-	}
-
-	if c.trace {
-		client.DumpResponse = httputil.DumpResponse
+		client = scmbitbucket.NewDefault()
 	}
 
 	// provide a custom http.Client with a transport
-	// that injects the private gitlab token through
+	// that injects the private bitbucket token through
 	// the PRIVATE_TOKEN header variable.
 	t := &oauth2.Transport{
 		Scheme: oauth2.SchemeBearer,
@@ -101,11 +96,11 @@ func (c *exportGitCommand) run(*kingpin.ParseContext) error {
 	}
 
 	var repository string
-	if c.project != "" {
-		repository = strings.Trim(c.project, "/")
+	if c.srcRepository != "" {
+		repository = strings.Trim(c.srcRepository, "/")
 	}
 
-	c.group = strings.Trim(c.group, "/")
+	c.workspace = strings.Trim(c.workspace, "/")
 
 	fileLogger := &gitexporter.FileLogger{Location: c.file}
 	reporter := make(map[string]*report.Report)
@@ -115,20 +110,21 @@ func (c *exportGitCommand) run(*kingpin.ParseContext) error {
 		NoComment: c.flags.NoComment,
 		NoWebhook: c.flags.NoWebhook,
 		NoRule:    c.flags.NoRule,
-		NoLabel:   c.flags.NoLabel,
+		NoLabel:   true, // bitbucket doesnt support native labels
 	}
 
-	e := gitlab.New(client, c.group, repository, checkpointManager, fileLogger, tracer_, reporter)
+	e := bitbucket.New(client, c.workspace, repository, checkpointManager, fileLogger, tracer_, reporter)
 
+	c.user = "x-token-auth" // this is needed for the git clone operation to work
 	exporter := gitexporter.NewExporter(e, c.file, c.user, c.token, tracer_, reporter, flags)
 	return exporter.Export(ctx)
 }
 
 // helper function registers the export command
 func registerGit(app *kingpin.CmdClause) {
-	c := new(exportGitCommand)
+	c := new(exportCommand)
 
-	cmd := app.Command("git-export", "export gitlab git data").
+	cmd := app.Command("git-export", "export bitbucket git data").
 		Hidden().
 		Action(c.run)
 
@@ -136,26 +132,22 @@ func registerGit(app *kingpin.CmdClause) {
 		Default("harness").
 		StringVar(&c.file)
 
-	cmd.Flag("host", "gitlab host url").
-		Envar("gitlab_HOST").
+	cmd.Flag("host", "bitbucket host url").
+		Envar("bitbucket_HOST").
 		StringVar(&c.url)
 
-	cmd.Flag("group", "gitlab group followed by subgroups").
+	cmd.Flag("workspace", "bitbucket workspace").
 		Required().
-		Envar("gitlab_GROUP").
-		StringVar(&c.group)
+		Envar("bitbucket_WORKSPACE").
+		StringVar(&c.workspace)
 
-	cmd.Flag("project", "optional name of the project to export").
-		Envar("gitlab_PROJECT").
-		StringVar(&c.project)
+	cmd.Flag("repository", "optional name of the repository to export").
+		Envar("bitbucket_REPOSITORY").
+		StringVar(&c.srcRepository)
 
-	cmd.Flag("username", "gitlab username").
-		Envar("gitlab_USERNAME").
-		StringVar(&c.user)
-
-	cmd.Flag("token", "gitlab token").
+	cmd.Flag("token", "bitbucket token").
 		Required().
-		Envar("gitlab_TOKEN").
+		Envar("bitbucket_TOKEN").
 		StringVar(&c.token)
 
 	cmd.Flag("resume", "resume from last checkpoint").
@@ -175,12 +167,8 @@ func registerGit(app *kingpin.CmdClause) {
 		BoolVar(&c.flags.NoWebhook)
 
 	cmd.Flag("no-rule", "do NOT export branch protection rules").
-		Default("false"). // revert when supported
-		BoolVar(&c.flags.NoRule)
-
-	cmd.Flag("no-label", "do NOT export labels").
 		Default("false").
-		BoolVar(&c.flags.NoLabel)
+		BoolVar(&c.flags.NoRule)
 
 	cmd.Flag("debug", "enable debug logging").
 		BoolVar(&c.debug)

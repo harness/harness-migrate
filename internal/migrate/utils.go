@@ -16,6 +16,8 @@ package migrate
 
 import (
 	"fmt"
+	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -23,6 +25,16 @@ import (
 )
 
 const maxIdentifierLength = 100
+
+var regExpHunkHeader = regexp.MustCompile(`^@@ -([0-9]+)(,([0-9]+))? \+([0-9]+)(,([0-9]+))? @@( (.+))?$`)
+
+type HunkHeader struct {
+	OldLine int
+	OldSpan int
+	NewLine int
+	NewSpan int
+	Text    string
+}
 
 // DisplayNameToIdentifier converts display name to a unique identifier.
 func DisplayNameToIdentifier(displayName string) string {
@@ -104,4 +116,31 @@ func randomizeIdentifier(identifier string) string {
 	}
 
 	return identifier + "_" + suffix
+}
+
+func ParseDiffHunkHeader(line string) (HunkHeader, bool) {
+	groups := regExpHunkHeader.FindStringSubmatch(line)
+	if groups == nil {
+		return HunkHeader{}, false
+	}
+
+	oldLine, _ := strconv.Atoi(groups[1])
+	oldSpan := 1
+	if groups[3] != "" {
+		oldSpan, _ = strconv.Atoi(groups[3])
+	}
+
+	newLine, _ := strconv.Atoi(groups[4])
+	newSpan := 1
+	if groups[6] != "" {
+		newSpan, _ = strconv.Atoi(groups[6])
+	}
+
+	return HunkHeader{
+		OldLine: oldLine,
+		OldSpan: oldSpan,
+		NewLine: newLine,
+		NewSpan: newSpan,
+		Text:    groups[8],
+	}, true
 }

@@ -54,14 +54,6 @@ type (
 		SubjectType       string    `json:"subject_type"`
 	}
 
-	HunkHeader struct {
-		OldLine int
-		OldSpan int
-		NewLine int
-		NewSpan int
-		Text    string
-	}
-
 	ruleSet struct {
 		ID          int         `json:"id"`
 		Name        string      `json:"name"`

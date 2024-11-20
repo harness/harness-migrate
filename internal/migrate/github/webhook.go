@@ -26,7 +26,6 @@ import (
 	"github.com/harness/harness-migrate/internal/types/enum"
 )
 
-// ListWebhooks implements gitexporter.Interface.
 func (e *Export) ListWebhooks(
 	ctx context.Context,
 	repoSlug string,

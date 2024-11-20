@@ -23,10 +23,7 @@ import (
 	"github.com/harness/harness-migrate/internal/harness"
 )
 
-const (
-	unknownUserId      = -1
-	CheckpointKeyUsers = "users"
-)
+const CheckpointKeyUsers = "users"
 
 func (e *Export) FindEmailByUsername(ctx context.Context, username string) (string, error) {
 	user, ok := e.userMap[username]

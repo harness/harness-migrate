@@ -29,7 +29,6 @@ func (m *Importer) CreateRepo(
 	targetSpace string,
 	tracer tracer.Tracer,
 ) (*harness.Repository, error) {
-	// TODO: check license for size limit
 	tracer.Start(common.MsgStartImportCreateRepo, repo.Name)
 	in := &harness.CreateRepositoryForMigrateInput{
 		Identifier:    repo.Name,

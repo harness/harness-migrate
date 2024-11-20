@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package gitlab
+package bitbucket
 
 import (
 	"context"
@@ -62,13 +62,23 @@ func (e *Export) ListWebhooks(
 	}
 
 	for {
-		webhooks, resp, err := e.gitlab.Repositories.ListHooks(ctx, repoSlug, opts)
+		webhooks, resp, err := e.bitbucket.Repositories.ListHooks(ctx, repoSlug, opts)
 		if err != nil {
 			e.tracer.LogError(common.ErrListWebhook, repoSlug, err)
 			e.tracer.Stop(common.ErrListWebhooks, repoSlug, err)
 			return types.WebhookData{}, err
 		}
 		allWebhooks = append(allWebhooks, webhooks...)
+
+		err = e.checkpointManager.SaveCheckpoint(checkpointDataKey, allWebhooks)
+		if err != nil {
+			e.tracer.LogError(common.ErrCheckpointWebhooksDataSave, err)
+		}
+
+		err = e.checkpointManager.SaveCheckpoint(checkpointPageKey, resp.Page.Next)
+		if err != nil {
+			e.tracer.LogError(common.ErrCheckpointWebhooksPageSave, repoSlug, err)
+		}
 
 		if resp.Page.Next == 0 {
 			break
@@ -106,16 +116,17 @@ func mapEvents(triggers []string) ([]enum.WebhookTrigger, []string) {
 
 	for _, v := range triggers {
 		switch v {
-		case "push":
-			events = append(events, enum.WebhookTriggerBranchCreated, enum.WebhookTriggerBranchUpdated,
-				enum.WebhookTriggerBranchDeleted, enum.WebhookTriggerPullReqBranchUpdated)
-		case "tag":
-			events = append(events, enum.WebhookTriggerTagCreated, enum.WebhookTriggerTagUpdated, enum.WebhookTriggerTagDeleted)
-		case "comment":
+		case "repo:push":
+			events = append(events, enum.WebhookTriggerBranchCreated, enum.WebhookTriggerBranchDeleted, enum.WebhookTriggerBranchUpdated,
+				enum.WebhookTriggerTagCreated, enum.WebhookTriggerTagDeleted, enum.WebhookTriggerTagUpdated, enum.WebhookTriggerPullReqBranchUpdated)
+		case "repo:commit_comment_created", "pullrequest:comment_created":
 			events = append(events, enum.WebhookTriggerPullReqCommentCreated)
-		case "merge":
-			events = append(events, enum.WebhookTriggerPullReqCreated, enum.WebhookTriggerPullReqReopened,
-				enum.WebhookTriggerPullReqClosed, enum.WebhookTriggerPullReqUpdated, enum.WebhookTriggerPullReqMerged)
+		case "pullrequest:created":
+			events = append(events, enum.WebhookTriggerPullReqCreated, enum.WebhookTriggerPullReqReopened)
+		case "pullrequest:updated":
+			events = append(events, enum.WebhookTriggerPullReqUpdated, enum.WebhookTriggerPullReqBranchUpdated)
+		case "pullrequest:fulfilled":
+			events = append(events, enum.WebhookTriggerPullReqMerged)
 		default:
 			notSupportedEvents = append(notSupportedEvents, v)
 		}

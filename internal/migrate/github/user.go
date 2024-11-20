@@ -28,6 +28,10 @@ const (
 )
 
 func (e *Export) FindEmailByUsername(ctx context.Context, username string) (string, error) {
+	if username == "ghost" || username == "" {
+		return getDefaultEmail("deleted-user"), nil
+	}
+
 	user, ok := e.userMap[username]
 	if ok {
 		return user.Email, nil

@@ -121,6 +121,9 @@ func getCommentSide(fileType string) string {
 }
 
 func extractSnippetInfo(diff codeDiff) types.Hunk {
+	if len(diff.Hunks) == 0 {
+		return types.Hunk{}
+	}
 	hunk := diff.Hunks[0]
 	header := common.FormatHunkHeader(hunk.SourceLine, hunk.SourceSpan, hunk.DestinationLine, hunk.DestinationSpan, "")
 	var lines []string

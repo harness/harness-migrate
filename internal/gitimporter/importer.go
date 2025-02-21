@@ -26,7 +26,6 @@ import (
 	"github.com/harness/harness-migrate/internal/common"
 	"github.com/harness/harness-migrate/internal/harness"
 	"github.com/harness/harness-migrate/internal/tracer"
-	"github.com/harness/harness-migrate/internal/types/enum"
 	"github.com/harness/harness-migrate/internal/util"
 	"github.com/harness/harness-migrate/types"
 )
@@ -164,13 +163,13 @@ func (m *Importer) Import(ctx context.Context) error {
 		}
 
 		// update the repo state to active
-		_, err = m.Harness.UpdateRepositoryState(
-			repoRef,
-			&harness.UpdateRepositoryStateInput{State: enum.RepoStateActive},
-		)
-		if err != nil {
-			return fmt.Errorf("failed to update the repo state to %s: %w", enum.RepoStateActive, err)
-		}
+		// _, err = m.Harness.UpdateRepositoryState(
+		// 	repoRef,
+		// 	&harness.UpdateRepositoryStateInput{State: enum.RepoStateActive},
+		// )
+		// if err != nil {
+		// 	return fmt.Errorf("failed to update the repo state to %s: %w", enum.RepoStateActive, err)
+		// }
 	}
 
 	m.Tracer.Log(common.MsgCompleteImport, len(folders))

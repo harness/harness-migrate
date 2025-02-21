@@ -17,6 +17,7 @@ package github
 import (
 	"context"
 	"fmt"
+	"slices"
 
 	"github.com/drone/go-scm/scm"
 	"github.com/harness/harness-migrate/internal/checkpoint"
@@ -29,6 +30,11 @@ func (e *Export) ListPullRequestComments(
 	repoSlug string, prNumber int,
 	opts types.ListOptions,
 ) ([]*types.PRComment, error) {
+	ignorePrs := []int{22083, 14970, 11331, 11341, 11338, 11341, 5177, 5178, 4465, 4466, 4467}
+
+	if slices.Contains(ignorePrs, prNumber) { //skip these prs
+		return nil, nil
+	}
 	e.tracer.Debug().Start(common.MsgStartExportPrComments, repoSlug, prNumber)
 	var allComments []*types.PRComment
 	msgCommentsExport := common.MsgCompleteExportPrComments

@@ -29,10 +29,10 @@ import (
 )
 
 // IMPORT STEP 1
-const skipUpTo = 60646
+//const skipUpTo = 60646
 
 // IMPORT STEP 2
-const maxPR = 60647
+//const maxPR = 22968
 
 func (e *Export) ListPullRequests(
 	ctx context.Context,
@@ -46,7 +46,7 @@ func (e *Export) ListPullRequests(
 	opts := scm.PullRequestListOptions{
 		Page:   params.Page,
 		Size:   params.Size,
-		Open:   params.Open, //params.Open,
+		Open:   false, // params.Open, //params.Open,
 		Closed: params.Closed,
 	}
 
@@ -103,7 +103,7 @@ func (e *Export) ListPullRequests(
 		mappedPrs := common.MapPullRequest(prs)
 
 		// TEMPORARY FOR IMPORT STEP 1
-		mappedPrs = filterPRs(mappedPrs, skipUpTo)
+		//mappedPrs = filterPRs(mappedPrs, skipUpTo)
 
 		// TEMPORARY FOR IMPORT STEP 2
 		//mappedPrs = filterPRs(mappedPrs, maxPR)
@@ -124,7 +124,7 @@ func (e *Export) ListPullRequests(
 			e.tracer.LogError(common.ErrCheckpointPrPageSave, err)
 		}
 
-		if resp.Page.Next == 0 || prs[len(prs)-1].Number <= maxPR {
+		if resp.Page.Next == 0 { //|| prs[len(prs)-1].Number <= maxPR {
 			break
 		}
 

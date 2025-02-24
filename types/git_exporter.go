@@ -188,10 +188,11 @@ type (
 	}
 
 	Approvals struct {
-		RequireCodeOwners      bool `json:"require_code_owners,omitempty"`
-		RequireMinimumCount    int  `json:"require_minimum_count,omitempty"`
-		RequireLatestCommit    bool `json:"require_latest_commit,omitempty"`
-		RequireNoChangeRequest bool `json:"require_no_change_request,omitempty"`
+		RequireCodeOwners                  bool `json:"require_code_owners,omitempty"`
+		RequireMinimumCount                int  `json:"require_minimum_count,omitempty"`
+		RequireLatestCommit                bool `json:"require_latest_commit,omitempty"`
+		RequireNoChangeRequest             bool `json:"require_no_change_request,omitempty"`
+		RequireMinimumDefaultReviewerCount int  `json:"require_minimum_default_reviewer_count,omitempty"`
 	}
 
 	Comments struct {

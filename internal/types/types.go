@@ -157,10 +157,11 @@ type (
 	}
 
 	Approvals struct {
-		RequireCodeOwners      bool
-		RequireMinimumCount    int
-		RequireLatestCommit    bool
-		RequireNoChangeRequest bool
+		RequireCodeOwners                  bool
+		RequireMinimumCount                int
+		RequireLatestCommit                bool
+		RequireNoChangeRequest             bool
+		RequireMinimumDefaultReviewerCount int
 	}
 
 	Comments struct {

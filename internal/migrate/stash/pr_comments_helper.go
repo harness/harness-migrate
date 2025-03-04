@@ -148,6 +148,9 @@ func extractSnippetInfo(diff codeDiff) types.Hunk {
 }
 
 func extractHunkInfo(anchor commentAnchor, diff codeDiff) string {
+	if len(diff.Hunks) == 0 {
+		return ""
+	}
 	hunk := diff.Hunks[0]
 	for _, segment := range hunk.Segments {
 		if anchor.LineType != segment.Type {

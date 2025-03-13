@@ -32,7 +32,7 @@ import (
 //const skipUpTo = 60646
 
 // IMPORT STEP 2
-//const maxPR = 22968
+const maxPR = 22969
 
 func (e *Export) ListPullRequests(
 	ctx context.Context,
@@ -46,7 +46,7 @@ func (e *Export) ListPullRequests(
 	opts := scm.PullRequestListOptions{
 		Page:   params.Page,
 		Size:   params.Size,
-		Open:   false, // params.Open, //params.Open,
+		Open:   params.Open, // params.Open, //params.Open,
 		Closed: params.Closed,
 	}
 
@@ -106,7 +106,7 @@ func (e *Export) ListPullRequests(
 		//mappedPrs = filterPRs(mappedPrs, skipUpTo)
 
 		// TEMPORARY FOR IMPORT STEP 2
-		//mappedPrs = filterPRs(mappedPrs, maxPR)
+		mappedPrs = filterPRs(mappedPrs, maxPR)
 
 		mappedPrsWithAuthor, err := e.addEmailToPRAuthor(ctx, mappedPrs)
 		if err != nil {
@@ -124,7 +124,7 @@ func (e *Export) ListPullRequests(
 			e.tracer.LogError(common.ErrCheckpointPrPageSave, err)
 		}
 
-		if resp.Page.Next == 0 { //|| prs[len(prs)-1].Number <= maxPR {
+		if resp.Page.Next == 0 || prs[len(prs)-1].Number <= maxPR {
 			break
 		}
 
@@ -155,7 +155,7 @@ func (e *Export) addEmailToPRAuthor(ctx context.Context, prs []types.PRResponse)
 func filterPRs(prs []types.PRResponse, lastPRNumber int) []types.PRResponse {
 	var newPRs []types.PRResponse
 	for _, pr := range prs {
-		if pr.Number > lastPRNumber {
+		if pr.Number >= lastPRNumber {
 			newPRs = append(newPRs, pr)
 		}
 	}

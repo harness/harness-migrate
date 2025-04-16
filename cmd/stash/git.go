@@ -106,6 +106,7 @@ func (c *exportCommand) run(*kingpin.ParseContext) error {
 		NoWebhook: c.flags.NoWebhook,
 		NoRule:    c.flags.NoRule,
 		NoLabel:   true, // stash doesnt support labels
+		NoGitLFS:  c.flags.NoGitLFS,
 	}
 	// extract the data
 	e := stash.New(client, c.project, repository, checkpointManager, fileLogger, tracer_, reporter)
@@ -169,6 +170,10 @@ func registerGit(app *kingpin.CmdClause) {
 	cmd.Flag("no-rule", "do NOT export branch protection rules").
 		Default("false").
 		BoolVar(&c.flags.NoRule)
+
+	cmd.Flag("no-git-lfs", "do NOT export git lfs objects").
+		Default("false").
+		BoolVar(&c.flags.NoGitLFS)
 
 	cmd.Flag("debug", "enable debug logging").
 		BoolVar(&c.debug)

@@ -60,6 +60,7 @@ type (
 		NoRule    bool // to not export branch protection rules
 		NoComment bool // to not export pull request comments
 		NoLabel   bool // to not export repo/space labels
+		NoGitLFS  bool // to not export git lfs objects
 	}
 )
 
@@ -294,7 +295,7 @@ func (e *Exporter) getData(ctx context.Context, path string) ([]*types.RepoData,
 		}
 
 		// 2. clone git data for each repo
-		isEmpty, err := e.CloneRepository(ctx, repo.Repository, repoPath, repo.RepoSlug, e.exporter.PullRequestRefs(), e.Tracer)
+		isEmpty, err := e.CloneRepository(ctx, repo.Repository, repoPath, repo.RepoSlug, e.exporter.PullRequestRefs(), e.flags.NoGitLFS, e.Tracer)
 		if err != nil {
 			return nil, fmt.Errorf("cannot clone the git repo for %s: %w", repo.RepoSlug, err)
 		}

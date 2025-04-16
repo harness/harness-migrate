@@ -461,17 +461,16 @@ func extractUsers(repo *types.RepoData, users map[string]bool) map[string]bool {
 	repoUsers := make(map[string]bool)
 
 	for _, prData := range repo.PullRequestData {
-		users[prData.PullRequest.PullRequest.Author.Email] = true
-		repoUsers[prData.PullRequest.PullRequest.Author.Email] = true
+		if prData.PullRequest.Author.Email != "" {
+			users[prData.PullRequest.Author.Email] = true
+			repoUsers[prData.PullRequest.Author.Email] = true
+		}
+
 		for _, comment := range prData.Comments {
 			if comment.Author.Email != "" {
 				users[comment.Author.Email] = true
 				repoUsers[comment.Author.Email] = true
 			}
-		}
-		if prData.PullRequest.Author.Email != "" {
-			users[prData.PullRequest.Author.Email] = true
-			repoUsers[prData.PullRequest.Author.Email] = true
 		}
 	}
 

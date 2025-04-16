@@ -6,6 +6,7 @@ import (
 
 	"github.com/harness/harness-migrate/internal/checkpoint"
 	"github.com/harness/harness-migrate/internal/common"
+	"github.com/harness/harness-migrate/internal/gitexporter"
 	"github.com/harness/harness-migrate/internal/types"
 
 	"github.com/drone/go-scm/scm"
@@ -60,7 +61,11 @@ func (e *Export) ListPullRequests(
 			return nil, fmt.Errorf("cannot list prs: %w", err)
 		}
 		mappedPrs := common.MapPullRequest(prs)
-		allPrs = append(allPrs, mappedPrs...)
+		mappedPrsWithAuthor, err := e.sanitizePRAuthorEmail(ctx, mappedPrs)
+		if err != nil {
+			return nil, fmt.Errorf("cannot sanitize pr author email: %w", err)
+		}
+		allPrs = append(allPrs, mappedPrsWithAuthor...)
 
 		err = e.checkpointManager.SaveCheckpoint(checkpointDataKey, allPrs)
 		if err != nil {
@@ -84,4 +89,16 @@ func (e *Export) ListPullRequests(
 	}
 
 	return allPrs, nil
+}
+
+func (e *Export) sanitizePRAuthorEmail(ctx context.Context, prs []types.PRResponse) ([]types.PRResponse, error) {
+	for _, pr := range prs {
+		if pr.Author.Email == "" {
+			pr.Author.Email = pr.Author.Login + gitexporter.UnknownEmailSuffix
+			if err := e.fileLogger.Log("no email found for user %s using %s as fallback email", pr.Author.Login, pr.Author.Email); err != nil {
+				return nil, fmt.Errorf("cannot log file for unknown email, error: %w", err)
+			}
+		}
+	}
+	return prs, nil
 }

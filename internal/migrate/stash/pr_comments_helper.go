@@ -21,6 +21,7 @@ import (
 
 	"github.com/drone/go-scm/scm"
 	"github.com/harness/harness-migrate/internal/common"
+	"github.com/harness/harness-migrate/internal/gitexporter"
 	"github.com/harness/harness-migrate/internal/types"
 )
 
@@ -106,11 +107,18 @@ func convertPullRequestComment(from pullRequestComment, parentID int, anchor com
 		Author: scm.User{
 			Login: from.Author.Slug,
 			Name:  from.Author.DisplayName,
-			Email: from.Author.EmailAddress,
+			Email: sanitizeEmail(from.Author.EmailAddress, from.Author.Slug),
 		}},
 		ParentID:    parentID,
 		CodeComment: codeComment,
 	}
+}
+
+func sanitizeEmail(email, username string) string {
+	if email != "" {
+		return email
+	}
+	return username + gitexporter.UnknownEmailSuffix
 }
 
 func getCommentSide(fileType string) string {

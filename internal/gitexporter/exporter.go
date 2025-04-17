@@ -295,7 +295,7 @@ func (e *Exporter) getData(ctx context.Context, path string) ([]*types.RepoData,
 		}
 
 		// 2. clone git data for each repo
-		isEmpty, err := e.CloneRepository(ctx, repo.Repository, repoPath, repo.RepoSlug, e.exporter.PullRequestRefs(), e.flags.NoGitLFS, e.Tracer)
+		isEmpty, lfsObjectCount, err := e.CloneRepository(ctx, repo.Repository, repoPath, repo.RepoSlug, e.exporter.PullRequestRefs(), e.flags.NoGitLFS, e.Tracer)
 		if err != nil {
 			return nil, fmt.Errorf("cannot clone the git repo for %s: %w", repo.RepoSlug, err)
 		}
@@ -305,6 +305,7 @@ func (e *Exporter) getData(ctx context.Context, path string) ([]*types.RepoData,
 			continue
 		}
 
+		repoData[i].Repository.LfsObjectCount = lfsObjectCount
 		// 3. get all webhooks for each repo
 		if !e.flags.NoWebhook {
 			webhooks, err := e.exporter.ListWebhooks(ctx, repo.RepoSlug, types.ListOptions{})

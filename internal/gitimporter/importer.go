@@ -57,6 +57,7 @@ type Flags struct {
 	NoWebhook     bool
 	NoRule        bool
 	NoLabel       bool
+	NoLFS         bool
 }
 
 func NewImporter(
@@ -232,7 +233,7 @@ func (m *Importer) createRepoAndDoPush(ctx context.Context, repoFolder string, r
 		}
 	}
 
-	err = m.Push(ctx, repoFolder, hRepo, m.Tracer)
+	err = m.Push(ctx, repoFolder, hRepo, repo.LfsObjectCount, m.Tracer)
 	if err != nil {
 		return fmt.Errorf("failed to push to repo: %w", err)
 	}

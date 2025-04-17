@@ -121,23 +121,11 @@ func RunGitLFSCommand(ctx context.Context, dir string, env []string, args ...str
 }
 
 // HasLFSObjects checks if the repository has any Git LFS objects
-func HasLFSObjects(ctx context.Context, dir string, env []string) (bool, error) {
+func HasLFSObjects(ctx context.Context, dir string, env []string) (int64, error) {
 	output, err := RunGitLFSCommand(ctx, dir, env, "ls-files")
 	if err != nil {
-		return false, err
+		return 0, err
 	}
 
-	return len(output) > 0, nil
-}
-
-// PullLFSObjects pulls all LFS objects for the repository
-func PullLFSObjects(ctx context.Context, dir string, env []string) error {
-	// First fetch LFS objects metadata
-	if _, err := RunGitLFSCommand(ctx, dir, env, "fetch", "--all"); err != nil {
-		return err
-	}
-
-	// Then pull/checkout the actual objects
-	_, err := RunGitLFSCommand(ctx, dir, env, "pull")
-	return err
+	return int64(len(output)), nil
 }

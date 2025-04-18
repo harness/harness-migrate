@@ -527,7 +527,6 @@ func mapPRData(pr types.PRResponse, comments []*types.PRComment) *types.PullRequ
 
 func mapRepoData(repoData *types.RepoData) *externalTypes.RepositoryData {
 	d := new(externalTypes.RepositoryData)
-	d.Repository.Slug = repoData.Repository.RepoSlug
 	d.Repository = mapRepository(repoData.Repository)
 	d.BranchRules = mapBranchRules(repoData.BranchRules)
 

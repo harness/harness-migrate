@@ -15,7 +15,9 @@
 package gitexporter
 
 import (
+	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -28,8 +30,38 @@ import (
 	"github.com/harness/harness-migrate/types"
 
 	"github.com/drone/go-scm/scm"
+	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
+	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/transport"
+	"github.com/go-git/go-git/v5/plumbing/transport/http"
 )
+
+type gitCloner interface {
+	clone(ctx context.Context) (bool, error)
+}
+
+type cloneParams struct {
+	repoData   scm.Repository
+	gitPath    string
+	repoSlug   string
+	pullreqRef []config.RefSpec
+	auth       credentials
+	tracer     tracer.Tracer
+}
+
+type credentials struct {
+	username string
+	token    string
+}
+
+type nativeGitCloner struct {
+	params cloneParams
+}
+
+type goGitCloner struct {
+	params cloneParams
+}
 
 func (e *Exporter) CloneRepository(
 	ctx context.Context,
@@ -40,83 +72,164 @@ func (e *Exporter) CloneRepository(
 	noGitLFS bool,
 	tracer tracer.Tracer,
 ) (bool, int64, error) {
-	var isEmpty bool
 	tracer.Start(common.MsgStartGitClone, repoSlug)
-
-	if err := command.CheckGitInstallation(); err != nil {
-		return isEmpty, 0, err
-	}
 
 	if !noGitLFS {
 		if err := command.CheckGitLFSInstallation(); err != nil {
-			return isEmpty, 0, err
+			return false, 0, err
 		}
 	}
 
 	gitPath := filepath.Join(repoPath, types.GitDir)
-	if err := util.CreateFolder(gitPath); err != nil {
+	params := cloneParams{
+		repoData:   repoData,
+		gitPath:    gitPath,
+		repoSlug:   repoSlug,
+		pullreqRef: pullreqRef,
+		auth: credentials{
+			username: e.ScmLogin,
+			token:    e.ScmToken,
+		},
+		tracer: tracer,
+	}
+
+	cloner := e.selectCloner(params)
+	isEmpty, err := cloner.clone(ctx)
+	if err != nil {
+		return false, 0, fmt.Errorf("failed to clone repo %s: %w", repoSlug, err)
+	}
+
+	lfsObjectCount, err := e.checkLFSObjects(ctx, gitPath, repoSlug, noGitLFS, tracer)
+	if err != nil {
 		return isEmpty, 0, err
-	}
-
-	if _, err := os.Stat(filepath.Join(gitPath, ".git")); err == nil {
-		tracer.Log(common.MsgRepoAlreadyExists, repoSlug)
-		return isEmpty, 0, nil
-	}
-
-	// prepare git authentication
-	gitEnv := []string{
-		"GIT_TERMINAL_PROMPT=0",
-		fmt.Sprintf("GIT_USERNAME=%s", e.ScmLogin),
-		fmt.Sprintf("GIT_PASSWORD=%s", e.ScmToken),
-	}
-
-	// initialize git-lfs
-	if !noGitLFS {
-		output, err := command.RunGitLFSCommand(ctx, gitPath, gitEnv, "install", "--force")
-		if err != nil {
-			tracer.LogError(common.ErrGitClone, repoSlug, err, string(output))
-			return isEmpty, 0, fmt.Errorf("failed to initialize git-lfs: %w", err)
-		}
-	}
-
-	// clone repository with all refs
-	cloneArgs := []string{
-		"clone",
-		"--mirror", // includes all refs
-		"--no-checkout",
-		repoData.Clone,
-		".",
-	}
-
-	output, err := command.RunGitCommand(ctx, gitPath, gitEnv, cloneArgs...)
-	if err != nil {
-		if strings.Contains(string(output), "You appear to have cloned an empty repository.") {
-			isEmpty = true
-			tracer.Stop(common.MsgGitCloneEmptyRepo, repoSlug)
-			return isEmpty, 0, nil
-		}
-
-		tracer.LogError(common.ErrGitClone, repoSlug, err, string(output))
-		return isEmpty, 0, fmt.Errorf("failed to clone repo %s from %q: %w", repoSlug, repoData.Clone, err)
-	}
-
-	// fetch all refs
-	output, err = command.RunGitCommand(ctx, gitPath, gitEnv, "fetch", "--all", "--force", "--prune")
-	if err != nil {
-		tracer.LogError(common.ErrGitFetch, repoSlug, err, string(output))
-		return isEmpty, 0, fmt.Errorf("failed to sync repo %s from %q: %w", repoSlug, repoData.Clone, err)
-	}
-
-	var lfsObjectCount int64
-	if !noGitLFS {
-		// Check for LFS objects with credentials
-		lfsObjectCount, err = command.HasLFSObjects(ctx, gitPath, gitEnv)
-		if err != nil {
-			tracer.LogError("git-lfs-check", repoSlug, err, string(output))
-			return isEmpty, 0, fmt.Errorf("failed to check LFS objects for repo %s: %w", repoSlug, err)
-		}
 	}
 
 	tracer.Stop(common.MsgCompleteGitClone, repoSlug)
 	return isEmpty, lfsObjectCount, nil
+}
+
+func (e *Exporter) selectCloner(params cloneParams) gitCloner {
+	if err := command.CheckGitInstallation(); err == nil {
+		return &nativeGitCloner{params: params}
+	}
+	return &goGitCloner{params: params}
+}
+
+func (e *Exporter) checkLFSObjects(
+	ctx context.Context,
+	gitPath string,
+	repoSlug string,
+	noGitLFS bool,
+	tracer tracer.Tracer,
+) (int64, error) {
+	if noGitLFS {
+		return 0, nil
+	}
+
+	lfsObjectCount, err := command.HasLFSObjects(ctx, gitPath, []string{})
+	if err != nil {
+		tracer.LogError("git-lfs-check", repoSlug, err)
+		return 0, fmt.Errorf("failed to check LFS objects for repo %s: %w", repoSlug, err)
+	}
+
+	return lfsObjectCount, nil
+}
+
+func (c *nativeGitCloner) clone(ctx context.Context) (bool, error) {
+	if err := util.CreateFolder(c.params.gitPath); err != nil {
+		return false, err
+	}
+
+	if _, err := os.Stat(filepath.Join(c.params.gitPath, ".git")); err == nil {
+		c.params.tracer.Log(common.MsgRepoAlreadyExists, c.params.repoSlug)
+		return false, nil
+	}
+
+	gitEnv := []string{
+		"GIT_TERMINAL_PROMPT=0",
+		fmt.Sprintf("GIT_USERNAME=%s", c.params.auth.username),
+		fmt.Sprintf("GIT_PASSWORD=%s", c.params.auth.token),
+	}
+
+	cloneArgs := []string{
+		"clone",
+		"--mirror",
+		"--no-checkout",
+		c.params.repoData.Clone,
+		".",
+	}
+
+	output, err := command.RunGitCommand(ctx, c.params.gitPath, gitEnv, cloneArgs...)
+	if err != nil {
+		if strings.Contains(string(output), "You appear to have cloned an empty repository.") {
+			c.params.tracer.Stop(common.MsgGitCloneEmptyRepo, c.params.repoSlug)
+			return true, nil
+		}
+
+		c.params.tracer.LogError(common.ErrGitClone, c.params.repoSlug, err, string(output))
+		return false, fmt.Errorf("failed to clone repo %s from %q: %w", c.params.repoSlug, c.params.repoData.Clone, err)
+	}
+
+	output, err = command.RunGitCommand(ctx, c.params.gitPath, gitEnv, "fetch", "--all", "--force", "--prune")
+	if err != nil {
+		c.params.tracer.LogError(common.ErrGitFetch, c.params.repoSlug, err, string(output))
+		return false, fmt.Errorf("failed to sync repo %s from %q: %w", c.params.repoSlug, c.params.repoData.Clone, err)
+	}
+
+	return false, nil
+}
+
+func (c *goGitCloner) clone(ctx context.Context) (bool, error) {
+	if err := util.CreateFolder(c.params.gitPath); err != nil {
+		return false, err
+	}
+
+	var cloneOutput bytes.Buffer
+	repo, err := git.PlainCloneContext(ctx, c.params.gitPath, true, &git.CloneOptions{
+		URL: c.params.repoData.Clone,
+		Auth: &http.BasicAuth{
+			Username: c.params.auth.username,
+			Password: c.params.auth.token,
+		},
+		SingleBranch: false,
+		Tags:         git.AllTags,
+		NoCheckout:   true,
+		Progress:     &cloneOutput,
+	})
+
+	if errors.Is(err, git.ErrRepositoryAlreadyExists) {
+		c.params.tracer.Log(common.MsgRepoAlreadyExists, c.params.repoSlug)
+		return false, nil
+	}
+
+	if errors.Is(err, plumbing.ErrReferenceNotFound) || errors.Is(err, transport.ErrEmptyRemoteRepository) {
+		c.params.tracer.Stop(common.MsgGitCloneEmptyRepo, c.params.repoSlug)
+		return true, nil
+	}
+
+	if err != nil {
+		c.params.tracer.LogError(common.ErrGitClone, c.params.repoSlug, err, cloneOutput.String())
+		return false, fmt.Errorf("failed to clone repo %s from %q: %w", c.params.repoSlug, c.params.repoData.Clone, err)
+	}
+
+	refSpecs := []config.RefSpec{"refs/heads/*:refs/heads/*", "refs/tags/*:refs/tags/*"}
+	refSpecs = append(refSpecs, c.params.pullreqRef...)
+
+	var fetchOutput bytes.Buffer
+	err = repo.Fetch(&git.FetchOptions{
+		RefSpecs: refSpecs,
+		Auth: &http.BasicAuth{
+			Username: c.params.auth.username,
+			Password: c.params.auth.token,
+		},
+		Force:    true,
+		Progress: &fetchOutput,
+	})
+
+	if err != nil && !errors.Is(err, git.NoErrAlreadyUpToDate) {
+		c.params.tracer.LogError(common.ErrGitFetch, c.params.repoSlug, err, fetchOutput.String())
+		return false, fmt.Errorf("failed to sync repo %s from %q: %w", c.params.repoSlug, c.params.repoData.Clone, err)
+	}
+
+	return false, nil
 }

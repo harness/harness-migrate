@@ -15,6 +15,7 @@
 package command
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -120,12 +121,12 @@ func RunGitLFSCommand(ctx context.Context, dir string, env []string, args ...str
 	return RunGitCommand(ctx, dir, env, lfsArgs...)
 }
 
-// HasLFSObjects checks if the repository has any Git LFS objects
+// HasLFSObjects checks if the repository has any Git LFS objects and returns the count
 func HasLFSObjects(ctx context.Context, dir string, env []string) (int64, error) {
 	output, err := RunGitLFSCommand(ctx, dir, env, "ls-files")
 	if err != nil {
 		return 0, err
 	}
 
-	return int64(len(output)), nil
+	return int64(bytes.Count(output, []byte{'\n'})), nil
 }

@@ -56,7 +56,8 @@ type credentials struct {
 }
 
 type nativeGitCloner struct {
-	params cloneParams
+	params   cloneParams
+	fetchLFS bool
 }
 
 type goGitCloner struct {
@@ -93,7 +94,7 @@ func (e *Exporter) CloneRepository(
 		tracer: tracer,
 	}
 
-	cloner := e.selectCloner(params)
+	cloner := e.selectCloner(params, noGitLFS)
 	isEmpty, err := cloner.clone(ctx)
 	if err != nil {
 		return false, 0, fmt.Errorf("failed to clone repo %s: %w", repoSlug, err)
@@ -108,9 +109,9 @@ func (e *Exporter) CloneRepository(
 	return isEmpty, lfsObjectCount, nil
 }
 
-func (e *Exporter) selectCloner(params cloneParams) gitCloner {
+func (e *Exporter) selectCloner(params cloneParams, noGitLFS bool) gitCloner {
 	if err := command.CheckGitInstallation(); err == nil {
-		return &nativeGitCloner{params: params}
+		return &nativeGitCloner{params: params, fetchLFS: !noGitLFS}
 	}
 	return &goGitCloner{params: params}
 }
@@ -153,8 +154,6 @@ func (c *nativeGitCloner) clone(ctx context.Context) (bool, error) {
 
 	cloneArgs := []string{
 		"clone",
-		"--mirror",
-		"--no-checkout",
 		c.params.repoData.Clone,
 		".",
 	}
@@ -168,6 +167,14 @@ func (c *nativeGitCloner) clone(ctx context.Context) (bool, error) {
 
 		c.params.tracer.LogError(common.ErrGitClone, c.params.repoSlug, err, string(output))
 		return false, fmt.Errorf("failed to clone repo %s from %q: %w", c.params.repoSlug, c.params.repoData.Clone, err)
+	}
+
+	if c.fetchLFS {
+		err = command.FetchLFSObjects(ctx, c.params.gitPath, gitEnv)
+		if err != nil {
+			c.params.tracer.LogError("git-lfs-pull", c.params.repoSlug, err)
+			return false, fmt.Errorf("failed to pull LFS objects for repo %s: %w", c.params.repoSlug, err)
+		}
 	}
 
 	output, err = command.RunGitCommand(ctx, c.params.gitPath, gitEnv, "fetch", "--all", "--force", "--prune")

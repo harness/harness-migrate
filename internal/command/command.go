@@ -130,3 +130,17 @@ func HasLFSObjects(ctx context.Context, dir string, env []string) (int64, error)
 
 	return int64(bytes.Count(output, []byte{'\n'})), nil
 }
+
+func FetchLFSObjects(ctx context.Context, dir string, env []string) error {
+	out, err := RunGitLFSCommand(ctx, dir, env, "fetch", "--all")
+	if err != nil {
+		return fmt.Errorf("failed to fetch LFS objects for repo %s, output: %s, err: %w", dir, out, err)
+	}
+
+	out, err = RunGitLFSCommand(ctx, dir, env, "checkout")
+	if err != nil {
+		return fmt.Errorf("failed to checkout LFS objects for repo %s, output: %s, err: %w", dir, out, err)
+	}
+
+	return nil
+}

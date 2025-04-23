@@ -1,22 +1,56 @@
-FROM golang:1.21-alpine
+# ---------------------------------------------------------#
+#                   Build harness-migrator image                    #
+# ---------------------------------------------------------#
+FROM golang:1.22-alpine
 
-# Install git and git-lfs
-RUN apk add --no-cache git git-lfs
+# install required dependencies
+RUN apk update && \
+    apk add --no-cache \
+    git \
+    git-lfs \
+    ca-certificates \
+    tzdata \
+    bash \
+    curl \
+    openssh \
+    build-base
 
-# Set the working directory
+# install git-lfs without repo-level hooks
+RUN git lfs install --skip-repo
+
+# set working directory
 WORKDIR /app
 
-# Copy go mod and sum files
+# copy go mod and sum files
 COPY go.mod go.sum ./
 
-# Download all dependencies
+# download dependencies
 RUN go mod download
 
-# Copy the source code
 COPY . .
 
-# Build the application
-RUN go build -o /harness-migrator
+# set required build flags
+ENV CGO_ENABLED=0 \
+    GOOS=linux \
+    GOARCH=amd64
 
-# Set the entrypoint
-ENTRYPOINT ["/harness-migrator"]
+# build the application
+RUN go build -o migrator main.go
+
+# set git config for the container
+RUN git config --system credential.helper cache && \
+    git config --system http.sslVerify true && \
+    git config --system core.longpaths true && \
+    git config --system core.compression 9
+
+# create non-root user and set permissions
+RUN adduser -D -u 1001 migrator && \
+    mkdir -p /data && \
+    chown -R migrator:migrator /app /data && \
+    chmod 755 /app
+
+# switch to non-root user
+USER migrator
+
+# set the entrypoint
+ENTRYPOINT ["/app/migrator"]

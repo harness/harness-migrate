@@ -148,13 +148,19 @@ func (c *nativeGitCloner) clone(ctx context.Context) (bool, error) {
 
 	gitEnv := []string{
 		"GIT_TERMINAL_PROMPT=0",
-		fmt.Sprintf("GIT_USERNAME=%s", c.params.auth.username),
-		fmt.Sprintf("GIT_PASSWORD=%s", c.params.auth.token),
+	}
+
+	cloneURL := c.params.repoData.Clone
+	if strings.HasPrefix(cloneURL, "https://") {
+		cloneURL = fmt.Sprintf("https://%s:%s@%s",
+			c.params.auth.username,
+			c.params.auth.token,
+			strings.TrimPrefix(cloneURL, "https://"))
 	}
 
 	cloneArgs := []string{
 		"clone",
-		c.params.repoData.Clone,
+		cloneURL,
 		".",
 	}
 
@@ -169,18 +175,18 @@ func (c *nativeGitCloner) clone(ctx context.Context) (bool, error) {
 		return false, fmt.Errorf("failed to clone repo %s from %q: %w", c.params.repoSlug, c.params.repoData.Clone, err)
 	}
 
+	output, err = command.RunGitCommand(ctx, c.params.gitPath, gitEnv, "fetch", "--all", "--force", "--prune")
+	if err != nil {
+		c.params.tracer.LogError(common.ErrGitFetch, c.params.repoSlug, err, string(output))
+		return false, fmt.Errorf("failed to sync repo %s from %q: %w", c.params.repoSlug, c.params.repoData.Clone, err)
+	}
+
 	if c.fetchLFS {
 		err = command.FetchLFSObjects(ctx, c.params.gitPath, gitEnv)
 		if err != nil {
 			c.params.tracer.LogError("git-lfs-pull", c.params.repoSlug, err)
 			return false, fmt.Errorf("failed to pull LFS objects for repo %s: %w", c.params.repoSlug, err)
 		}
-	}
-
-	output, err = command.RunGitCommand(ctx, c.params.gitPath, gitEnv, "fetch", "--all", "--force", "--prune")
-	if err != nil {
-		c.params.tracer.LogError(common.ErrGitFetch, c.params.repoSlug, err, string(output))
-		return false, fmt.Errorf("failed to sync repo %s from %q: %w", c.params.repoSlug, c.params.repoData.Clone, err)
 	}
 
 	return false, nil

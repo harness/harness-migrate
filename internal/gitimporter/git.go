@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"path/filepath"
+	"strings"
 
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
@@ -56,8 +57,6 @@ func (m *Importer) Push(
 	const remoteName = "origin"
 	gitEnv := []string{
 		"GIT_TERMINAL_PROMPT=1",
-		fmt.Sprintf("GIT_USERNAME=%s", "git-importer"),
-		fmt.Sprintf("GIT_PASSWORD=%s", m.HarnessToken),
 	}
 
 	output, err := command.RunGitCommand(ctx, gitPath, gitEnv, "remote", "set-url", remoteName, repo.GitURL)
@@ -147,11 +146,20 @@ func (m *Importer) handleLFSPush(
 func (p *nativeGitPusher) push(ctx context.Context, repo *harness.Repository, gitPath, remoteName string) error {
 	gitEnv := []string{
 		"GIT_TERMINAL_PROMPT=0",
-		fmt.Sprintf("GIT_USERNAME=%s", p.params.auth.username),
-		fmt.Sprintf("GIT_PASSWORD=%s", p.params.auth.token),
 	}
 
-	output, err := command.RunGitCommand(ctx, gitPath, gitEnv, "push", "--mirror", remoteName)
+	pushURL := repo.GitURL
+	if strings.HasPrefix(repo.GitURL, "https://") {
+		pushURL = fmt.Sprintf("https://%s:%s@%s",
+			p.params.auth.username,
+			p.params.auth.token,
+			strings.TrimPrefix(repo.GitURL, "https://"))
+	}
+
+	output, err := command.RunGitCommand(ctx, gitPath, gitEnv, "push", "-v", pushURL,
+		"refs/heads/*:refs/heads/*",
+		"refs/tags/*:refs/tags/*",
+		"refs/pullreq/*/head:refs/pullreq/*/head")
 	if err != nil {
 		p.params.tracer.LogError(common.ErrGitPush, repo.GitURL, err, string(output))
 		return fmt.Errorf("failed to push refs to %q: %w", repo.GitURL, err)

@@ -127,7 +127,7 @@ func (e *Exporter) checkLFSObjects(
 		return 0, nil
 	}
 
-	lfsObjectCount, err := command.HasLFSObjects(ctx, gitPath, []string{})
+	lfsObjectCount, err := command.HasLFSObjects(ctx, gitPath)
 	if err != nil {
 		tracer.LogError("git-lfs-check", repoSlug, err)
 		return 0, fmt.Errorf("failed to check LFS objects for repo %s: %w", repoSlug, err)
@@ -136,18 +136,17 @@ func (e *Exporter) checkLFSObjects(
 	return lfsObjectCount, nil
 }
 
+func refSpecsToStrings(refs []config.RefSpec) []string {
+	result := make([]string, len(refs))
+	for i, ref := range refs {
+		result[i] = ref.String()
+	}
+	return result
+}
+
 func (c *nativeGitCloner) clone(ctx context.Context) (bool, error) {
 	if err := util.CreateFolder(c.params.gitPath); err != nil {
 		return false, err
-	}
-
-	if _, err := os.Stat(filepath.Join(c.params.gitPath, ".git")); err == nil {
-		c.params.tracer.Log(common.MsgRepoAlreadyExists, c.params.repoSlug)
-		return false, nil
-	}
-
-	gitEnv := []string{
-		"GIT_TERMINAL_PROMPT=0",
 	}
 
 	cloneURL := c.params.repoData.Clone
@@ -158,35 +157,45 @@ func (c *nativeGitCloner) clone(ctx context.Context) (bool, error) {
 			strings.TrimPrefix(cloneURL, "https://"))
 	}
 
-	cloneArgs := []string{
-		"clone",
-		cloneURL,
-		".",
-	}
-
-	output, err := command.RunGitCommand(ctx, c.params.gitPath, gitEnv, cloneArgs...)
+	output, err := command.RunGitCommand(ctx, c.params.gitPath,
+		[]string{},
+		"clone", "--bare",
+		cloneURL, ".")
 	if err != nil {
 		if strings.Contains(string(output), "You appear to have cloned an empty repository.") {
 			c.params.tracer.Stop(common.MsgGitCloneEmptyRepo, c.params.repoSlug)
 			return true, nil
 		}
-
 		c.params.tracer.LogError(common.ErrGitClone, c.params.repoSlug, err, string(output))
-		return false, fmt.Errorf("failed to clone repo %s from %q: %w", c.params.repoSlug, c.params.repoData.Clone, err)
+		return false, fmt.Errorf("failed to clone repo %s: %w", c.params.repoSlug, err)
 	}
 
-	output, err = command.RunGitCommand(ctx, c.params.gitPath, gitEnv, "fetch", "--all", "--force", "--prune")
+	fetchArgs := []string{
+		"fetch",
+		"origin",
+		"refs/heads/*:refs/heads/*",
+		"refs/tags/*:refs/tags/*",
+	}
+	fetchArgs = append(fetchArgs, refSpecsToStrings(c.params.pullreqRef)...)
+
+	output, err = command.RunGitCommand(ctx, c.params.gitPath, []string{}, fetchArgs...)
 	if err != nil {
 		c.params.tracer.LogError(common.ErrGitFetch, c.params.repoSlug, err, string(output))
-		return false, fmt.Errorf("failed to sync repo %s from %q: %w", c.params.repoSlug, c.params.repoData.Clone, err)
+		return false, fmt.Errorf("failed to fetch refs for %s: %w", c.params.repoSlug, err)
 	}
 
 	if c.fetchLFS {
-		err = command.FetchLFSObjects(ctx, c.params.gitPath, gitEnv)
+		err = command.FetchLFSObjects(ctx, c.params.gitPath)
 		if err != nil {
 			c.params.tracer.LogError("git-lfs-pull", c.params.repoSlug, err)
 			return false, fmt.Errorf("failed to pull LFS objects for repo %s: %w", c.params.repoSlug, err)
 		}
+	}
+
+	// remove local config to prevent credential leak
+	if err := os.Remove(filepath.Join(c.params.gitPath, "config")); err != nil {
+		c.params.tracer.LogError("git-config-remove", c.params.repoSlug, err)
+		return false, fmt.Errorf("failed to remove config for %s: %w", c.params.repoSlug, err)
 	}
 
 	return false, nil

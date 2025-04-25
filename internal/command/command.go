@@ -40,6 +40,11 @@ var (
 	versionRegex = regexp.MustCompile(`(?:version\s+|/)((?:\d+\.){1,2}\d+)`)
 )
 
+type Credentials struct {
+	Username string
+	Password string
+}
+
 // extractVersion extracts major and minor version numbers
 func extractVersion(input string) (major, minor int) {
 	matches := versionRegex.FindStringSubmatch(input)
@@ -106,7 +111,27 @@ func CheckGitLFSInstallation() error {
 	return nil
 }
 
-// RunGitCommand executes a git command and returns its output and error
+func RunGitCommandWithAuth(ctx context.Context, dir string, auth Credentials, args ...string) ([]byte, error) {
+	gitEnv := append(os.Environ(), []string{
+		"GIT_TERMINAL_PROMPT=0",
+		"GIT_CONFIG_NOSYSTEM=1",       // ignore system config
+		"GIT_CONFIG_GLOBAL=/dev/null", // ignore global config
+		fmt.Sprintf("GIT_USER=%s", auth.Username),
+		fmt.Sprintf("GIT_PASS=%s", auth.Password),
+	}...)
+
+	credHelper := "credential.helper=!f() { echo username=$GIT_USER; echo password=$GIT_PASS; }; f"
+	args = append([]string{"-c", credHelper}, args...)
+
+	defer func() {
+		cmd := exec.CommandContext(ctx, "git", "config", "--local", "--unset-all", "credential.helper")
+		cmd.Dir = dir
+		cmd.Run()
+	}()
+
+	return RunGitCommand(ctx, dir, gitEnv, args...)
+}
+
 func RunGitCommand(ctx context.Context, dir string, env []string, args ...string) ([]byte, error) {
 	cmd := exec.CommandContext(ctx, "git", args...)
 	cmd.Dir = dir
@@ -115,15 +140,15 @@ func RunGitCommand(ctx context.Context, dir string, env []string, args ...string
 }
 
 // RunGitLFSCommand executes a git-lfs command with credentials and returns its output and error
-func RunGitLFSCommand(ctx context.Context, dir string, env []string, args ...string) ([]byte, error) {
+func RunGitLFSCommand(ctx context.Context, dir string, args ...string) ([]byte, error) {
 	// Add git-lfs prefix to args
 	lfsArgs := append([]string{"lfs"}, args...)
-	return RunGitCommand(ctx, dir, env, lfsArgs...)
+	return RunGitCommand(ctx, dir, []string{}, lfsArgs...)
 }
 
 // HasLFSObjects checks if the repository has any Git LFS objects and returns the count
-func HasLFSObjects(ctx context.Context, dir string, env []string) (int64, error) {
-	output, err := RunGitLFSCommand(ctx, dir, env, "ls-files")
+func HasLFSObjects(ctx context.Context, dir string) (int64, error) {
+	output, err := RunGitLFSCommand(ctx, dir, "ls-files")
 	if err != nil {
 		return 0, err
 	}
@@ -131,13 +156,13 @@ func HasLFSObjects(ctx context.Context, dir string, env []string) (int64, error)
 	return int64(bytes.Count(output, []byte{'\n'})), nil
 }
 
-func FetchLFSObjects(ctx context.Context, dir string, env []string) error {
-	out, err := RunGitLFSCommand(ctx, dir, env, "fetch", "--all")
+func FetchLFSObjects(ctx context.Context, dir string) error {
+	out, err := RunGitLFSCommand(ctx, dir, "fetch", "--all")
 	if err != nil {
 		return fmt.Errorf("failed to fetch LFS objects for repo %s, output: %s, err: %w", dir, out, err)
 	}
 
-	out, err = RunGitLFSCommand(ctx, dir, env, "checkout")
+	out, err = RunGitLFSCommand(ctx, dir, "checkout")
 	if err != nil {
 		return fmt.Errorf("failed to checkout LFS objects for repo %s, output: %s, err: %w", dir, out, err)
 	}

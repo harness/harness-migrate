@@ -108,7 +108,6 @@ func (m *Importer) handleLFSPush(
 	output, err := command.RunGitCommandWithAuth(ctx, gitPath,
 		command.Credentials{Username: "git-importer", Password: m.HarnessToken},
 		"lfs", "push", "--all", remoteName, repo.DefaultBranch)
-	tracer.LogError("git-lfs-push", repo.GitURL, string(output))
 	if err != nil {
 		tracer.LogError("git-lfs-push", repo.GitURL, err, string(output))
 		return fmt.Errorf("failed to push LFS objects to %q: %w", repo.GitURL, err)

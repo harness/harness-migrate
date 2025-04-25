@@ -56,8 +56,7 @@ type credentials struct {
 }
 
 type nativeGitCloner struct {
-	params   cloneParams
-	fetchLFS bool
+	params cloneParams
 }
 
 type goGitCloner struct {
@@ -71,11 +70,12 @@ func (e *Exporter) CloneRepository(
 	repoSlug string,
 	pullreqRef []config.RefSpec,
 	tracer tracer.Tracer,
-) (bool, int64, error) {
+) (bool, int, error) {
 	tracer.Start(common.MsgStartGitClone, repoSlug)
 
-	if e.flags.Standalone {
-		if err := command.CheckGitLFSInstallation(); err != nil {
+	if !e.flags.Standalone {
+		if err := command.CheckGitDependancies(); err != nil {
+			tracer.Stop(common.ErrMissingDependency)
 			return false, 0, err
 		}
 	}
@@ -96,26 +96,39 @@ func (e *Exporter) CloneRepository(
 	cloner := e.selectCloner(params)
 	isEmpty, err := cloner.clone(ctx)
 	if err != nil {
+		tracer.Stop(common.ErrGitClone, err)
 		return false, 0, fmt.Errorf("failed to clone repo %s: %w", repoSlug, err)
 	}
 
-	var lfsObjectCount int64
-	if e.flags.Standalone {
-		lfsObjectCount, err = e.checkLFSObjects(ctx, gitPath, repoSlug, tracer)
-		if err != nil {
-			return isEmpty, 0, err
-		}
+	var lfsObjectCount int
+
+	if e.flags.NoLFS {
+		tracer.Stop(common.MsgCompleteGitClone, repoSlug)
+		return isEmpty, lfsObjectCount, nil
 	}
 
+	err = command.FetchLFSObjects(ctx, gitPath)
+	if err != nil {
+		tracer.Stop(common.ErrFetchLFSObjects, err)
+		return isEmpty, lfsObjectCount, fmt.Errorf("failed to pull LFS objects for repo %s: %w", repoSlug, err)
+	}
+
+	lfsObjectCount, err = e.checkLFSObjects(ctx, gitPath, repoSlug, tracer)
+	if err != nil {
+		tracer.Stop(common.ErrFetchLFSObjects, err)
+		return isEmpty, 0, err
+	}
+
+	e.Report[repoSlug].ReportMetric(ReportTypeGitLFSObjects, lfsObjectCount)
 	tracer.Stop(common.MsgCompleteGitClone, repoSlug)
 	return isEmpty, lfsObjectCount, nil
 }
 
 func (e *Exporter) selectCloner(params cloneParams) gitCloner {
 	if e.flags.Standalone {
-		return &nativeGitCloner{params: params}
+		return &goGitCloner{params: params}
 	}
-	return &goGitCloner{params: params}
+	return &nativeGitCloner{params: params}
 }
 
 func (e *Exporter) checkLFSObjects(
@@ -123,7 +136,7 @@ func (e *Exporter) checkLFSObjects(
 	gitPath string,
 	repoSlug string,
 	tracer tracer.Tracer,
-) (int64, error) {
+) (int, error) {
 	lfsObjectCount, err := command.HasLFSObjects(ctx, gitPath)
 	if err != nil {
 		tracer.LogError("git-lfs-check", repoSlug, err)
@@ -179,14 +192,6 @@ func (c *nativeGitCloner) clone(ctx context.Context) (bool, error) {
 	if err != nil {
 		c.params.tracer.LogError(common.ErrGitFetch, c.params.repoSlug, err, string(output))
 		return false, fmt.Errorf("failed to fetch refs for %s: %w", c.params.repoSlug, err)
-	}
-
-	if c.fetchLFS {
-		err = command.FetchLFSObjects(ctx, c.params.gitPath)
-		if err != nil {
-			c.params.tracer.LogError("git-lfs-pull", c.params.repoSlug, err)
-			return false, fmt.Errorf("failed to pull LFS objects for repo %s: %w", c.params.repoSlug, err)
-		}
 	}
 
 	// remove local config to prevent credential leak

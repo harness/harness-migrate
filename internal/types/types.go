@@ -73,7 +73,8 @@ type (
 		scm.Repository
 		RepoSlug       string
 		IsEmpty        bool
-		LfsObjectCount int64
+		LfsObjectCount int
+		DisableGitLFS  bool
 	}
 
 	LabelResponse struct {

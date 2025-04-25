@@ -48,6 +48,7 @@ type gitImport struct {
 	noWebhook bool
 	noRule    bool
 	noLabel   bool
+	noLFS     bool
 
 	standalone bool
 }
@@ -78,7 +79,9 @@ func (c *gitImport) run(*kingpin.ParseContext) error {
 			NoWebhook:     c.noWebhook,
 			NoRule:        c.noRule,
 			NoLabel:       c.noLabel,
-			Standalone:    c.standalone,
+			NoLFS:         c.noLFS,
+
+			Standalone: c.standalone,
 		},
 		tracer_)
 
@@ -165,7 +168,16 @@ func registerGitImporter(app *kingpin.CmdClause) {
 		Default("false").
 		BoolVar(&c.noRule)
 
-	cmd.Flag("standalone", "rely on standalone git (and git-lfs) binaries").
+	cmd.Flag("no-lfs", "do NOT export LFS objects").
+		Hidden().
+		Default("false").
+		BoolVar(&c.noLFS)
+
+	cmd.Flag("skip-lfs", "skip importing LFS objects (--no-lfs is an alias)").
+		Default("false").
+		BoolVar(&c.noLFS)
+
+	cmd.Flag("standalone", "run migrator in standalone mode, git lfs objects will not be exported").
 		Default("false").
 		BoolVar(&c.standalone)
 

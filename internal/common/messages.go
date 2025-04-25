@@ -62,6 +62,7 @@ const (
 
 	ErrGitClone                     = "cannot clone the git repository %q due to error: %w. output: %s"
 	ErrGitFetch                     = "cannot fetch repository references for %s: %w. output: %s"
+	ErrFetchLFSObjects              = "cannot pull LFS objects for repository %s: %w"
 	ErrCreateRepo                   = "failed to create repository %q at %s due to: %w"
 	ErrListWebhook                  = "cannot list webhooks for repository %s: %w"
 	ErrListRepo                     = "cannot list repositories due to error :%w"
@@ -86,11 +87,14 @@ const (
 	ErrListWebhooks                 = "cannot list webhooks for repo %s: %w"
 	ErrListLabels                   = "cannot list labels for repo %s: %w"
 	ErrGitPush                      = "cannot git push to '%s' due to %w. output:%s"
+	ErrGitLFSPush                   = "cannot git push LFS objects to '%s' due to %w. output:%s"
 	ErrImportBranchRules            = "cannot import branch rules for repository %s: %w"
 	ErrImportPRs                    = "cannot import pull requests and comments for repository %s: %w"
 	ErrImportWebhooks               = "cannot import webhooks for repository %s: %w"
 	ErrImportLabels                 = "cannot import labels for %s: %w"
 	ErrCleanupRepo                  = "cannot clean up the repo on server: %w"
+	ErrMissingDependency            = "git/git-lfs binaries not found. Run with --standalone if you want to skip Git LFS objects: %w"
+	ErrGitRemoteAdd                 = "cannot add remote for repository %s: %w"
 
 	PanicCheckpointSaveErr = "error occurred in reading checkpoint data"
 	ErrCannotCreateFolder  = "cannot create folder: %w"

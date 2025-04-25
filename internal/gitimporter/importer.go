@@ -57,6 +57,7 @@ type Flags struct {
 	NoWebhook     bool
 	NoRule        bool
 	NoLabel       bool
+	NoLFS         bool
 
 	Standalone bool
 }
@@ -233,6 +234,7 @@ func (m *Importer) createRepoAndDoPush(ctx context.Context, repoFolder string, r
 			return fmt.Errorf("failed to set file size limit on repo: %w", err)
 		}
 	}
+	// TODO update repo setting if repo.DisableGitLFS is set
 
 	err = m.Push(ctx, repoFolder, hRepo, repo.LfsObjectCount, m.Tracer)
 	if err != nil {

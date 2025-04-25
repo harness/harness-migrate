@@ -69,8 +69,20 @@ func isVersionGreaterOrEqual(major1, minor1, major2, minor2 int) bool {
 	return minor1 >= minor2
 }
 
-// CheckGitInstallation verifies if git is installed and meets minimum version requirements
-func CheckGitInstallation() error {
+func CheckGitDependancies() error {
+	if err := checkGitInstallation(); err != nil {
+		return err
+	}
+
+	if err := checkGitLFSInstallation(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// checkGitInstallation verifies if git is installed and meets minimum version requirements
+func checkGitInstallation() error {
 	output, err := exec.Command("git", "version").Output()
 	if err != nil {
 		return ErrGitNotInstalled
@@ -88,8 +100,8 @@ func CheckGitInstallation() error {
 	return nil
 }
 
-// CheckGitLFSInstallation verifies if git-lfs is installed and meets minimum version requirements
-func CheckGitLFSInstallation() error {
+// checkGitLFSInstallation verifies if git-lfs is installed and meets minimum version requirements
+func checkGitLFSInstallation() error {
 	output, err := exec.Command("git-lfs", "version").Output()
 	if err != nil {
 		// Try alternative command
@@ -147,13 +159,13 @@ func RunGitLFSCommand(ctx context.Context, dir string, args ...string) ([]byte, 
 }
 
 // HasLFSObjects checks if the repository has any Git LFS objects and returns the count
-func HasLFSObjects(ctx context.Context, dir string) (int64, error) {
+func HasLFSObjects(ctx context.Context, dir string) (int, error) {
 	output, err := RunGitLFSCommand(ctx, dir, "ls-files")
 	if err != nil {
 		return 0, err
 	}
 
-	return int64(bytes.Count(output, []byte{'\n'})), nil
+	return bytes.Count(output, []byte{'\n'}), nil
 }
 
 func FetchLFSObjects(ctx context.Context, dir string) error {
@@ -162,7 +174,7 @@ func FetchLFSObjects(ctx context.Context, dir string) error {
 		return fmt.Errorf("failed to fetch LFS objects for repo %s, output: %s, err: %w", dir, out, err)
 	}
 
-	out, err = RunGitLFSCommand(ctx, dir, "checkout")
+	out, err = RunGitLFSCommand(ctx, dir, "pull")
 	if err != nil {
 		return fmt.Errorf("failed to checkout LFS objects for repo %s, output: %s, err: %w", dir, out, err)
 	}

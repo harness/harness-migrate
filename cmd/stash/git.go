@@ -106,6 +106,7 @@ func (c *exportCommand) run(*kingpin.ParseContext) error {
 		NoWebhook: c.flags.NoWebhook,
 		NoRule:    c.flags.NoRule,
 		NoLabel:   true, // stash doesnt support labels
+		NoLFS:     c.flags.NoLFS,
 
 		Standalone: c.flags.Standalone,
 	}
@@ -172,7 +173,11 @@ func registerGit(app *kingpin.CmdClause) {
 		Default("false").
 		BoolVar(&c.flags.NoRule)
 
-	cmd.Flag("standalone", "rely on standalone git (and git-lfs) binaries").
+	cmd.Flag("no-lfs", "do NOT export LFS objects").
+		Default("false").
+		BoolVar(&c.flags.NoLFS)
+
+	cmd.Flag("standalone", "run migrator in standalone mode, git lfs objects will not be exported").
 		Default("false").
 		BoolVar(&c.flags.Standalone)
 

@@ -25,7 +25,7 @@ type pushParams struct {
 	gitPath        string
 	repo           *harness.Repository
 	remoteName     string
-	lfsObjectCount int64
+	lfsObjectCount int
 	tracer         tracer.Tracer
 	token          string
 }
@@ -42,13 +42,14 @@ func (m *Importer) Push(
 	ctx context.Context,
 	repoPath string,
 	repo *harness.Repository,
-	lfsObjectCount int64,
+	lfsObjectCount int,
 	tracer tracer.Tracer,
 ) error {
 	tracer.Start(common.MsgStartImportGit, repo.GitURL)
 
-	if m.flags.Standalone {
-		if err := command.CheckGitLFSInstallation(); err != nil {
+	if !m.flags.Standalone {
+		if err := command.CheckGitDependancies(); err != nil {
+			tracer.Stop(common.ErrMissingDependency)
 			return err
 		}
 	}
@@ -58,12 +59,15 @@ func (m *Importer) Push(
 
 	output, err := command.RunGitCommand(ctx, gitPath, []string{}, "remote", "add", remoteName, repo.GitURL)
 	if err != nil {
-		tracer.LogError("git-remote", repo.GitURL, err, string(output))
+		tracer.Stop(common.ErrGitRemoteAdd, err, string(output))
 		return fmt.Errorf("failed to add remote %q: %w", repo.GitURL, err)
 	}
 
-	if err := m.handleLFSPush(ctx, gitPath, repo, remoteName, lfsObjectCount, tracer); err != nil {
-		return err
+	if !m.flags.NoLFS {
+		if err := m.handleLFSPush(ctx, gitPath, repo, remoteName, lfsObjectCount, tracer); err != nil {
+			tracer.Stop(common.ErrGitLFSPush, err)
+			return err
+		}
 	}
 
 	params := pushParams{
@@ -76,9 +80,8 @@ func (m *Importer) Push(
 	}
 
 	pusher := m.selectGitPusher(params)
-
 	if err := pusher.push(ctx, repo, gitPath, remoteName); err != nil {
-		tracer.LogError("git-push", repo.GitURL, err)
+		tracer.Stop(common.ErrGitPush, err)
 		return fmt.Errorf("failed to push git repository: %w", err)
 	}
 
@@ -88,9 +91,9 @@ func (m *Importer) Push(
 
 func (m *Importer) selectGitPusher(params pushParams) gitPusher {
 	if m.flags.Standalone {
-		return &nativeGitPusher{params: params}
+		return &goGitPusher{params: params}
 	}
-	return &goGitPusher{params: params}
+	return &nativeGitPusher{params: params}
 }
 
 func (m *Importer) handleLFSPush(
@@ -98,24 +101,18 @@ func (m *Importer) handleLFSPush(
 	gitPath string,
 	repo *harness.Repository,
 	remoteName string,
-	lfsObjectCount int64,
+	lfsObjectCount int,
 	tracer tracer.Tracer,
 ) error {
-	if !m.flags.Standalone || lfsObjectCount == 0 {
-		tracer.LogError("git-lfs-push leaving due to 0 LFS objects", repo.GitURL)
+	if lfsObjectCount == 0 {
 		return nil
-	}
-
-	if err := command.CheckGitLFSInstallation(); err != nil {
-		tracer.LogError("git-lfs-push leaving due to missing LFS installation", repo.GitURL)
-		return err
 	}
 
 	output, err := command.RunGitCommandWithAuth(ctx, gitPath,
 		command.Credentials{Username: "git-importer", Password: m.HarnessToken},
 		"lfs", "push", "--all", remoteName, repo.DefaultBranch)
 	if err != nil {
-		tracer.LogError("git-lfs-push", repo.GitURL, err, string(output))
+		tracer.LogError(common.ErrGitLFSPush, err, string(output))
 		return fmt.Errorf("failed to push LFS objects to %q: %w", repo.GitURL, err)
 	}
 
@@ -175,8 +172,8 @@ func (p *goGitPusher) push(
 	})
 
 	if err != nil && !errors.Is(err, git.NoErrAlreadyUpToDate) {
-		p.params.tracer.Stop(common.ErrGitPush, repo.GitURL, err, output.String())
-		return fmt.Errorf(common.ErrGitPush, repo.GitURL, err, output.String())
+		p.params.tracer.LogError(common.ErrGitPush, repo.GitURL, err, output.String())
+		return fmt.Errorf("failed to push refs to %q: %w", repo.GitURL, err)
 	}
 
 	return nil

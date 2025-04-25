@@ -48,7 +48,8 @@ type (
 		Created        time.Time  `json:"created"`
 		Updated        time.Time  `json:"updated"`
 		IsEmpty        bool       `json:"is_empty"`
-		LfsObjectCount int64      `json:"lfs_object_count"`
+		DisableGitLFS  bool       `json:"disable_git_lfs"`
+		LfsObjectCount int        `json:"lfs_object_count"`
 	}
 
 	Perm struct {

@@ -60,6 +60,7 @@ type (
 		NoRule    bool // to not export branch protection rules
 		NoComment bool // to not export pull request comments
 		NoLabel   bool // to not export repo/space labels
+		NoLFS     bool // to not export LFS objects
 
 		Standalone bool // rely on standalone git (and git-lfs) binaries
 	}
@@ -309,6 +310,11 @@ func (e *Exporter) getData(ctx context.Context, path string) ([]*types.RepoData,
 		}
 
 		repoData[i].Repository.LfsObjectCount = lfsObjectCount
+
+		if e.flags.NoLFS {
+			repoData[i].Repository.DisableGitLFS = true
+		}
+
 		// 3. get all webhooks for each repo
 		if !e.flags.NoWebhook {
 			webhooks, err := e.exporter.ListWebhooks(ctx, repo.RepoSlug, types.ListOptions{})

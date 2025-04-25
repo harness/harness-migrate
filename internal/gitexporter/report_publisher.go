@@ -3,11 +3,12 @@ package gitexporter
 import "github.com/harness/harness-migrate/internal/report"
 
 const (
-	ReportTypeWebhooks    = "webhook"
-	ReportTypePRs         = "pull requests"
-	ReportTypeBranchRules = "branch rules"
-	ReportTypeLabels      = "labels"
-	ReportTypeUsers       = "users"
+	ReportTypeWebhooks      = "webhook"
+	ReportTypePRs           = "pull requests"
+	ReportTypeBranchRules   = "branch rules"
+	ReportTypeLabels        = "labels"
+	ReportTypeUsers         = "users"
+	ReportTypeGitLFSObjects = "LFS objects"
 )
 
 func publishReport(report map[string]*report.Report) {

@@ -48,7 +48,8 @@ type gitImport struct {
 	noWebhook bool
 	noRule    bool
 	noLabel   bool
-	noLFS     bool
+
+	standalone bool
 }
 
 type UserInvite bool
@@ -77,7 +78,7 @@ func (c *gitImport) run(*kingpin.ParseContext) error {
 			NoWebhook:     c.noWebhook,
 			NoRule:        c.noRule,
 			NoLabel:       c.noLabel,
-			NoLFS:         c.noLFS,
+			Standalone:    c.standalone,
 		},
 		tracer_)
 
@@ -164,14 +165,9 @@ func registerGitImporter(app *kingpin.CmdClause) {
 		Default("false").
 		BoolVar(&c.noRule)
 
-	cmd.Flag("no-lfs", "").
-		Hidden().
+	cmd.Flag("standalone", "rely on standalone git (and git-lfs) binaries").
 		Default("false").
-		BoolVar(&c.noLFS)
-
-	cmd.Flag("skip-lfs", "skip importing LFS objects (--no-lfs is an alias)").
-		Default("false").
-		BoolVar(&c.noLFS)
+		BoolVar(&c.standalone)
 
 	cmd.Flag("debug", "enable debug logging").
 		BoolVar(&c.debug)

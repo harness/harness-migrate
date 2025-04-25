@@ -47,6 +47,12 @@ func (m *Importer) Push(
 ) error {
 	tracer.Start(common.MsgStartImportGit, repo.GitURL)
 
+	if m.flags.Standalone {
+		if err := command.CheckGitLFSInstallation(); err != nil {
+			return err
+		}
+	}
+
 	gitPath := filepath.Join(repoPath, types.GitDir)
 	const remoteName = "harnessRemote"
 
@@ -81,7 +87,7 @@ func (m *Importer) Push(
 }
 
 func (m *Importer) selectGitPusher(params pushParams) gitPusher {
-	if err := command.CheckGitInstallation(); err == nil {
+	if m.flags.Standalone {
 		return &nativeGitPusher{params: params}
 	}
 	return &goGitPusher{params: params}
@@ -95,7 +101,7 @@ func (m *Importer) handleLFSPush(
 	lfsObjectCount int64,
 	tracer tracer.Tracer,
 ) error {
-	if m.flags.NoLFS || lfsObjectCount == 0 {
+	if !m.flags.Standalone || lfsObjectCount == 0 {
 		tracer.LogError("git-lfs-push leaving due to 0 LFS objects", repo.GitURL)
 		return nil
 	}

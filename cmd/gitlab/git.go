@@ -116,7 +116,8 @@ func (c *exportGitCommand) run(*kingpin.ParseContext) error {
 		NoWebhook: c.flags.NoWebhook,
 		NoRule:    c.flags.NoRule,
 		NoLabel:   c.flags.NoLabel,
-		NoGitLFS:  c.flags.NoGitLFS,
+
+		Standalone: c.flags.Standalone,
 	}
 
 	e := gitlab.New(client, c.group, repository, checkpointManager, fileLogger, tracer_, reporter)
@@ -183,9 +184,9 @@ func registerGit(app *kingpin.CmdClause) {
 		Default("false").
 		BoolVar(&c.flags.NoLabel)
 
-	cmd.Flag("no-git-lfs", "do NOT export git lfs objects").
+	cmd.Flag("standalone", "rely on standalone git (and git-lfs) binaries").
 		Default("false").
-		BoolVar(&c.flags.NoGitLFS)
+		BoolVar(&c.flags.Standalone)
 
 	cmd.Flag("debug", "enable debug logging").
 		BoolVar(&c.debug)

@@ -57,7 +57,8 @@ type Flags struct {
 	NoWebhook     bool
 	NoRule        bool
 	NoLabel       bool
-	NoLFS         bool
+
+	Standalone bool
 }
 
 func NewImporter(

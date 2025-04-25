@@ -70,12 +70,11 @@ func (e *Exporter) CloneRepository(
 	repoPath string,
 	repoSlug string,
 	pullreqRef []config.RefSpec,
-	noGitLFS bool,
 	tracer tracer.Tracer,
 ) (bool, int64, error) {
 	tracer.Start(common.MsgStartGitClone, repoSlug)
 
-	if !noGitLFS {
+	if e.flags.Standalone {
 		if err := command.CheckGitLFSInstallation(); err != nil {
 			return false, 0, err
 		}
@@ -94,24 +93,27 @@ func (e *Exporter) CloneRepository(
 		tracer: tracer,
 	}
 
-	cloner := e.selectCloner(params, noGitLFS)
+	cloner := e.selectCloner(params)
 	isEmpty, err := cloner.clone(ctx)
 	if err != nil {
 		return false, 0, fmt.Errorf("failed to clone repo %s: %w", repoSlug, err)
 	}
 
-	lfsObjectCount, err := e.checkLFSObjects(ctx, gitPath, repoSlug, noGitLFS, tracer)
-	if err != nil {
-		return isEmpty, 0, err
+	var lfsObjectCount int64
+	if e.flags.Standalone {
+		lfsObjectCount, err = e.checkLFSObjects(ctx, gitPath, repoSlug, tracer)
+		if err != nil {
+			return isEmpty, 0, err
+		}
 	}
 
 	tracer.Stop(common.MsgCompleteGitClone, repoSlug)
 	return isEmpty, lfsObjectCount, nil
 }
 
-func (e *Exporter) selectCloner(params cloneParams, noGitLFS bool) gitCloner {
-	if err := command.CheckGitInstallation(); err == nil {
-		return &nativeGitCloner{params: params, fetchLFS: !noGitLFS}
+func (e *Exporter) selectCloner(params cloneParams) gitCloner {
+	if e.flags.Standalone {
+		return &nativeGitCloner{params: params}
 	}
 	return &goGitCloner{params: params}
 }
@@ -120,13 +122,8 @@ func (e *Exporter) checkLFSObjects(
 	ctx context.Context,
 	gitPath string,
 	repoSlug string,
-	noGitLFS bool,
 	tracer tracer.Tracer,
 ) (int64, error) {
-	if noGitLFS {
-		return 0, nil
-	}
-
 	lfsObjectCount, err := command.HasLFSObjects(ctx, gitPath)
 	if err != nil {
 		tracer.LogError("git-lfs-check", repoSlug, err)

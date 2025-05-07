@@ -48,7 +48,7 @@ type (
 		Created        time.Time  `json:"created"`
 		Updated        time.Time  `json:"updated"`
 		IsEmpty        bool       `json:"is_empty"`
-		DisableGitLFS  bool       `json:"disable_git_lfs"`
+		GitLFSDisabled bool       `json:"git_lfs_disabled"`
 		LfsObjectCount int        `json:"lfs_object_count"`
 	}
 

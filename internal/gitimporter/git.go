@@ -42,15 +42,16 @@ func (m *Importer) Push(
 	ctx context.Context,
 	repoPath string,
 	repo *harness.Repository,
+	gitLFSDisabled bool,
 	lfsObjectCount int,
 	tracer tracer.Tracer,
 ) error {
 	tracer.Start(common.MsgStartImportGit, repo.GitURL)
 
-	if !m.flags.Standalone {
+	if !gitLFSDisabled {
 		if err := command.CheckGitDependancies(); err != nil {
-			tracer.Stop(common.ErrMissingDependency)
-			return err
+			tracer.Log(common.ErrSkipGitLFS)
+			gitLFSDisabled = true
 		}
 	}
 
@@ -63,7 +64,7 @@ func (m *Importer) Push(
 		return fmt.Errorf("failed to add remote %q: %w", repo.GitURL, err)
 	}
 
-	if !m.flags.NoLFS {
+	if !gitLFSDisabled {
 		if err := m.handleLFSPush(ctx, gitPath, repo, remoteName, lfsObjectCount, tracer); err != nil {
 			tracer.Stop(common.ErrGitLFSPush, err)
 			return err
@@ -79,7 +80,7 @@ func (m *Importer) Push(
 		token:          m.HarnessToken,
 	}
 
-	pusher := m.selectGitPusher(params)
+	pusher := m.selectGitPusher(params, gitLFSDisabled)
 	if err := pusher.push(ctx, repo, gitPath, remoteName); err != nil {
 		tracer.Stop(common.ErrGitPush, err)
 		return fmt.Errorf("failed to push git repository: %w", err)
@@ -89,8 +90,8 @@ func (m *Importer) Push(
 	return nil
 }
 
-func (m *Importer) selectGitPusher(params pushParams) gitPusher {
-	if m.flags.Standalone {
+func (m *Importer) selectGitPusher(params pushParams, gitLFSDisabled bool) gitPusher {
+	if gitLFSDisabled {
 		return &goGitPusher{params: params}
 	}
 	return &nativeGitPusher{params: params}

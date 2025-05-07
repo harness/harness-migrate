@@ -107,8 +107,6 @@ func (c *exportCommand) run(*kingpin.ParseContext) error {
 		NoRule:    c.flags.NoRule,
 		NoLabel:   true, // stash doesnt support labels
 		NoLFS:     c.flags.NoLFS,
-
-		Standalone: c.flags.Standalone,
 	}
 	// extract the data
 	e := stash.New(client, c.project, repository, checkpointManager, fileLogger, tracer_, reporter)
@@ -176,10 +174,6 @@ func registerGit(app *kingpin.CmdClause) {
 	cmd.Flag("no-lfs", "do NOT export LFS objects").
 		Default("false").
 		BoolVar(&c.flags.NoLFS)
-
-	cmd.Flag("standalone", "run migrator in standalone mode, git lfs objects will not be exported").
-		Default("false").
-		BoolVar(&c.flags.Standalone)
 
 	cmd.Flag("debug", "enable debug logging").
 		BoolVar(&c.debug)

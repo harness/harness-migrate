@@ -102,7 +102,7 @@ func mapRepository(repository types.RepoResponse) externalTypes.Repository {
 		Updated:        repository.Updated,
 		IsEmpty:        repository.IsEmpty,
 		LfsObjectCount: repository.LfsObjectCount,
-		DisableGitLFS:  repository.DisableGitLFS,
+		GitLFSDisabled: repository.GitLFSDisabled,
 	}
 }
 

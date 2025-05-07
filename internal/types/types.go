@@ -74,7 +74,7 @@ type (
 		RepoSlug       string
 		IsEmpty        bool
 		LfsObjectCount int
-		DisableGitLFS  bool
+		GitLFSDisabled bool
 	}
 
 	LabelResponse struct {

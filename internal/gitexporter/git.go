@@ -73,13 +73,6 @@ func (e *Exporter) CloneRepository(
 ) (bool, int, error) {
 	tracer.Start(common.MsgStartGitClone, repoSlug)
 
-	if !e.flags.Standalone {
-		if err := command.CheckGitDependancies(); err != nil {
-			tracer.Stop(common.ErrMissingDependency)
-			return false, 0, err
-		}
-	}
-
 	gitPath := filepath.Join(repoPath, types.GitDir)
 	params := cloneParams{
 		repoData:   repoData,
@@ -125,7 +118,7 @@ func (e *Exporter) CloneRepository(
 }
 
 func (e *Exporter) selectCloner(params cloneParams) gitCloner {
-	if e.flags.Standalone {
+	if e.flags.NoLFS {
 		return &goGitCloner{params: params}
 	}
 	return &nativeGitCloner{params: params}

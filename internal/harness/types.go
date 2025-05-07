@@ -63,6 +63,7 @@ type (
 	// RepoSettings defines general repository settings which are externally accessible
 	RepoSettings struct {
 		FileSizeLimit *int64 `json:"file_size_limit"`
+		GitLFSEnabled *bool  `json:"git_lfs_enabled"`
 	}
 )
 

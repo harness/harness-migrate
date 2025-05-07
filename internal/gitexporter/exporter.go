@@ -24,6 +24,7 @@ import (
 	"strings"
 
 	"github.com/harness/harness-migrate/internal/checkpoint"
+	"github.com/harness/harness-migrate/internal/command"
 	"github.com/harness/harness-migrate/internal/common"
 	"github.com/harness/harness-migrate/internal/report"
 	"github.com/harness/harness-migrate/internal/tracer"
@@ -61,8 +62,6 @@ type (
 		NoComment bool // to not export pull request comments
 		NoLabel   bool // to not export repo/space labels
 		NoLFS     bool // to not export LFS objects
-
-		Standalone bool // rely on standalone git (and git-lfs) binaries
 	}
 )
 
@@ -296,7 +295,24 @@ func (e *Exporter) getData(ctx context.Context, path string) ([]*types.RepoData,
 			return nil, fmt.Errorf(common.ErrWritingFileData, err)
 		}
 
-		// 2. clone git data for each repo
+		// 2. get repo setting for git lfs
+		if !e.flags.NoLFS {
+			lfsEnabled, err := e.exporter.GetLFSEnabled(ctx, repo.RepoSlug)
+			if err != nil {
+				return nil, fmt.Errorf("cannot get Git LFS enabled setting for %s: %w", repo.RepoSlug, err)
+			}
+
+			e.flags.NoLFS = !lfsEnabled
+			if lfsEnabled {
+				if err := command.CheckGitDependancies(); err != nil {
+					e.Tracer.Log(common.ErrSkipGitLFS, err)
+					e.flags.NoLFS = true
+				}
+			}
+		}
+		repoData[i].Repository.GitLFSDisabled = e.flags.NoLFS
+
+		// 3. clone git data for each repo
 		isEmpty, lfsObjectCount, err := e.CloneRepository(
 			ctx, repo.Repository, repoPath, repo.RepoSlug,
 			e.exporter.PullRequestRefs(), e.Tracer)
@@ -312,10 +328,10 @@ func (e *Exporter) getData(ctx context.Context, path string) ([]*types.RepoData,
 		repoData[i].Repository.LfsObjectCount = lfsObjectCount
 
 		if e.flags.NoLFS {
-			repoData[i].Repository.DisableGitLFS = true
+			repoData[i].Repository.GitLFSDisabled = true
 		}
 
-		// 3. get all webhooks for each repo
+		// 4. get all webhooks for each repo
 		if !e.flags.NoWebhook {
 			webhooks, err := e.exporter.ListWebhooks(ctx, repo.RepoSlug, types.ListOptions{})
 			if err != nil {
@@ -325,7 +341,7 @@ func (e *Exporter) getData(ctx context.Context, path string) ([]*types.RepoData,
 			e.Report[repo.RepoSlug].ReportMetric(ReportTypeWebhooks, len(webhooks.ConvertedHooks))
 		}
 
-		// 4. get all branch rules for each repo
+		// 5. get all branch rules for each repo
 		if !e.flags.NoRule {
 			branchRules, err := e.exporter.ListBranchRules(ctx, repo.RepoSlug, types.ListOptions{Page: 1, Size: 25})
 			if err != nil {
@@ -335,7 +351,7 @@ func (e *Exporter) getData(ctx context.Context, path string) ([]*types.RepoData,
 			e.Report[repo.RepoSlug].ReportMetric(ReportTypeBranchRules, len(branchRules))
 		}
 
-		// 5. get labels for each repo (independant of their assignment)
+		// 6. get labels for each repo (independant of their assignment)
 		if !e.flags.NoLabel {
 			labels, err := e.exporter.ListLabels(ctx, repo.RepoSlug,
 				types.ListOptions{Page: 1, Size: 25})
@@ -346,7 +362,7 @@ func (e *Exporter) getData(ctx context.Context, path string) ([]*types.RepoData,
 			e.Report[repo.RepoSlug].ReportMetric(ReportTypeLabels, len(labels))
 		}
 
-		// 6. get all data for each pr
+		// 7. get all data for each pr
 		if !e.flags.NoPR {
 			prs, err := e.exporter.ListPullRequests(ctx, repo.RepoSlug,
 				types.PullRequestListOptions{Page: 1, Size: 25, Open: true, Closed: true})

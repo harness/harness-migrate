@@ -24,6 +24,9 @@ Export will depend on the size of repo and its pull request. A repo which has mo
 ## Prerequisites
 To export projects from stash, you must have admin access in for the project to successfully export all the supported entities. 
 
+
+If your repository has Git Large File Storage (LFS) objects which you want to migrate, you must have [git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git) and [git-lfs](https://git-lfs.com/) to be installed where you run the migrator (or [run the migrator in Docker](README.md#using-docker)).
+
 ### Users
 All the users encountered anywhere are stored by email and can be found in users.json in the exported zip file.
 
@@ -69,6 +72,9 @@ Application also supports advanced option like `resume` which can help you resum
 ### General
 #### Export fails due to unresolved host
 If project export fails due to unresolved host make sure bitbucket server is reachable from the machine which is running the migrator.
+
+#### Missing Git LFS objects
+Make sure the Large File Storage (LFS) is allowed on your Bitbucket Server repository in Repository settings -> Repository details ->Allow LFS.
 
 #### Missing webhooks or branch rules
 If you see missing items for any webhooks or branch rules you can refer `ExporterLogs.log` file in root of zip folder.

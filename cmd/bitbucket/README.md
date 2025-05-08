@@ -20,6 +20,8 @@ Export will depend on the size of repo and its pull request. A repo which has mo
 ## Prerequisites
 To export workspaces from Bitbucket, you must have admin write access in for the workspace to successfully export all the supported entities. 
 
+If your repository has Git Large File Storage (LFS) objects which you want to migrate, you must have [git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git) and [git-lfs](https://git-lfs.com/) to be installed where you run the migrator (or [run the migrator in Docker](README.md#using-docker)).
+
 ### Users
 All the users encountered anywhere are stored by email and can be found in users.json in the exported zip file. You need to use a workplace access token to list user email addresses. Emails of past workspace members are not accessible due to Bitbucket's compliance with GDPR.
 

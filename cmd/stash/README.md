@@ -74,7 +74,7 @@ Application also supports advanced option like `resume` which can help you resum
 If project export fails due to unresolved host make sure bitbucket server is reachable from the machine which is running the migrator.
 
 #### Missing Git LFS objects
-Make sure the Large File Storage (LFS) is allowed on your Bitbucket Server repository in Repository settings -> Repository details ->Allow LFS.
+Make sure the Large File Storage (LFS) is allowed on your Bitbucket Server repository in Repository settings -> Repository details -> Allow LFS.
 
 #### Missing webhooks or branch rules
 If you see missing items for any webhooks or branch rules you can refer `ExporterLogs.log` file in root of zip folder.

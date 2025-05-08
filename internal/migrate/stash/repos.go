@@ -118,7 +118,7 @@ func (e *Export) ListRepositories(
 
 func (e *Export) GetLFSEnabled(ctx context.Context, repoSlug string) (bool, error) {
 	e.tracer.Start(common.MsgStartRepoLFSEnabled, repoSlug)
-	enabled, err := e.checkLFSEnabled(ctx, e.project, repoSlug)
+	enabled, err := e.checkLFSEnabled(ctx, repoSlug)
 	if err != nil {
 		e.tracer.LogError(common.ErrRepoLFSEnabled, err)
 		return false, err

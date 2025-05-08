@@ -52,5 +52,8 @@ RUN adduser -D -u 1001 migrator && \
 # switch to non-root user
 USER migrator
 
+# add migrator to PATH
+ENV PATH="/app:${PATH}"
+
 # set the entrypoint
-ENTRYPOINT ["/app/migrator"]
+ENTRYPOINT ["/bin/bash"]

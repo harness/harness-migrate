@@ -95,7 +95,7 @@ const (
 	ErrImportWebhooks               = "cannot import webhooks for repository %s: %w"
 	ErrImportLabels                 = "cannot import labels for %s: %w"
 	ErrCleanupRepo                  = "cannot clean up the repo on server: %w"
-	ErrSkipGitLFS                   = "Skipping LFS objects migration: git-lfs not installed. Install git-lfs and remove --skip-lfs flag to include them: %w"
+	ErrSkipGitLFS                   = "Skipping Git LFS objects migration. If repository has LFS objects please install git and git-lfs to include them: %w"
 	ErrGitRemoteAdd                 = "cannot add remote for repository %s: %w"
 	ErrRepoLFSEnabled               = "cannot check if LFS is enabled for repository %s: %w"
 

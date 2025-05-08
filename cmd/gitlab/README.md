@@ -1,6 +1,7 @@
 # Git migrator for Gitlab
 We support migrating these entities from Gitlab:
 - Code Repository
+- LFS objects *(requires [git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git) and [git-lfs](https://git-lfs.com/) to be installed)*
 - Repository Public/Private status
 - Merge requests
 - Merge requests comments
@@ -12,7 +13,6 @@ Items that would not imported or imported differently:
 - Emoji reactions
 - Merge request reviewers and approvers
 - Any attachment
-- LFS objects
 - Webhooks: Some webhook events are not supported. You can check supported triggers [here](https://apidocs.harness.io/tag/webhook#operation/createWebhook)
 
 ### Estimating export duration

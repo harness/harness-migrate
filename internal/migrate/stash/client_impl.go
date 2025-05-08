@@ -98,15 +98,15 @@ func (e *Export) listBranchModels(
 
 func (e *Export) checkLFSEnabled(
 	ctx context.Context,
-	namespace string,
-	repoName string,
+	repoSlug string,
 ) (bool, error) {
+	namespace, name := scm.Split(repoSlug)
 	// NOTE this is NOT an exposed API in Atlassian documentation.
-	path := fmt.Sprintf("rest/git-lfs/admin/projects/%s/repos/%s/enabled", namespace, repoName)
+	path := fmt.Sprintf("rest/git-lfs/admin/projects/%s/repos/%s/enabled", namespace, name)
 	out := new(branchModels)
 	res, err := e.do(ctx, "GET", path, out)
 	// ref: https://jira.atlassian.com/browse/BSERV-8935?focusedId=1916441&page=com.atlassian.jira.plugin.system.issuetabpanels%3Acomment-tabpanel#comment-1916441
-	if res.Status == 404 && res.Body == nil {
+	if res.Status == 404 {
 		return false, nil
 	}
 	if res.Status == 200 {

@@ -111,7 +111,7 @@ func (e *Export) checkLFSEnabled(
 	if res.Status == 200 {
 		return true, nil
 	}
-	return false, err
+	return false, fmt.Errorf("failed to check Git LFS allowed for %q: %w", repoSlug, err)
 }
 
 func (e *Export) do(ctx context.Context, method, path string, out any) (*scm.Response, error) {

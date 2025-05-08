@@ -121,6 +121,7 @@ func (e *Export) GetLFSEnabledSettings(ctx context.Context, repoSlug string) (bo
 	enabled, err := e.checkLFSEnabled(ctx, repoSlug)
 	if err != nil {
 		e.tracer.LogError(common.ErrRepoLFSEnabled, err)
+		e.tracer.Stop(common.MsgCompleteRepoLFSEnabled, repoSlug)
 		return false, err
 	}
 

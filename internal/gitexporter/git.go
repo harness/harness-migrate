@@ -47,7 +47,6 @@ type cloneParams struct {
 	repoSlug   string
 	pullreqRef []config.RefSpec
 	auth       credentials
-	tracer     tracer.Tracer
 }
 
 type credentials struct {
@@ -57,10 +56,12 @@ type credentials struct {
 
 type nativeGitCloner struct {
 	params cloneParams
+	tracer tracer.Tracer
 }
 
 type goGitCloner struct {
 	params cloneParams
+	tracer tracer.Tracer
 }
 
 func (e *Exporter) CloneRepository(
@@ -83,7 +84,6 @@ func (e *Exporter) CloneRepository(
 			username: e.ScmLogin,
 			token:    e.ScmToken,
 		},
-		tracer: tracer,
 	}
 
 	cloner := e.selectCloner(params)
@@ -166,10 +166,10 @@ func (c *nativeGitCloner) clone(ctx context.Context) (bool, error) {
 		cloneURL, ".")
 	if err != nil {
 		if strings.Contains(string(output), "You appear to have cloned an empty repository.") {
-			c.params.tracer.Stop(common.MsgGitCloneEmptyRepo, c.params.repoSlug)
+			c.tracer.Stop(common.MsgGitCloneEmptyRepo, c.params.repoSlug)
 			return true, nil
 		}
-		c.params.tracer.LogError(common.ErrGitClone, c.params.repoSlug, err, string(output))
+		c.tracer.LogError(common.ErrGitClone, c.params.repoSlug, err, string(output))
 		return false, fmt.Errorf("failed to clone repo %s: %w", c.params.repoSlug, err)
 	}
 
@@ -183,13 +183,13 @@ func (c *nativeGitCloner) clone(ctx context.Context) (bool, error) {
 
 	output, err = command.RunGitCommand(ctx, c.params.gitPath, []string{}, fetchArgs...)
 	if err != nil {
-		c.params.tracer.LogError(common.ErrGitFetch, c.params.repoSlug, err, string(output))
+		c.tracer.LogError(common.ErrGitFetch, c.params.repoSlug, err, string(output))
 		return false, fmt.Errorf("failed to fetch refs for %s: %w", c.params.repoSlug, err)
 	}
 
 	// remove local config to prevent credential leak
 	if err := os.Remove(filepath.Join(c.params.gitPath, "config")); err != nil {
-		c.params.tracer.LogError("git-config-remove", c.params.repoSlug, err)
+		c.tracer.LogError("git-config-remove", c.params.repoSlug, err)
 		return false, fmt.Errorf("failed to remove config for %s: %w", c.params.repoSlug, err)
 	}
 
@@ -215,17 +215,17 @@ func (c *goGitCloner) clone(ctx context.Context) (bool, error) {
 	})
 
 	if errors.Is(err, git.ErrRepositoryAlreadyExists) {
-		c.params.tracer.Log(common.MsgRepoAlreadyExists, c.params.repoSlug)
+		c.tracer.Log(common.MsgRepoAlreadyExists, c.params.repoSlug)
 		return false, nil
 	}
 
 	if errors.Is(err, plumbing.ErrReferenceNotFound) || errors.Is(err, transport.ErrEmptyRemoteRepository) {
-		c.params.tracer.Stop(common.MsgGitCloneEmptyRepo, c.params.repoSlug)
+		c.tracer.Stop(common.MsgGitCloneEmptyRepo, c.params.repoSlug)
 		return true, nil
 	}
 
 	if err != nil {
-		c.params.tracer.LogError(common.ErrGitClone, c.params.repoSlug, err, cloneOutput.String())
+		c.tracer.LogError(common.ErrGitClone, c.params.repoSlug, err, cloneOutput.String())
 		return false, fmt.Errorf("failed to clone repo %s from %q: %w", c.params.repoSlug, c.params.repoData.Clone, err)
 	}
 
@@ -244,7 +244,7 @@ func (c *goGitCloner) clone(ctx context.Context) (bool, error) {
 	})
 
 	if err != nil && !errors.Is(err, git.NoErrAlreadyUpToDate) {
-		c.params.tracer.LogError(common.ErrGitFetch, c.params.repoSlug, err, fetchOutput.String())
+		c.tracer.LogError(common.ErrGitFetch, c.params.repoSlug, err, fetchOutput.String())
 		return false, fmt.Errorf("failed to sync repo %s from %q: %w", c.params.repoSlug, c.params.repoData.Clone, err)
 	}
 

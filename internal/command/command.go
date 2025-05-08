@@ -69,7 +69,7 @@ func isVersionGreaterOrEqual(major1, minor1, major2, minor2 int) bool {
 	return minor1 >= minor2
 }
 
-func CheckGitDependancies() error {
+func CheckGitDependencies() error {
 	if err := checkGitInstallation(); err != nil {
 		return err
 	}

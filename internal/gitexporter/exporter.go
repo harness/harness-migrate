@@ -304,7 +304,7 @@ func (e *Exporter) getData(ctx context.Context, path string) ([]*types.RepoData,
 
 			e.flags.NoLFS = !lfsEnabled
 			if lfsEnabled {
-				if err := command.CheckGitDependancies(); err != nil {
+				if err := command.CheckGitDependencies(); err != nil {
 					e.Tracer.LogError(common.ErrSkipGitLFS, err)
 					e.flags.NoLFS = true
 				}

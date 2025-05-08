@@ -26,16 +26,17 @@ type pushParams struct {
 	repo           *harness.Repository
 	remoteName     string
 	lfsObjectCount int
-	tracer         tracer.Tracer
 	token          string
 }
 
 type nativeGitPusher struct {
 	params pushParams
+	tracer tracer.Tracer
 }
 
 type goGitPusher struct {
 	params pushParams
+	tracer tracer.Tracer
 }
 
 func (m *Importer) Push(
@@ -49,7 +50,7 @@ func (m *Importer) Push(
 	tracer.Start(common.MsgStartImportGit, repo.GitURL)
 
 	if !gitLFSDisabled {
-		if err := command.CheckGitDependancies(); err != nil {
+		if err := command.CheckGitDependencies(); err != nil {
 			tracer.LogError(common.ErrSkipGitLFS, err)
 			gitLFSDisabled = true
 		}
@@ -76,7 +77,6 @@ func (m *Importer) Push(
 		repo:           repo,
 		remoteName:     remoteName,
 		lfsObjectCount: lfsObjectCount,
-		tracer:         tracer,
 		token:          m.HarnessToken,
 	}
 
@@ -127,7 +127,7 @@ func (p *nativeGitPusher) push(ctx context.Context, repo *harness.Repository, gi
 		"+refs/heads/*:refs/heads/*",
 		"+refs/tags/*:refs/tags/*")
 	if err != nil {
-		p.params.tracer.LogError(common.ErrGitPush, repo.GitURL, err, string(output))
+		p.tracer.LogError(common.ErrGitPush, repo.GitURL, err, string(output))
 		return fmt.Errorf("failed to push refs to %q: %w", repo.GitURL, err)
 	}
 
@@ -142,7 +142,7 @@ func (p *goGitPusher) push(
 ) error {
 	gitRepo, err := git.PlainOpen(gitPath)
 	if err != nil {
-		p.params.tracer.Stop("failed to open git dir from %q", gitPath)
+		p.tracer.Stop("failed to open git dir from %q", gitPath)
 		return fmt.Errorf("failed to open the exported repository from %q: %w", gitPath, err)
 	}
 
@@ -173,7 +173,7 @@ func (p *goGitPusher) push(
 	})
 
 	if err != nil && !errors.Is(err, git.NoErrAlreadyUpToDate) {
-		p.params.tracer.LogError(common.ErrGitPush, repo.GitURL, err, output.String())
+		p.tracer.LogError(common.ErrGitPush, repo.GitURL, err, output.String())
 		return fmt.Errorf("failed to push refs to %q: %w", repo.GitURL, err)
 	}
 

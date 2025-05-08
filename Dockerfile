@@ -1,5 +1,5 @@
 # ---------------------------------------------------------#
-#                   Build harness-migrator image                    #
+#                   Build harness-migrator image           #
 # ---------------------------------------------------------#
 FROM golang:1.22-alpine
 

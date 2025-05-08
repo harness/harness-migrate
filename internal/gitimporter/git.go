@@ -50,7 +50,7 @@ func (m *Importer) Push(
 
 	if !gitLFSDisabled {
 		if err := command.CheckGitDependancies(); err != nil {
-			tracer.Log(common.ErrSkipGitLFS)
+			tracer.LogError(common.ErrSkipGitLFS, err)
 			gitLFSDisabled = true
 		}
 	}

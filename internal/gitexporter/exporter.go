@@ -297,7 +297,7 @@ func (e *Exporter) getData(ctx context.Context, path string) ([]*types.RepoData,
 
 		// 2. get repo setting for git lfs
 		if !e.flags.NoLFS {
-			lfsEnabled, err := e.exporter.GetLFSEnabled(ctx, repo.RepoSlug)
+			lfsEnabled, err := e.exporter.GetLFSEnabledSettings(ctx, repo.RepoSlug)
 			if err != nil {
 				return nil, fmt.Errorf("cannot get Git LFS enabled setting for %s: %w", repo.RepoSlug, err)
 			}
@@ -326,10 +326,6 @@ func (e *Exporter) getData(ctx context.Context, path string) ([]*types.RepoData,
 		}
 
 		repoData[i].Repository.LfsObjectCount = lfsObjectCount
-
-		if e.flags.NoLFS {
-			repoData[i].Repository.GitLFSDisabled = true
-		}
 
 		// 4. get all webhooks for each repo
 		if !e.flags.NoWebhook {

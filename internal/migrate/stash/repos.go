@@ -116,7 +116,7 @@ func (e *Export) ListRepositories(
 	return common.MapRepository(allRepos), nil
 }
 
-func (e *Export) GetLFSEnabled(ctx context.Context, repoSlug string) (bool, error) {
+func (e *Export) GetLFSEnabledSettings(ctx context.Context, repoSlug string) (bool, error) {
 	e.tracer.Start(common.MsgStartRepoLFSEnabled, repoSlug)
 	enabled, err := e.checkLFSEnabled(ctx, repoSlug)
 	if err != nil {

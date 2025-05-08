@@ -106,7 +106,7 @@ func (e *Exporter) CloneRepository(
 		return isEmpty, lfsObjectCount, fmt.Errorf("failed to pull LFS objects for repo %s: %w", repoSlug, err)
 	}
 
-	lfsObjectCount, err = e.checkLFSObjects(ctx, gitPath, repoSlug, tracer)
+	lfsObjectCount, err = e.countLFSObjects(ctx, gitPath, repoSlug, tracer)
 	if err != nil {
 		tracer.Stop(common.ErrFetchLFSObjects, err)
 		return isEmpty, 0, err
@@ -124,7 +124,7 @@ func (e *Exporter) selectCloner(params cloneParams) gitCloner {
 	return &nativeGitCloner{params: params}
 }
 
-func (e *Exporter) checkLFSObjects(
+func (e *Exporter) countLFSObjects(
 	ctx context.Context,
 	gitPath string,
 	repoSlug string,

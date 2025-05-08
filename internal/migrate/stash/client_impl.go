@@ -103,8 +103,7 @@ func (e *Export) checkLFSEnabled(
 	namespace, name := scm.Split(repoSlug)
 	// NOTE this is NOT an exposed API in Atlassian documentation.
 	path := fmt.Sprintf("rest/git-lfs/admin/projects/%s/repos/%s/enabled", namespace, name)
-	out := new(branchModels)
-	res, err := e.do(ctx, "GET", path, out)
+	res, err := e.do(ctx, "GET", path, nil)
 	// ref: https://jira.atlassian.com/browse/BSERV-8935?focusedId=1916441&page=com.atlassian.jira.plugin.system.issuetabpanels%3Acomment-tabpanel#comment-1916441
 	if res.Status == 404 {
 		return false, nil

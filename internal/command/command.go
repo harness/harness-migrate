@@ -153,7 +153,6 @@ func RunGitCommand(ctx context.Context, dir string, env []string, args ...string
 
 // RunGitLFSCommand executes a git-lfs command with credentials and returns its output and error
 func RunGitLFSCommand(ctx context.Context, dir string, args ...string) ([]byte, error) {
-	// Add git-lfs prefix to args
 	lfsArgs := append([]string{"lfs"}, args...)
 	return RunGitCommand(ctx, dir, []string{}, lfsArgs...)
 }

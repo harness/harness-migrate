@@ -113,7 +113,7 @@ func (e *Export) ListRepositories(
 	return common.MapRepository(allRepos), nil
 }
 
-func (e *Export) GetLFSEnabled(ctx context.Context, repoSlug string) (bool, error) {
+func (e *Export) GetLFSEnabledSettings(ctx context.Context, repoSlug string) (bool, error) {
 	// Bitbucket Cloud has Git LFS enabled.
 	// ref: https://jira.atlassian.com/browse/BCLOUD-20682
 	return true, nil

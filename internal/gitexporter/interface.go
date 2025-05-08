@@ -41,5 +41,5 @@ type Interface interface {
 
 	ListLabels(ctx context.Context, repoSlug string, opts types.ListOptions) (map[string]externalTypes.Label, error)
 
-	GetLFSEnabled(ctx context.Context, repoSlug string) (bool, error)
+	GetLFSEnabledSettings(ctx context.Context, repoSlug string) (bool, error)
 }

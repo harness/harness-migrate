@@ -95,6 +95,13 @@ func (e *Exporter) Export(ctx context.Context) error {
 
 	e.Tracer.Log(common.MsgStartExport)
 
+	if !e.flags.NoLFS {
+		if err := command.CheckGitDependencies(); err != nil {
+			e.Tracer.LogError(common.ErrSkipGitLFS, err)
+			e.flags.NoLFS = true
+		}
+	}
+
 	data, err := e.getData(ctx, path)
 	if err != nil {
 		return fmt.Errorf(common.ErrFetchingFileData, err)
@@ -303,12 +310,6 @@ func (e *Exporter) getData(ctx context.Context, path string) ([]*types.RepoData,
 			}
 
 			e.flags.NoLFS = !lfsEnabled
-			if lfsEnabled {
-				if err := command.CheckGitDependencies(); err != nil {
-					e.Tracer.LogError(common.ErrSkipGitLFS, err)
-					e.flags.NoLFS = true
-				}
-			}
 		}
 		repoData[i].Repository.GitLFSDisabled = e.flags.NoLFS
 

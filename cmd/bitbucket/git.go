@@ -42,7 +42,6 @@ type exportCommand struct {
 	srcRepository string
 	user          string
 	token         string
-	url           string
 
 	checkpoint bool
 
@@ -58,16 +57,7 @@ func (c *exportCommand) run(*kingpin.ParseContext) error {
 	ctx = slog.NewContext(ctx, log)
 
 	// create the bitbucket cloud client
-	var client *scm.Client
-	var err error
-	if c.url != "" {
-		client, err = scmbitbucket.New(c.url)
-		if err != nil {
-			return err
-		}
-	} else {
-		client = scmbitbucket.NewDefault()
-	}
+	client := scmbitbucket.NewDefault()
 
 	// provide a custom http.Client with a transport
 	// that injects the private bitbucket token through
@@ -131,10 +121,6 @@ func registerGit(app *kingpin.CmdClause) {
 	cmd.Arg("save", "save the output to a folder").
 		Default("harness").
 		StringVar(&c.file)
-
-	cmd.Flag("host", "bitbucket host url").
-		Envar("bitbucket_HOST").
-		StringVar(&c.url)
 
 	cmd.Flag("workspace", "bitbucket workspace").
 		Required().

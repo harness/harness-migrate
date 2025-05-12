@@ -44,7 +44,6 @@ type exportGitCommand struct {
 	project string
 	user    string
 	token   string
-	url     string
 
 	checkpoint bool
 	flags      gitexporter.Flags
@@ -59,16 +58,7 @@ func (c *exportGitCommand) run(*kingpin.ParseContext) error {
 	ctx = slog.NewContext(ctx, log)
 
 	// create the gitlab client
-	var client *scm.Client
-	var err error
-	if c.url != "" {
-		client, err = scmgitlab.New(c.url)
-		if err != nil {
-			return err
-		}
-	} else {
-		client = scmgitlab.NewDefault()
-	}
+	client := scmgitlab.NewDefault()
 
 	if c.trace {
 		client.DumpResponse = httputil.DumpResponse
@@ -135,10 +125,6 @@ func registerGit(app *kingpin.CmdClause) {
 	cmd.Arg("save", "save the output to a folder").
 		Default("harness").
 		StringVar(&c.file)
-
-	cmd.Flag("host", "gitlab host url").
-		Envar("gitlab_HOST").
-		StringVar(&c.url)
 
 	cmd.Flag("group", "gitlab group followed by subgroups").
 		Required().

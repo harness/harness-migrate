@@ -42,7 +42,6 @@ type exportCommand struct {
 	srcRepository string
 	user          string
 	token         string
-	url           string
 
 	checkpoint bool
 
@@ -58,16 +57,7 @@ func (c *exportCommand) run(*kingpin.ParseContext) error {
 	ctx = slog.NewContext(ctx, log)
 
 	// create the github client
-	var client *scm.Client
-	var err error
-	if c.url != "" {
-		client, err = scmgithub.New(c.url)
-		if err != nil {
-			return err
-		}
-	} else {
-		client = scmgithub.NewDefault()
-	}
+	client := scmgithub.NewDefault()
 
 	// provide a custom http.Client with a transport
 	// that injects the private github token through
@@ -130,10 +120,6 @@ func registerGit(app *kingpin.CmdClause) {
 	cmd.Arg("save", "save the output to a folder").
 		Default("harness").
 		StringVar(&c.file)
-
-	cmd.Flag("host", "github host url").
-		Envar("github_HOST").
-		StringVar(&c.url)
 
 	cmd.Flag("org", "github organization").
 		Required().

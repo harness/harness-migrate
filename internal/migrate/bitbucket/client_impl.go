@@ -52,7 +52,7 @@ func (e *Export) GetUserByAccountID(
 	ctx context.Context,
 	accID string,
 ) (*user, *scm.Response, error) {
-	path := fmt.Sprintf("2.0/workspaces/%s/members?fields=values.user.*&q=user.account_id=", accID)
+	path := fmt.Sprintf("2.0/workspaces/%s/members?fields=values.user.*&q=user.account_id=%s", e.workspace, accID)
 	out := &user{}
 	res, err := e.do(ctx, "GET", path, nil, &out)
 	if res.Status == 404 {

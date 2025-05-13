@@ -292,6 +292,7 @@ func (e *Exporter) getData(ctx context.Context, path string) ([]*types.RepoData,
 		data := &types.RepoData{Repository: repository}
 		repoData = append(repoData, data)
 		e.Report[repository.RepoSlug] = report.Init(repository.RepoSlug)
+		e.reportSkippedMetadata(e.Report[repository.RepoSlug])
 	}
 
 	for i, repo := range repositories {
@@ -333,9 +334,7 @@ func (e *Exporter) getData(ctx context.Context, path string) ([]*types.RepoData,
 		repoData[i].Repository.LfsObjectCount = lfsObjectCount
 
 		// 4. get all webhooks for each repo
-		if e.flags.NoWebhook {
-			e.Report[repo.RepoSlug].ReportSkipped(report.ReportTypeWebhooks)
-		} else {
+		if !e.flags.NoWebhook {
 			webhooks, err := e.exporter.ListWebhooks(ctx, repo.RepoSlug, types.ListOptions{})
 			if err != nil {
 				return nil, fmt.Errorf("encountered error in getting webhooks: %v", err)
@@ -345,9 +344,7 @@ func (e *Exporter) getData(ctx context.Context, path string) ([]*types.RepoData,
 		}
 
 		// 5. get all branch rules for each repo
-		if e.flags.NoRule {
-			e.Report[repo.RepoSlug].ReportSkipped(report.ReportTypeBranchRules)
-		} else {
+		if !e.flags.NoRule {
 			branchRules, err := e.exporter.ListBranchRules(ctx, repo.RepoSlug, types.ListOptions{Page: 1, Size: 25})
 			if err != nil {
 				return nil, fmt.Errorf("encountered error in getting branch rules: %w", err)
@@ -357,9 +354,7 @@ func (e *Exporter) getData(ctx context.Context, path string) ([]*types.RepoData,
 		}
 
 		// 6. get labels for each repo (independant of their assignment)
-		if e.flags.NoLabel {
-			e.Report[repo.RepoSlug].ReportSkipped(report.ReportTypeLabels)
-		} else {
+		if !e.flags.NoLabel {
 			labels, err := e.exporter.ListLabels(ctx, repo.RepoSlug,
 				types.ListOptions{Page: 1, Size: 25})
 			if err != nil {
@@ -370,9 +365,7 @@ func (e *Exporter) getData(ctx context.Context, path string) ([]*types.RepoData,
 		}
 
 		// 7. get all data for each pr
-		if e.flags.NoPR {
-			e.Report[repo.RepoSlug].ReportSkipped(report.ReportTypePRs)
-		} else {
+		if !e.flags.NoPR {
 			prs, err := e.exporter.ListPullRequests(ctx, repo.RepoSlug,
 				types.PullRequestListOptions{Page: 1, Size: 25, Open: true, Closed: true})
 			if err != nil {
@@ -602,4 +595,19 @@ func deleteFolders(path string) error {
 func deleteFiles(path string) error {
 	// delete users.json skipping exporter json for now
 	return os.Remove(filepath.Join(path, externalTypes.UsersFileName))
+}
+
+func (e Exporter) reportSkippedMetadata(reporter *report.Report) {
+	reportTypesMap := map[string]bool{
+		report.ReportTypeWebhooks:    e.flags.NoWebhook,
+		report.ReportTypePRs:         e.flags.NoPR,
+		report.ReportTypeBranchRules: e.flags.NoRule,
+		report.ReportTypeLabels:      e.flags.NoLabel,
+	}
+
+	for reportType, isSkipped := range reportTypesMap {
+		if isSkipped {
+			reporter.ReportSkipped(reportType)
+		}
+	}
 }

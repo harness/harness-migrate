@@ -132,6 +132,8 @@ func (m *Importer) Import(ctx context.Context) error {
 		repoRef := util.JoinPaths(m.HarnessSpace, repository.Name)
 
 		m.Report[repoRef] = report.Init(repoRef)
+		m.reportSkippedMetadata(m.Report[repoRef])
+
 		if err := m.createRepoAndDoPush(ctx, f, &repository); err != nil {
 			m.Tracer.LogError("failed to create or push git data for %q: %s", repoRef, err.Error())
 			if !errors.Is(err, harness.ErrDuplicate) {
@@ -260,33 +262,25 @@ func (m *Importer) createRepoAndDoPush(ctx context.Context, repoFolder string, r
 }
 
 func (m *Importer) importRepoMetaData(_ context.Context, repoRef, repoFolder string) error {
-	if m.flags.NoLabel {
-		m.Report[repoRef].ReportSkipped(report.ReportTypeLabels)
-	} else {
+	if !m.flags.NoLabel {
 		if err := m.ImportLabels(repoRef, repoFolder); err != nil {
 			return fmt.Errorf("failed to import labels for '%s': %w", repoRef, err)
 		}
 	}
 
-	if m.flags.NoPR {
-		m.Report[repoRef].ReportSkipped(report.ReportTypePRs)
-	} else {
+	if !m.flags.NoPR {
 		if err := m.ImportPullRequests(repoRef, repoFolder); err != nil {
 			return fmt.Errorf("failed to import pull requests and comments for repo '%s': %w", repoRef, err)
 		}
 	}
 
-	if m.flags.NoWebhook {
-		m.Report[repoRef].ReportSkipped(report.ReportTypeWebhooks)
-	} else {
+	if !m.flags.NoWebhook {
 		if err := m.ImportWebhooks(repoRef, repoFolder); err != nil {
 			return fmt.Errorf("failed to import webhooks for repo '%s': %w", repoRef, err)
 		}
 	}
 
-	if m.flags.NoRule {
-		m.Report[repoRef].ReportSkipped(report.ReportTypeBranchRules)
-	} else {
+	if !m.flags.NoRule {
 		if err := m.ImportBranchRules(repoRef, repoFolder); err != nil {
 			return fmt.Errorf("failed to import branch rules for repo '%s': %w", repoRef, err)
 		}
@@ -348,4 +342,19 @@ func getRepoBaseFolders(directory string, singleRepo string) ([]string, error) {
 	}
 
 	return folders, nil
+}
+
+func (m *Importer) reportSkippedMetadata(reporter *report.Report) {
+	reportTypesMap := map[string]bool{
+		report.ReportTypeWebhooks:    m.flags.NoWebhook,
+		report.ReportTypePRs:         m.flags.NoPR,
+		report.ReportTypeBranchRules: m.flags.NoRule,
+		report.ReportTypeLabels:      m.flags.NoLabel,
+	}
+
+	for reportType, isSkipped := range reportTypesMap {
+		if isSkipped {
+			reporter.ReportSkipped(reportType)
+		}
+	}
 }

@@ -313,6 +313,10 @@ func (e *Exporter) getData(ctx context.Context, path string) ([]*types.RepoData,
 		}
 		repoData[i].Repository.GitLFSDisabled = e.flags.NoLFS
 
+		if e.flags.NoLFS {
+			e.Report[repo.RepoSlug].ReportSkipped(report.ReportTypeGitLFSObjects)
+		}
+
 		// 3. clone git data for each repo
 		isEmpty, lfsObjectCount, err := e.CloneRepository(
 			ctx, repo.Repository, repoPath, repo.RepoSlug,

@@ -16,50 +16,37 @@ package bitbucket
 
 import (
 	"context"
-	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/harness/harness-migrate/internal/gitexporter"
-	"github.com/harness/harness-migrate/internal/harness"
 )
 
 const CheckpointKeyUsers = "users"
 
-func (e *Export) FindEmailByAccountID(ctx context.Context, accID string) (string, error) {
+// Bitbucket in accordance with GPDR does not provide PII for users
+// https://developer.atlassian.com/cloud/bitbucket/bitbucket-api-changes-gdpr/
+func (e *Export) GetDefaultEmail(ctx context.Context, accID, displayName string) (string, error) {
 	userData, ok := e.userMap[accID]
 	if ok {
 		return userData.Email, nil
 	}
 
-	u, _, err := e.GetUserByAccountID(ctx, accID)
-	if errors.Is(err, harness.ErrForbidden) {
-		return "",
-			fmt.Errorf("token must have 'user' scope to fetch workspace members emails: %w", harness.ErrForbidden)
+	normalizedDisplayName := strings.ReplaceAll(displayName, " ", "_")
+	if normalizedDisplayName == "" {
+		normalizedDisplayName = "user"
 	}
 
-	if err != nil && !errors.Is(err, harness.ErrNotFound) {
-		return "", err
+	userData.Email = normalizedDisplayName + "." + accID + gitexporter.UnknownEmailSuffix
+	if err := e.fileLogger.Log("no email found for user with account ID %s and display name %s using '%s' as fallback email",
+		accID, displayName, userData.Email); err != nil {
+		return "", fmt.Errorf("cannot log file for unknown email, error: %w", err)
 	}
 
-	if errors.Is(err, harness.ErrNotFound) || u == nil {
-		return "", fmt.Errorf("couldn't find the user with account id %s: %w", accID, harness.ErrNotFound)
-	}
-
-	if u.Email == "" {
-		userData.Email = getDefaultEmail(accID)
-		if err := e.fileLogger.Log("no public email found for user %s using %s as fallback email", accID, userData.Email); err != nil {
-			return "", fmt.Errorf("cannot log file for unknown email, error: %w", err)
-		}
-	}
-
-	e.userMap[accID] = *u
+	e.userMap[accID] = userData
 	if err := e.checkpointManager.SaveCheckpoint(CheckpointKeyUsers, e.userMap); err != nil {
 		return "", fmt.Errorf("cannot get checkpoint, error: %w", err)
 	}
 
-	return u.Email, nil
-}
-
-func getDefaultEmail(username string) string {
-	return username + gitexporter.UnknownEmailSuffix
+	return userData.Email, nil
 }

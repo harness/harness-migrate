@@ -21,7 +21,17 @@ Export will depend on the size of repo and its pull request. A repo which has mo
 To export workspaces from Bitbucket, you must have admin write access in for the workspace to successfully export all the supported entities. 
 
 ### Users
-All the users encountered anywhere are stored by email and can be found in users.json in the exported zip file. You need to use a workplace access token to list user email addresses. Emails of past workspace members are not accessible due to Bitbucket's compliance with GDPR.
+Due to Bitbucket's GDPR compliance, email addresses might be missing for certain user activities. Here's what you need to know:
+
+- Git commit data (author name and email) is preserved as-is from the repository
+- For other user activities (PR authors, commenters, branch restrictions), we generate placeholder emails in the format:
+  `display_name.account_id@unknownemail.harness.io`
+
+The exported zip file contains:
+- Original files with placeholder emails where needed (PRs, comments, branch restrictions)
+- users.json: A reference file listing all encountered users and their email status
+
+If you have workspace admin access and want to preserve original user activities, you can replace the placeholder emails in the original files before importing to Harness Code. The users.json file helps you identify which emails need replacement.
 
 ### Installing
 You can install the migrator via github releases or run `make build` with latest go version present in your system.

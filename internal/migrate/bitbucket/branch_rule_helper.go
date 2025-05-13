@@ -119,7 +119,7 @@ func (e *Export) convertBranchRule(
 	}
 
 	for _, usr := range from.Users {
-		email, err := e.FindEmailByAccountID(ctx, usr.AccountID)
+		email, err := e.GetDefaultEmail(ctx, usr.AccountID, usr.DisplayName)
 		if err != nil {
 			e.tracer.LogError("failed to get user email with account ID %s for branch rule bypass list: %w", usr.AccountID, err)
 			continue

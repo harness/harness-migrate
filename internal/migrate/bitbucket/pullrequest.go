@@ -106,7 +106,7 @@ func (e *Export) ListPullRequests(
 
 func (e *Export) addEmailToPRAuthor(ctx context.Context, prs []types.PRResponse) ([]types.PRResponse, error) {
 	for i, pr := range prs {
-		email, err := e.FindEmailByAccountID(ctx, pr.Author.ID) // ID is account-id since go-scm v1.38.9
+		email, err := e.GetDefaultEmail(ctx, pr.Author.ID, pr.Author.Name) // ID is account-id since go-scm v1.38.9 (and Name is display name)
 		if err != nil {
 			return nil, fmt.Errorf("cannot find email for author %s: %w", pr.Author.Login, err)
 		}

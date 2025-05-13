@@ -98,7 +98,7 @@ func (e *Export) addEmailToAuthorInComments(ctx context.Context, comments []*typ
 	commentsCopy := make([]*types.PRComment, len(comments))
 	for i, comment := range comments {
 		commentCopy := *comment
-		email, err := e.FindEmailByAccountID(ctx, comment.Author.ID) // ID holds account_id value
+		email, err := e.GetDefaultEmail(ctx, comment.Author.ID, comment.Author.Name) // ID holds account_id value
 		if err != nil {
 			return nil, fmt.Errorf("cannot find email for author %s: %w", commentCopy.Author.Login, err)
 		}

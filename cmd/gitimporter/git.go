@@ -107,7 +107,7 @@ func registerGitImporter(app *kingpin.CmdClause) {
 		Envar("harness_SPACE").
 		StringVar(&c.harnessSpace)
 
-	cmd.Flag("skip-users", "skip unknown user and map to token uuid (Default:true)").
+	cmd.Flag("skip-users", "skip unknown user and map to token uuid").
 		Default("false").
 		Envar("harness_SKIP_USERS").
 		BoolVar(&c.skipUsers)

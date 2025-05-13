@@ -26,7 +26,6 @@ import (
 	"github.com/harness/harness-migrate/internal/checkpoint"
 	"github.com/harness/harness-migrate/internal/common"
 	"github.com/harness/harness-migrate/internal/gitexporter"
-	"github.com/harness/harness-migrate/internal/harness"
 	"github.com/harness/harness-migrate/internal/report"
 	"github.com/harness/harness-migrate/internal/tracer"
 	"github.com/harness/harness-migrate/internal/types"
@@ -46,27 +45,6 @@ type Export struct {
 	report     map[string]*report.Report
 
 	userMap map[string]user
-}
-
-func (e *Export) GetUserByAccountID(
-	ctx context.Context,
-	accID string,
-) (*user, *scm.Response, error) {
-	path := fmt.Sprintf("2.0/workspaces/%s/members?fields=values.user.*&q=user.account_id=%s", e.workspace, accID)
-	out := &user{}
-	res, err := e.do(ctx, "GET", path, nil, &out)
-	if res.Status == 404 {
-		return nil, res, fmt.Errorf("user not found: %w", harness.ErrNotFound)
-	}
-	if res.Status == 403 {
-		return nil, res, fmt.Errorf("failed to find user: %w", harness.ErrForbidden)
-	}
-
-	if err != nil {
-		return nil, res, fmt.Errorf("failed to find user: %w", err)
-	}
-
-	return out, res, err
 }
 
 func (e *Export) ListPRComments(

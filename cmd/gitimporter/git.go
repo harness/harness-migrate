@@ -21,6 +21,7 @@ import (
 
 	"github.com/harness/harness-migrate/cmd/util"
 	"github.com/harness/harness-migrate/internal/gitimporter"
+	"github.com/harness/harness-migrate/internal/report"
 
 	"github.com/alecthomas/kingpin/v2"
 	"github.com/google/uuid"
@@ -66,6 +67,7 @@ func (c *gitImport) run(*kingpin.ParseContext) error {
 	c.harnessRepo = strings.Trim(c.harnessRepo, "/")
 	importUuid := uuid.New().String()
 	c.endpoint, _ = strings.CutSuffix(c.endpoint, "/")
+	reporter := make(map[string]*report.Report)
 	importer := gitimporter.NewImporter(
 		c.endpoint, c.harnessSpace, c.harnessRepo, c.harnessToken, c.filePath,
 		importUuid, c.Gitness, c.trace,
@@ -77,7 +79,8 @@ func (c *gitImport) run(*kingpin.ParseContext) error {
 			NoRule:        c.noRule,
 			NoLabel:       c.noLabel,
 		},
-		tracer_)
+		tracer_,
+		reporter)
 
 	tracer_.Log("starting operation with id: %s", importUuid)
 	return importer.Import(ctx)

@@ -22,6 +22,7 @@ import (
 	"path/filepath"
 
 	"github.com/harness/harness-migrate/internal/common"
+	"github.com/harness/harness-migrate/internal/report"
 	"github.com/harness/harness-migrate/types"
 )
 
@@ -37,6 +38,7 @@ func (m *Importer) ImportWebhooks(
 	}
 
 	if in == nil {
+		m.Report[repoRef].ReportMetric(report.ReportTypeWebhooks, 0)
 		m.Tracer.Stop(common.MsgCompleteImportWebhooks, 0, repoRef)
 		return nil
 	}
@@ -46,6 +48,7 @@ func (m *Importer) ImportWebhooks(
 		return fmt.Errorf("failed to import webhooks for repo '%s' : %w",
 			repoRef, err)
 	}
+	m.Report[repoRef].ReportMetric(report.ReportTypeWebhooks, len(in.Hooks))
 	m.Tracer.Stop(common.MsgCompleteImportWebhooks, len(in.Hooks), repoRef)
 
 	return nil

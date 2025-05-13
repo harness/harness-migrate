@@ -23,6 +23,7 @@ import (
 	"regexp"
 
 	"github.com/harness/harness-migrate/internal/common"
+	"github.com/harness/harness-migrate/internal/report"
 	"github.com/harness/harness-migrate/types"
 )
 
@@ -39,6 +40,7 @@ func (m *Importer) ImportPullRequests(
 	}
 
 	if len(in) == 0 {
+		m.Report[repoRef].ReportMetric(report.ReportTypePRs, len(in))
 		m.Tracer.Stop(common.MsgCompleteImportPRs, len(in), repoRef)
 		return nil
 	}
@@ -48,6 +50,7 @@ func (m *Importer) ImportPullRequests(
 		return fmt.Errorf("failed to import pull requests and comments for repo '%s' : %w",
 			repoRef, err)
 	}
+	m.Report[repoRef].ReportMetric(report.ReportTypePRs, len(in))
 	m.Tracer.Stop(common.MsgCompleteImportPRs, len(in), repoRef)
 
 	return nil

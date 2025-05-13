@@ -21,6 +21,7 @@ import (
 	"path/filepath"
 
 	"github.com/harness/harness-migrate/internal/common"
+	"github.com/harness/harness-migrate/internal/report"
 	"github.com/harness/harness-migrate/types"
 )
 
@@ -36,6 +37,7 @@ func (m *Importer) ImportLabels(
 	}
 
 	if len(in) == 0 {
+		m.Report[repoRef].ReportMetric(report.ReportTypeLabels, len(in))
 		m.Tracer.Stop(common.MsgCompleteImportLabels, len(in), repoRef)
 		return nil
 	}
@@ -46,6 +48,7 @@ func (m *Importer) ImportLabels(
 			repoRef, err)
 	}
 
+	m.Report[repoRef].ReportMetric(report.ReportTypeLabels, len(in))
 	m.Tracer.Stop(common.MsgCompleteImportLabels, len(in), repoRef)
 	return nil
 }

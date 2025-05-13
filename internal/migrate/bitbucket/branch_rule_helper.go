@@ -19,8 +19,8 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/harness/harness-migrate/internal/gitexporter"
 	"github.com/harness/harness-migrate/internal/migrate"
+	"github.com/harness/harness-migrate/internal/report"
 	"github.com/harness/harness-migrate/internal/types"
 	"github.com/harness/harness-migrate/internal/types/enum"
 )
@@ -144,6 +144,6 @@ func (e *Export) convertBranchRule(
 		}
 	}
 
-	e.report[repo].ReportErrors(gitexporter.ReportTypeBranchRules, repo, logs)
+	e.report[repo].ReportErrors(report.ReportTypeBranchRules, repo, logs)
 	return rules
 }

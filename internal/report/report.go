@@ -23,6 +23,15 @@ import (
 	"github.com/jedib0t/go-pretty/v6/text"
 )
 
+const (
+	ReportTypeWebhooks      = "webhook"
+	ReportTypePRs           = "pull requests"
+	ReportTypeBranchRules   = "branch rules"
+	ReportTypeLabels        = "labels"
+	ReportTypeUsers         = "users"
+	ReportTypeGitLFSObjects = "LFS objects"
+)
+
 type Report struct {
 	name   string
 	report map[string]int
@@ -71,7 +80,14 @@ func (r *Report) ReportErrors(typ string, key string, errors []string) {
 	m = r.errors[typ]
 	m.error[key] = strings.Join(errors, ",")
 }
-func (r *Report) PublishReport() {
+
+func PublishReports(report map[string]*Report) {
+	for _, v := range report {
+		v.publishReport()
+	}
+}
+
+func (r *Report) publishReport() {
 	rowConfigAutoMerge := table.RowConfig{AutoMerge: true}
 	fmt.Println("")
 	t := table.NewWriter()

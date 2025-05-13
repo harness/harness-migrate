@@ -25,6 +25,7 @@ import (
 
 	"github.com/harness/harness-migrate/internal/common"
 	"github.com/harness/harness-migrate/internal/harness"
+	"github.com/harness/harness-migrate/internal/report"
 	"github.com/harness/harness-migrate/internal/tracer"
 	"github.com/harness/harness-migrate/internal/types/enum"
 	"github.com/harness/harness-migrate/internal/util"
@@ -45,6 +46,7 @@ type Importer struct {
 
 	Gitness bool
 	Tracer  tracer.Tracer
+	Report  map[string]*report.Report
 
 	RequestId string
 	flags     Flags
@@ -69,7 +71,9 @@ func NewImporter(
 	gitness,
 	trace bool,
 	flags Flags,
-	tracer tracer.Tracer) *Importer {
+	tracer tracer.Tracer,
+	report map[string]*report.Report,
+) *Importer {
 	spaceParts := strings.Split(space, "/")
 
 	client := harness.New(spaceParts[0], token, harness.WithAddress(baseURL), harness.WithTracing(trace))
@@ -84,6 +88,7 @@ func NewImporter(
 		HarnessRepo:     repo,
 		HarnessToken:    token,
 		Tracer:          tracer,
+		Report:          report,
 		RequestId:       requestId,
 		Endpoint:        baseURL,
 		Gitness:         gitness,
@@ -126,6 +131,7 @@ func (m *Importer) Import(ctx context.Context) error {
 
 		repoRef := util.JoinPaths(m.HarnessSpace, repository.Name)
 
+		m.Report[repoRef] = report.Init(repoRef)
 		if err := m.createRepoAndDoPush(ctx, f, &repository); err != nil {
 			m.Tracer.LogError("failed to create or push git data for %q: %s", repoRef, err.Error())
 			if !errors.Is(err, harness.ErrDuplicate) {
@@ -172,6 +178,7 @@ func (m *Importer) Import(ctx context.Context) error {
 		}
 	}
 
+	report.PublishReports(m.Report)
 	m.Tracer.Log(common.MsgCompleteImport, len(folders))
 	return nil
 }
@@ -250,8 +257,7 @@ func (m *Importer) createRepoAndDoPush(ctx context.Context, repoFolder string, r
 
 func (m *Importer) importRepoMetaData(_ context.Context, repoRef, repoFolder string) error {
 	if !m.flags.NoLabel {
-		// CODE-2404: ignore Not Found as migrate labels API on server might not be deployed yet (e.g, H0).
-		if err := m.ImportLabels(repoRef, repoFolder); err != nil && !errors.Is(err, harness.ErrNotFound) {
+		if err := m.ImportLabels(repoRef, repoFolder); err != nil {
 			return fmt.Errorf("failed to import labels for '%s': %w", repoRef, err)
 		}
 	}

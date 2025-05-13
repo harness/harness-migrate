@@ -22,8 +22,8 @@ import (
 	"strings"
 
 	"github.com/harness/harness-migrate/internal/common"
-	"github.com/harness/harness-migrate/internal/gitexporter"
 	"github.com/harness/harness-migrate/internal/migrate"
+	"github.com/harness/harness-migrate/internal/report"
 	"github.com/harness/harness-migrate/internal/types"
 	"github.com/harness/harness-migrate/internal/types/enum"
 )
@@ -88,7 +88,7 @@ func (e *Export) convertBranchRule(
 				repoSlug, err)
 		}
 	}
-	e.report[repoSlug].ReportErrors(gitexporter.ReportTypeBranchRules, strconv.Itoa(from.ID), logs)
+	e.report[repoSlug].ReportErrors(report.ReportTypeBranchRules, strconv.Itoa(from.ID), logs)
 
 	return &types.BranchRule{
 		ID:         from.ID,

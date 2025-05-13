@@ -22,6 +22,7 @@ import (
 	"path/filepath"
 
 	"github.com/harness/harness-migrate/internal/common"
+	"github.com/harness/harness-migrate/internal/report"
 	"github.com/harness/harness-migrate/types"
 )
 
@@ -37,6 +38,7 @@ func (m *Importer) ImportBranchRules(
 	}
 
 	if len(in) == 0 {
+		m.Report[repoRef].ReportMetric(report.ReportTypeBranchRules, 0)
 		m.Tracer.Stop(common.MsgCompleteImportBranchRules, 0, repoRef)
 		return nil
 	}
@@ -53,6 +55,8 @@ func (m *Importer) ImportBranchRules(
 		return fmt.Errorf("failed to import branch rules for repo '%s' : %w",
 			repoRef, err)
 	}
+
+	m.Report[repoRef].ReportMetric(report.ReportTypeBranchRules, len(rules))
 	m.Tracer.Stop(common.MsgCompleteImportBranchRules, len(rules), repoRef)
 
 	return nil

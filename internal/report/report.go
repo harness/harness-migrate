@@ -33,9 +33,10 @@ const (
 )
 
 type Report struct {
-	name   string
-	report map[string]int
-	errors map[string]*Error
+	name    string
+	report  map[string]int
+	errors  map[string]*Error
+	skipped map[string]bool
 }
 
 type Error struct {
@@ -44,9 +45,10 @@ type Error struct {
 
 func Init(name string) *Report {
 	return &Report{
-		name:   name,
-		report: make(map[string]int),
-		errors: make(map[string]*Error),
+		name:    name,
+		report:  make(map[string]int),
+		errors:  make(map[string]*Error),
+		skipped: make(map[string]bool),
 	}
 }
 
@@ -81,6 +83,11 @@ func (r *Report) ReportErrors(typ string, key string, errors []string) {
 	m.error[key] = strings.Join(errors, ",")
 }
 
+// ReportSkipped marks a metadata type as skipped during migration
+func (r *Report) ReportSkipped(typ string) {
+	r.skipped[typ] = true
+}
+
 func PublishReports(report map[string]*Report) {
 	for _, v := range report {
 		v.publishReport()
@@ -91,17 +98,30 @@ func (r *Report) publishReport() {
 	rowConfigAutoMerge := table.RowConfig{AutoMerge: true}
 	fmt.Println("")
 	t := table.NewWriter()
-	t.AppendHeader(table.Row{"Type", "Success", "Error(s)"}, rowConfigAutoMerge)
+	t.AppendHeader(table.Row{"Type", "Success", "Error(s)", "Skipped"}, rowConfigAutoMerge)
 	var rows []table.Row
+
+	addedTypes := make(map[string]bool)
+
 	for k, v := range r.report {
 		errorCount := 0
-		val, ok := r.errors[k]
-		if ok {
-			errorCount = len(val.error)
+		if e, ok := r.errors[k]; ok {
+			errorCount = len(e.error)
 		}
-		rows = append(rows, table.Row{k, v, errorCount})
+		skipped := r.skipped[k]
+		rows = append(rows, table.Row{k, v, errorCount, skipped})
+		addedTypes[k] = true
 	}
+
+	// add rows for skipped types that didn't have any metrics
+	for k := range r.skipped {
+		if !addedTypes[k] {
+			rows = append(rows, table.Row{k, 0, 0, true})
+		}
+	}
+
 	t.SetOutputMirror(os.Stdout)
+
 	t.AppendRows(rows)
 	t.AppendSeparator()
 	t.SetStyle(table.StyleLight)

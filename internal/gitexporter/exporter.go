@@ -329,7 +329,9 @@ func (e *Exporter) getData(ctx context.Context, path string) ([]*types.RepoData,
 		repoData[i].Repository.LfsObjectCount = lfsObjectCount
 
 		// 4. get all webhooks for each repo
-		if !e.flags.NoWebhook {
+		if e.flags.NoWebhook {
+			e.Report[repo.RepoSlug].ReportSkipped(report.ReportTypeWebhooks)
+		} else {
 			webhooks, err := e.exporter.ListWebhooks(ctx, repo.RepoSlug, types.ListOptions{})
 			if err != nil {
 				return nil, fmt.Errorf("encountered error in getting webhooks: %v", err)
@@ -339,7 +341,9 @@ func (e *Exporter) getData(ctx context.Context, path string) ([]*types.RepoData,
 		}
 
 		// 5. get all branch rules for each repo
-		if !e.flags.NoRule {
+		if e.flags.NoRule {
+			e.Report[repo.RepoSlug].ReportSkipped(report.ReportTypeBranchRules)
+		} else {
 			branchRules, err := e.exporter.ListBranchRules(ctx, repo.RepoSlug, types.ListOptions{Page: 1, Size: 25})
 			if err != nil {
 				return nil, fmt.Errorf("encountered error in getting branch rules: %w", err)
@@ -349,7 +353,9 @@ func (e *Exporter) getData(ctx context.Context, path string) ([]*types.RepoData,
 		}
 
 		// 6. get labels for each repo (independant of their assignment)
-		if !e.flags.NoLabel {
+		if e.flags.NoLabel {
+			e.Report[repo.RepoSlug].ReportSkipped(report.ReportTypeLabels)
+		} else {
 			labels, err := e.exporter.ListLabels(ctx, repo.RepoSlug,
 				types.ListOptions{Page: 1, Size: 25})
 			if err != nil {
@@ -360,7 +366,9 @@ func (e *Exporter) getData(ctx context.Context, path string) ([]*types.RepoData,
 		}
 
 		// 7. get all data for each pr
-		if !e.flags.NoPR {
+		if e.flags.NoPR {
+			e.Report[repo.RepoSlug].ReportSkipped(report.ReportTypePRs)
+		} else {
 			prs, err := e.exporter.ListPullRequests(ctx, repo.RepoSlug,
 				types.PullRequestListOptions{Page: 1, Size: 25, Open: true, Closed: true})
 			if err != nil {

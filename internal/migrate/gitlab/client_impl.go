@@ -74,6 +74,16 @@ func (e *Export) FindPR(
 	return convertPR(out), res, err
 }
 
+func (e *Export) projectInfo(
+	ctx context.Context,
+	repoSlug string,
+) (*repoInfo, *scm.Response, error) {
+	path := fmt.Sprintf("api/v4/projects/%s", encode(repoSlug))
+	out := &repoInfo{}
+	res, err := e.do(ctx, "GET", path, nil, &out)
+	return out, res, err
+}
+
 func (e *Export) ListPRComments(
 	ctx context.Context,
 	repoSlug string,

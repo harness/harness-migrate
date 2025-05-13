@@ -96,6 +96,24 @@ func (e *Export) listBranchModels(
 	return convertBranchModelsMap(*out), res, err
 }
 
+func (e *Export) checkLFSEnabled(
+	ctx context.Context,
+	repoSlug string,
+) (bool, error) {
+	namespace, name := scm.Split(repoSlug)
+	// NOTE this is NOT an exposed API in Atlassian documentation.
+	path := fmt.Sprintf("rest/git-lfs/admin/projects/%s/repos/%s/enabled", namespace, name)
+	res, err := e.do(ctx, "GET", path, nil)
+	// ref: https://jira.atlassian.com/browse/BSERV-8935?focusedId=1916441&page=com.atlassian.jira.plugin.system.issuetabpanels%3Acomment-tabpanel#comment-1916441
+	if res.Status == 404 {
+		return false, nil
+	}
+	if res.Status == 200 {
+		return true, nil
+	}
+	return false, fmt.Errorf("failed to check Git LFS allowed for %q: %w", repoSlug, err)
+}
+
 func (e *Export) do(ctx context.Context, method, path string, out any) (*scm.Response, error) {
 	req := &scm.Request{
 		Method: method,

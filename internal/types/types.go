@@ -71,8 +71,10 @@ type (
 
 	RepoResponse struct {
 		scm.Repository
-		RepoSlug string
-		IsEmpty  bool
+		RepoSlug       string
+		IsEmpty        bool
+		LfsObjectCount int
+		GitLFSDisabled bool
 	}
 
 	LabelResponse struct {

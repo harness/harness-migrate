@@ -1,6 +1,7 @@
 # Git migrator for Github
 We support migrating these entities from Github:
 - Repository
+- LFS objects *(requires [git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git) and [git-lfs](https://git-lfs.com/) to be installed)*
 - Repository Public/Private status
 - Pull requests
 - Pull request comments
@@ -14,7 +15,6 @@ Items that would not imported or imported differently:
 - Emoji reactions
 - Pull request reviewers and approvers
 - Any attachment
-- LFS objects
 - Webhooks: Some webhook events are not supported. You can check supported triggers [here](https://apidocs.harness.io/tag/webhook#operation/createWebhook)
 
 ### Estimating export duration
@@ -22,6 +22,8 @@ Export will depend on the size of repo and its pull request. A repo which has mo
 
 ## Prerequisites
 To export projects from Github, you must have admin write access in for the project to successfully export all the supported entities. 
+
+If your repository has Git Large File Storage (LFS) objects which you want to migrate, you must have [git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git) and [git-lfs](https://git-lfs.com/) to be installed where you run the migrator (or [run the migrator in Docker](../../README.md#using-docker)).
 
 ### Users
 All the users encountered anywhere are stored by email and can be found in users.json in the exported zip file.

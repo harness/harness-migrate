@@ -59,26 +59,29 @@ func (m *Importer) getFileSizeLimit(
 		return 0, fmt.Errorf("failed to find repo settings for %s: %w", repoRef, err)
 	}
 
-	m.Tracer.Stop(common.MsgCompleteGetRepoSetting, repoRef, *settings.FileSizeLimit)
+	m.Tracer.Stop(common.MsgCompleteGetRepoSetting, repoRef, *settings.FileSizeLimit, *settings.GitLFSEnabled)
 	return *settings.FileSizeLimit, nil
 }
 
-func (m *Importer) setFileSizeLimit(
+func (m *Importer) updateRepoSetting(
 	repoRef string,
 	size int64,
+	gitLFSEnabled bool,
 	tracer tracer.Tracer,
 ) error {
-	tracer.Start(common.MsgStartUpdateRepoSize, repoRef, size)
+	tracer.Start(common.MsgStartUpdateRepoSetting, repoRef, size, gitLFSEnabled)
 
 	in := &harness.RepoSettings{
 		FileSizeLimit: &size,
+		GitLFSEnabled: &gitLFSEnabled,
 	}
+
 	settings, err := m.Harness.UpdateRepoSettings(repoRef, in)
 	if err != nil {
 		tracer.Stop("failed to update repository settings for %s", repoRef)
 		return fmt.Errorf("failed to update repo settings for %s: %w", repoRef, err)
 	}
 
-	m.Tracer.Stop(common.MsgCompleteGetRepoSetting, repoRef, *settings.FileSizeLimit)
+	m.Tracer.Stop(common.MsgCompleteUpdateRepoSetting, repoRef, *settings.FileSizeLimit, gitLFSEnabled)
 	return nil
 }

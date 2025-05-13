@@ -115,3 +115,16 @@ func (e *Export) ListRepositories(
 	e.tracer.Stop(common.MsgCompleteRepoList, len(allRepos))
 	return common.MapRepository(allRepos), nil
 }
+
+func (e *Export) GetLFSEnabledSettings(ctx context.Context, repoSlug string) (bool, error) {
+	e.tracer.Start(common.MsgStartRepoLFSEnabled, repoSlug)
+	enabled, err := e.checkLFSEnabled(ctx, repoSlug)
+	if err != nil {
+		e.tracer.LogError(common.ErrRepoLFSEnabled, err)
+		e.tracer.Stop(common.MsgCompleteRepoLFSEnabled, repoSlug)
+		return false, err
+	}
+
+	e.tracer.Stop(common.MsgCompleteRepoLFSEnabled, repoSlug)
+	return enabled, nil
+}

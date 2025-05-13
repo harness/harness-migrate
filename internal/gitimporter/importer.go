@@ -224,15 +224,14 @@ func (m *Importer) createRepoAndDoPush(ctx context.Context, repoFolder string, r
 	}
 
 	// update the file-size-limit as push might get declined by the pre-receive hook on server due to large file sizes.
-	if originalLimit < m.flags.FileSizeLimit {
-		m.Tracer.Log("Updating the file-size-limit from %d to %d.", originalLimit, m.flags.FileSizeLimit)
-		err := m.setFileSizeLimit(repoRef, m.flags.FileSizeLimit, m.Tracer)
+	if originalLimit < m.flags.FileSizeLimit || repo.GitLFSDisabled {
+		err := m.updateRepoSetting(repoRef, m.flags.FileSizeLimit, !repo.GitLFSDisabled, m.Tracer)
 		if err != nil {
 			return fmt.Errorf("failed to set file size limit on repo: %w", err)
 		}
 	}
 
-	err = m.Push(ctx, repoFolder, hRepo, m.Tracer)
+	err = m.Push(ctx, repoFolder, hRepo, repo.GitLFSDisabled, repo.LfsObjectCount, m.Tracer)
 	if err != nil {
 		return fmt.Errorf("failed to push to repo: %w", err)
 	}
@@ -240,7 +239,7 @@ func (m *Importer) createRepoAndDoPush(ctx context.Context, repoFolder string, r
 	// revert the file-size-limit to it's original value
 	if originalLimit < m.flags.FileSizeLimit {
 		m.Tracer.Log("Reverting the file-size-limit from %d to its original value %d.", m.flags.FileSizeLimit, originalLimit)
-		err := m.setFileSizeLimit(repoRef, originalLimit, m.Tracer)
+		err := m.updateRepoSetting(repoRef, originalLimit, !repo.GitLFSDisabled, m.Tracer)
 		if err != nil {
 			return fmt.Errorf("failed to set file size limit on repo: %w", err)
 		}

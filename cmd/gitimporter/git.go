@@ -126,36 +126,39 @@ func registerGitImporter(app *kingpin.CmdClause) {
 		Envar("Gitness").
 		BoolVar(&c.Gitness)
 
-	cmd.Flag("no-pr", "do Not import pull requests and comments").
+	cmd.Flag("no-pr", "").
+		Hidden().
 		Default("false").
 		BoolVar(&c.noPR)
 
-	// keeping the old flags before making them obsolete
-	cmd.Flag("skip-pr", "skip importing pull requests and comments (alias for --no-pr)").
+	cmd.Flag("skip-pr", "skip importing pull requests and comments (--no-pr is an alias)").
 		Default("false").
 		BoolVar(&c.noPR)
 
-	cmd.Flag("no-label", "do Not import labels").
+	cmd.Flag("no-label", "").
+		Hidden().
 		Default("false").
 		BoolVar(&c.noLabel)
 
-	cmd.Flag("skip-label", "skip importing labels (alias for --no-label)").
+	cmd.Flag("skip-label", "skip importing labels (--no-label is an alias)").
 		Default("false").
 		BoolVar(&c.noLabel)
 
-	cmd.Flag("no-webhook", "do Not import webhooks").
+	cmd.Flag("no-webhook", "").
+		Hidden().
 		Default("false").
 		BoolVar(&c.noWebhook)
 
-	cmd.Flag("skip-webhook", "skip importing webhooks (alias for --no-webhook)").
+	cmd.Flag("skip-webhook", "skip importing webhooks (--no-webhook is an alias)").
 		Default("false").
 		BoolVar(&c.noWebhook)
 
-	cmd.Flag("no-rule", "do Not import branch protection rules").
+	cmd.Flag("no-rule", "").
+		Hidden().
 		Default("false").
 		BoolVar(&c.noRule)
 
-	cmd.Flag("skip-rule", "skip importing branch protection rules (alias for --no-rule)").
+	cmd.Flag("skip-rule", "skip importing branch protection rules (--no-rule is an alias)").
 		Default("false").
 		BoolVar(&c.noRule)
 

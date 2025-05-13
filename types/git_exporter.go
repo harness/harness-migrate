@@ -34,20 +34,22 @@ const (
 
 type (
 	Repository struct {
-		Slug       string     `json:"slug"`
-		ID         string     `json:"id"`
-		Namespace  string     `json:"namespace"`
-		Name       string     `json:"name"`
-		Branch     string     `json:"branch"`
-		Archived   bool       `json:"archived"`
-		Private    bool       `json:"private"`
-		Visibility Visibility `json:"visibility"`
-		Clone      string     `json:"clone"`
-		CloneSSH   string     `json:"clone_ssh"`
-		Link       string     `json:"link"`
-		Created    time.Time  `json:"created"`
-		Updated    time.Time  `json:"updated"`
-		IsEmpty    bool       `json:"is_empty"`
+		Slug           string     `json:"slug"`
+		ID             string     `json:"id"`
+		Namespace      string     `json:"namespace"`
+		Name           string     `json:"name"`
+		Branch         string     `json:"branch"`
+		Archived       bool       `json:"archived"`
+		Private        bool       `json:"private"`
+		Visibility     Visibility `json:"visibility"`
+		Clone          string     `json:"clone"`
+		CloneSSH       string     `json:"clone_ssh"`
+		Link           string     `json:"link"`
+		Created        time.Time  `json:"created"`
+		Updated        time.Time  `json:"updated"`
+		IsEmpty        bool       `json:"is_empty"`
+		GitLFSDisabled bool       `json:"git_lfs_disabled"`
+		LfsObjectCount int        `json:"lfs_object_count"`
 	}
 
 	Perm struct {

@@ -112,3 +112,8 @@ func (e *Export) ListRepositories(
 	e.tracer.Stop(common.MsgCompleteRepoList, len(allRepos))
 	return common.MapRepository(allRepos), nil
 }
+
+func (e *Export) GetLFSEnabledSettings(ctx context.Context, repoSlug string) (bool, error) {
+	// Github has Git LFS enabled.
+	return true, nil
+}

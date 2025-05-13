@@ -1,6 +1,7 @@
 # Git migrator for Gitlab
 We support migrating these entities from Gitlab:
 - Code Repository
+- LFS objects *(requires [git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git) and [git-lfs](https://git-lfs.com/) to be installed)*
 - Repository Public/Private status
 - Merge requests
 - Merge requests comments
@@ -12,7 +13,6 @@ Items that would not imported or imported differently:
 - Emoji reactions
 - Merge request reviewers and approvers
 - Any attachment
-- LFS objects
 - Webhooks: Some webhook events are not supported. You can check supported triggers [here](https://apidocs.harness.io/tag/webhook#operation/createWebhook)
 
 ### Estimating export duration
@@ -20,6 +20,8 @@ Export will depend on the size of repo and its merge request. A repo which has m
 
 ## Prerequisites
 To export projects from Gitlab, you must have admin write access in for the group/project to successfully export all the supported entities. 
+
+If your repository has Git Large File Storage (LFS) objects which you want to migrate, you must have [git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git) and [git-lfs](https://git-lfs.com/) to be installed where you run the migrator (or [run the migrator in Docker](../../README.md#using-docker)).
 
 ### Users
 All the users encountered anywhere are stored by email and can be found in users.json in the exported zip file.
@@ -89,6 +91,8 @@ Application also supports advanced option like `resume` which can help you resum
 #### Export fails due to reach the Gitlab rate limit
 If project export fails due to reaching the Gitlab API rate limit, you could wait for an hour and re-run the migrator or exclude exporting metadata (options available are `--no-pr, --no-comment, --no-webhook, and --no-rule`)
 
+#### Missing Git LFS objects
+Make sure the Git Large File Storage (LFS) is enabled on your Gitlab project in Settings -> General settings -> Repository.
 
 #### Missing webhooks
 If you see missing items for webhooks you can refer `ExporterLogs.log` file in root of zip folder.

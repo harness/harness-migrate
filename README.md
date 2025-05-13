@@ -10,9 +10,35 @@ continuous integration pipelines from other providers to Harness CI. You can use
 
 Migrating repositoires is a two-step process. 
 
-1. Export: Use `git-export` to export your repositories from your current provider. Guidlines for [Bitbucket On-perm](cmd/stash/README.md), [GitHub](cmd/github/README.md), [Gitlab](cmd/gitlab/README.md), and [Bitbucket](cmd/bitbucket/README.md). The exported data will be saved in a zip file.
+1. **Export**: Use `git-export` to export repositories with metadata from your current SCM provider. Guidlines for [Bitbucket On-perm](cmd/stash/README.md), [GitHub](cmd/github/README.md), [Gitlab](cmd/gitlab/README.md), and [Bitbucket](cmd/bitbucket/README.md). The exported data will be saved in a zip file.
 
-2. Import: Import the exported zip file into Harness using `git-import` to create new repositories as explained [here](cmd/gitimporter/README.md).
+2. **Import**: Import the exported data into Harness CODE using `git-import` command as explained [here](cmd/gitimporter/README.md).
+
+### Using Docker
+
+The migrator is available as a Docker image with all required dependencies pre-installed. Follow these steps:
+
+1. Build and run the container:
+```sh
+docker build -t harness-migrator .
+docker volume create migrator-data
+docker run -it --name migrator -v migrator-data:/data harness-migrator
+```
+
+2. Inside the container, run your export/import commands:
+```sh
+# Export example
+migrator [SCM-Provider] git-export [flags]
+
+# Import example
+migrator git-import [flags]
+```
+
+Note: All data is stored in the Docker volume `migrator-data` which persists even if you stop or remove the container. To clean up after you're done:
+```sh
+docker rm migrator
+docker volume rm migrator-data
+```
 
 ## Migrate Continuous Integration Pipelines 
 
@@ -139,4 +165,3 @@ $ harness-migrate terraform \
   output.tf
 $ terraform init
 $ terraform apply
-```

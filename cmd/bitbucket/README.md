@@ -1,6 +1,7 @@
 # Git migrator for Bitbucket
 We support migrating these entities from Bitbucket:
 - Repository
+- LFS objects *(requires [git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git) and [git-lfs](https://git-lfs.com/) to be installed)*
 - Repository Public/Private status
 - Pull requests
 - Pull request comments
@@ -11,7 +12,6 @@ Items that would not imported or imported differently:
 - Pull request reviewers and approvers
 - Pending tasks/comments
 - Any attachment
-- LFS objects
 - Webhooks: Some webhook events are not supported. You can check supported triggers [here](https://apidocs.harness.io/tag/webhook#operation/createWebhook)
 
 ### Estimating export duration
@@ -19,6 +19,8 @@ Export will depend on the size of repo and its pull request. A repo which has mo
 
 ## Prerequisites
 To export workspaces from Bitbucket, you must have admin write access in for the workspace to successfully export all the supported entities. 
+
+If your repository has Git Large File Storage (LFS) objects which you want to migrate, you must have [git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git) and [git-lfs](https://git-lfs.com/) to be installed where you run the migrator (or [run the migrator in Docker](../../README.md#using-docker)).
 
 ### Users
 Due to Bitbucket's GDPR compliance, email addresses might be missing for certain user activities. Here's what you need to know:

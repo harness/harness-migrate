@@ -61,6 +61,10 @@ type (
 		PublicEmail string `json:"public_email"`
 	}
 
+	repoInfo struct {
+		LFSEnabled bool `json:"lfs_enabled"`
+	}
+
 	mergeRequest struct {
 		Number         int    `json:"iid"`
 		Sha            string `json:"sha"`

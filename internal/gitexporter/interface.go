@@ -40,4 +40,6 @@ type Interface interface {
 	ListBranchRules(ctx context.Context, repoSlug string, opts types.ListOptions) ([]*types.BranchRule, error)
 
 	ListLabels(ctx context.Context, repoSlug string, opts types.ListOptions) (map[string]externalTypes.Label, error)
+
+	GetLFSEnabledSettings(ctx context.Context, repoSlug string) (bool, error)
 }

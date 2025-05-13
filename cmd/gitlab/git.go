@@ -116,6 +116,7 @@ func (c *exportGitCommand) run(*kingpin.ParseContext) error {
 		NoWebhook: c.flags.NoWebhook,
 		NoRule:    c.flags.NoRule,
 		NoLabel:   c.flags.NoLabel,
+		NoLFS:     c.flags.NoLFS,
 	}
 
 	e := gitlab.New(client, c.group, repository, checkpointManager, fileLogger, tracer_, reporter)
@@ -181,6 +182,10 @@ func registerGit(app *kingpin.CmdClause) {
 	cmd.Flag("no-label", "do NOT export labels").
 		Default("false").
 		BoolVar(&c.flags.NoLabel)
+
+	cmd.Flag("no-lfs", "do NOT export LFS objects").
+		Default("false").
+		BoolVar(&c.flags.NoLFS)
 
 	cmd.Flag("debug", "enable debug logging").
 		BoolVar(&c.debug)

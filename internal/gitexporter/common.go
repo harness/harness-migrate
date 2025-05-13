@@ -87,20 +87,22 @@ func mapBranchRuleDefinition(d types.Definition) externalTypes.Definition {
 
 func mapRepository(repository types.RepoResponse) externalTypes.Repository {
 	return externalTypes.Repository{
-		Slug:       repository.RepoSlug,
-		ID:         repository.ID,
-		Namespace:  repository.Namespace,
-		Name:       repository.Name,
-		Branch:     repository.Branch,
-		Archived:   repository.Archived,
-		Private:    repository.Private,
-		Visibility: mapVisibility(repository.Visibility),
-		Clone:      repository.Clone,
-		CloneSSH:   repository.CloneSSH,
-		Link:       repository.Link,
-		Created:    repository.Created,
-		Updated:    repository.Updated,
-		IsEmpty:    repository.IsEmpty,
+		Slug:           repository.RepoSlug,
+		ID:             repository.ID,
+		Namespace:      repository.Namespace,
+		Name:           repository.Name,
+		Branch:         repository.Branch,
+		Archived:       repository.Archived,
+		Private:        repository.Private,
+		Visibility:     mapVisibility(repository.Visibility),
+		Clone:          repository.Clone,
+		CloneSSH:       repository.CloneSSH,
+		Link:           repository.Link,
+		Created:        repository.Created,
+		Updated:        repository.Updated,
+		IsEmpty:        repository.IsEmpty,
+		LfsObjectCount: repository.LfsObjectCount,
+		GitLFSDisabled: repository.GitLFSDisabled,
 	}
 }
 

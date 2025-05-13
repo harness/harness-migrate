@@ -242,7 +242,7 @@ func (m *Importer) createRepoAndDoPush(ctx context.Context, repoFolder string, r
 		m.Report[repoRef].ReportSkipped(report.ReportTypeGitLFSObjects)
 	}
 
-	err = m.Push(ctx, repoFolder, hRepo, repo.GitLFSDisabled, repo.LfsObjectCount, m.Tracer)
+	err = m.Push(ctx, repoRef, repoFolder, hRepo, repo.GitLFSDisabled, repo.LfsObjectCount, m.Tracer)
 	if err != nil {
 		return fmt.Errorf("failed to push to repo: %w", err)
 	}

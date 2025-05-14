@@ -45,6 +45,7 @@ var version string
 // subcommand program.
 func Command() {
 	app := kingpin.New(application, description)
+	app.UsageWriter(os.Stdout)
 
 	bitbucket.Register(app)
 	cloudbuild.Register(app)

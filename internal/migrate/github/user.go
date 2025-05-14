@@ -16,9 +16,11 @@ package github
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/harness/harness-migrate/internal/gitexporter"
+	"github.com/harness/harness-migrate/internal/harness"
 	"github.com/harness/harness-migrate/internal/types"
 )
 
@@ -38,7 +40,7 @@ func (e *Export) FindEmailByUsername(ctx context.Context, username string) (stri
 	}
 
 	u, _, err := e.GetUserByUserName(ctx, username)
-	if err != nil {
+	if err != nil && !errors.Is(err, harness.ErrNotFound) {
 		return "", err
 	}
 

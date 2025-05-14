@@ -24,6 +24,7 @@ import (
 	"github.com/harness/harness-migrate/internal/checkpoint"
 	"github.com/harness/harness-migrate/internal/common"
 	"github.com/harness/harness-migrate/internal/gitexporter"
+	"github.com/harness/harness-migrate/internal/harness"
 	"github.com/harness/harness-migrate/internal/report"
 	"github.com/harness/harness-migrate/internal/tracer"
 	"github.com/harness/harness-migrate/internal/types"
@@ -73,6 +74,13 @@ func (e *Export) GetUserByUserName(
 	path := fmt.Sprintf("users/%s", userName)
 	out := &types.User{}
 	res, err := e.do(ctx, "GET", path, nil, &out)
+	if res.Status == 404 {
+		return nil, res, fmt.Errorf("user not found: %w", harness.ErrNotFound)
+	}
+	if res.Status == 403 {
+		return nil, res, fmt.Errorf("failed to find user: %w", harness.ErrForbidden)
+	}
+
 	return out, res, err
 }
 

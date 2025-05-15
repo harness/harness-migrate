@@ -109,14 +109,18 @@ func (r *Report) publishReport() {
 			errorCount = len(e.error)
 		}
 		skipped := r.skipped[k]
-		rows = append(rows, table.Row{k, v, errorCount, skipped})
+		skippedStr := "No"
+		if skipped {
+			skippedStr = "Yes"
+		}
+		rows = append(rows, table.Row{k, v, errorCount, skippedStr})
 		addedTypes[k] = true
 	}
 
 	// add rows for skipped types that didn't have any metrics
 	for k := range r.skipped {
 		if !addedTypes[k] {
-			rows = append(rows, table.Row{k, 0, 0, true})
+			rows = append(rows, table.Row{k, 0, 0, "Yes"})
 		}
 	}
 

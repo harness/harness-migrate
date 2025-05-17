@@ -24,7 +24,6 @@ import (
 
 	"github.com/alecthomas/kingpin/v2"
 	"github.com/google/uuid"
-	"golang.org/x/exp/slog"
 )
 
 type gitImport struct {
@@ -58,7 +57,7 @@ func (c *gitImport) run(*kingpin.ParseContext) error {
 
 	// attach the logger to the context
 	ctx := context.Background()
-	ctx = slog.NewContext(ctx, log)
+	ctx = util.WithLogger(ctx, log)
 
 	tracer_ := util.CreateTracerWithLevelAndType(c.debug, c.noProgress)
 	defer tracer_.Close()

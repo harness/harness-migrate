@@ -15,6 +15,7 @@
 package util
 
 import (
+	"context"
 	"crypto/tls"
 	"net/http"
 	"os"
@@ -33,14 +34,21 @@ import (
 )
 
 // CreateLogger helper function creates a logger
+type contextKey string
+
+const loggerKey = contextKey("logger")
+
 func CreateLogger(debug bool) *slog.Logger {
 	opts := new(slog.HandlerOptions)
 	if debug {
 		opts.Level = slog.LevelDebug
 	}
-	return slog.New(
-		opts.NewTextHandler(os.Stdout),
-	)
+	return slog.New(slog.NewTextHandler(os.Stdout, opts))
+}
+
+// WithLogger creates a new context with the logger attached
+func WithLogger(ctx context.Context, logger *slog.Logger) context.Context {
+	return context.WithValue(ctx, loggerKey, logger)
 }
 
 // CreateImporter helper function creates an importer

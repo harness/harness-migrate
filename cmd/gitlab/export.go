@@ -27,7 +27,6 @@ import (
 	"github.com/alecthomas/kingpin/v2"
 	scmgitlab "github.com/drone/go-scm/scm/driver/gitlab"
 	"github.com/drone/go-scm/scm/transport"
-	"golang.org/x/exp/slog"
 )
 
 type exportCommand struct {
@@ -46,7 +45,7 @@ func (c *exportCommand) run(*kingpin.ParseContext) error {
 
 	// attach the logger to the context
 	ctx := context.Background()
-	ctx = slog.NewContext(ctx, log)
+	ctx = util.WithLogger(ctx, log)
 
 	// create the gitlab client (url, token, org)
 	client := scmgitlab.NewDefault()

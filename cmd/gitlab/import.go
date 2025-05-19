@@ -29,7 +29,6 @@ import (
 	"github.com/alecthomas/kingpin/v2"
 	scmgitlab "github.com/drone/go-scm/scm/driver/gitlab"
 	"github.com/drone/go-scm/scm/transport"
-	"golang.org/x/exp/slog"
 )
 
 type importCommand struct {
@@ -47,24 +46,22 @@ type importCommand struct {
 
 func (c *importCommand) run(*kingpin.ParseContext) error {
 
-	// create the logger
-	log := util.CreateLogger(c.debug)
-
-	// attach the logger to the context
+	// create logger and context
+	logger := util.CreateLogger(c.debug)
 	ctx := context.Background()
-	ctx = slog.NewContext(ctx, log)
+	ctx = util.WithLogger(ctx, logger)
 
 	// read the data file
 	data, err := os.ReadFile(c.file)
 	if err != nil {
-		log.Error("cannot read data file", nil)
+		logger.Error("cannot read data file")
 		return err
 	}
 
 	// unmarshal the data file
 	org := new(types.Org)
 	if err := json.Unmarshal(data, org); err != nil {
-		log.Error("cannot unmarshal data file", nil)
+		logger.Error("cannot unmarshal data file")
 		return err
 	}
 
@@ -83,13 +80,12 @@ func (c *importCommand) run(*kingpin.ParseContext) error {
 	// get the current user id.
 	user, _, err := client.Users.Find(ctx)
 	if err != nil {
-		log.Error("cannot retrieve git user", nil)
+		logger.Error("cannot retrieve git user")
 		return err
 	}
 
-	log.Debug("verified user and token",
-		slog.String("user", user.Login),
-	)
+	logger.Debug("verified user and token",
+		"user", user.Login)
 
 	// create the importer
 	importer := &gitlab.Importer{

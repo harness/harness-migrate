@@ -56,7 +56,7 @@ func (c *migrateCommand) run(*kingpin.ParseContext) error {
 
 	// attach the logger to the context
 	ctx := context.Background()
-	ctx = slog.NewContext(ctx, log)
+	ctx = util.WithLogger(ctx, log)
 
 	// create the circle client (url, token, org)
 	client := client.New(c.circleToken,

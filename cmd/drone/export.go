@@ -28,7 +28,6 @@ import (
 
 	"github.com/alecthomas/kingpin/v2"
 	"github.com/jmoiron/sqlx"
-	"golang.org/x/exp/slog"
 )
 
 type exportCommand struct {
@@ -56,7 +55,7 @@ func (c *exportCommand) run(*kingpin.ParseContext) error {
 
 	// attach the logger to the context
 	ctx := context.Background()
-	ctx = slog.NewContext(ctx, log)
+	ctx = util.WithLogger(ctx, log)
 
 	var db *sqlx.DB
 	droneRepo, err := repo.NewRepository(c.Driver, c.Datasource, db)

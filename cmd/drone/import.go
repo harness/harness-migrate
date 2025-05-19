@@ -65,7 +65,7 @@ type importCommand struct {
 
 func (c *importCommand) run(*kingpin.ParseContext) error {
 	log := util.CreateLogger(c.debug)
-	ctx := slog.NewContext(context.Background(), log)
+	ctx := util.WithLogger(context.Background(), log)
 
 	if c.repoConn == "" && (c.gitlabToken == "" && c.githubToken == "" && c.bitbucketToken == "") {
 		return errors.New("either specify a repo connector or a gitlab/github/bitbucket token")

@@ -28,7 +28,6 @@ import (
 	"github.com/harness/harness-migrate/internal/gitexporter"
 	"github.com/harness/harness-migrate/internal/migrate/stash"
 	"github.com/harness/harness-migrate/internal/report"
-	"golang.org/x/exp/slog"
 )
 
 type exportCommand struct {
@@ -56,7 +55,7 @@ func (c *exportCommand) run(*kingpin.ParseContext) error {
 
 	// attach the logger to the context
 	ctx := context.Background()
-	ctx = slog.NewContext(ctx, log)
+	ctx = util.WithLogger(ctx, log)
 
 	// create the stash client (url, token, org)
 	client, err := scmstash.New(c.url)

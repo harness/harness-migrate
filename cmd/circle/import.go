@@ -54,7 +54,7 @@ func (c *importCommand) run(*kingpin.ParseContext) error {
 
 	// attach the logger to the context
 	ctx := context.Background()
-	ctx = slog.NewContext(ctx, log)
+	ctx = util.WithLogger(ctx, log)
 
 	// read the data file
 	data, err := os.ReadFile(c.file)

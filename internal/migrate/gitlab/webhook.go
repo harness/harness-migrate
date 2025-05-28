@@ -88,7 +88,7 @@ func (e *Export) ListWebhooks(
 func (e *Export) processWebhooks(repoSlug string, webhooks []*scm.Hook) (types.WebhookData, error) {
 	convertedHooks, notSupportedHooks := migrate.MapWebhooks(webhooks, mapEvents)
 	// logs the not supported hooks
-	err := migrate.LogNotSupportedWebhookEvents(repoSlug, notSupportedHooks, e.fileLogger)
+	err := migrate.LogNotSupportedWebhookEvents(repoSlug, notSupportedHooks, e.fileLogger, e.report[repoSlug])
 	if err != nil {
 		e.tracer.Stop(common.ErrListWebhooks, repoSlug, err)
 		return types.WebhookData{}, fmt.Errorf("failed to log the not supported webhooks for repo %q: %w",

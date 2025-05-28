@@ -25,6 +25,7 @@ import (
 
 	"github.com/harness/harness-migrate/internal/command"
 	"github.com/harness/harness-migrate/internal/common"
+	"github.com/harness/harness-migrate/internal/report"
 	"github.com/harness/harness-migrate/internal/tracer"
 	"github.com/harness/harness-migrate/internal/util"
 	"github.com/harness/harness-migrate/types"
@@ -112,7 +113,7 @@ func (e *Exporter) CloneRepository(
 		return isEmpty, 0, err
 	}
 
-	e.Report[repoSlug].ReportMetric(ReportTypeGitLFSObjects, lfsObjectCount)
+	e.Report[repoSlug].ReportMetric(report.ReportTypeGitLFSObjects, lfsObjectCount)
 	tracer.Stop(common.MsgCompleteGitClone, repoSlug)
 	return isEmpty, lfsObjectCount, nil
 }

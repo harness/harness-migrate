@@ -23,8 +23,8 @@ import (
 	"strings"
 
 	"github.com/harness/harness-migrate/internal/common"
-	"github.com/harness/harness-migrate/internal/gitexporter"
 	"github.com/harness/harness-migrate/internal/migrate"
+	"github.com/harness/harness-migrate/internal/report"
 	"github.com/harness/harness-migrate/internal/types"
 	"github.com/harness/harness-migrate/internal/types/enum"
 )
@@ -170,7 +170,7 @@ func (e *Export) convertBranchRule(from branchProtectionRule, repo string) []*ty
 			return rules
 		}
 	}
-	e.report[repo].ReportErrors(gitexporter.ReportTypeBranchRules, from.ID, logs)
+	e.report[repo].ReportErrors(report.ReportTypeBranchRules, from.ID, logs)
 
 	return rules
 }
@@ -276,7 +276,7 @@ func (e *Export) mapRuleDefinition(from *detailedRuleSet, repo string) types.Def
 			return definition
 		}
 	}
-	e.report[repo].ReportErrors(gitexporter.ReportTypeBranchRules, from.Name, logs)
+	e.report[repo].ReportErrors(report.ReportTypeBranchRules, from.Name, logs)
 
 	return definition
 }

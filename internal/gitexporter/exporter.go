@@ -144,7 +144,7 @@ func (e *Exporter) Export(ctx context.Context) error {
 		log.Printf("error cleaning up files: %v", err)
 	}
 
-	publishReport(e.Report)
+	report.PublishReports(e.Report)
 	return nil
 }
 
@@ -292,6 +292,7 @@ func (e *Exporter) getData(ctx context.Context, path string) ([]*types.RepoData,
 		data := &types.RepoData{Repository: repository}
 		repoData = append(repoData, data)
 		e.Report[repository.RepoSlug] = report.Init(repository.RepoSlug)
+		e.reportSkippedMetadata(e.Report[repository.RepoSlug])
 	}
 
 	for i, repo := range repositories {
@@ -312,6 +313,10 @@ func (e *Exporter) getData(ctx context.Context, path string) ([]*types.RepoData,
 			e.flags.NoLFS = !lfsEnabled
 		}
 		repoData[i].Repository.GitLFSDisabled = e.flags.NoLFS
+
+		if e.flags.NoLFS {
+			e.Report[repo.RepoSlug].ReportSkipped(report.ReportTypeGitLFSObjects)
+		}
 
 		// 3. clone git data for each repo
 		isEmpty, lfsObjectCount, err := e.CloneRepository(
@@ -335,7 +340,7 @@ func (e *Exporter) getData(ctx context.Context, path string) ([]*types.RepoData,
 				return nil, fmt.Errorf("encountered error in getting webhooks: %v", err)
 			}
 			repoData[i].Webhooks = webhooks
-			e.Report[repo.RepoSlug].ReportMetric(ReportTypeWebhooks, len(webhooks.ConvertedHooks))
+			e.Report[repo.RepoSlug].ReportMetric(report.ReportTypeWebhooks, len(webhooks.ConvertedHooks))
 		}
 
 		// 5. get all branch rules for each repo
@@ -345,7 +350,7 @@ func (e *Exporter) getData(ctx context.Context, path string) ([]*types.RepoData,
 				return nil, fmt.Errorf("encountered error in getting branch rules: %w", err)
 			}
 			repoData[i].BranchRules = branchRules
-			e.Report[repo.RepoSlug].ReportMetric(ReportTypeBranchRules, len(branchRules))
+			e.Report[repo.RepoSlug].ReportMetric(report.ReportTypeBranchRules, len(branchRules))
 		}
 
 		// 6. get labels for each repo (independant of their assignment)
@@ -356,7 +361,7 @@ func (e *Exporter) getData(ctx context.Context, path string) ([]*types.RepoData,
 				return nil, fmt.Errorf("encountered error in getting labels: %w", err)
 			}
 			repoData[i].Labels = labels
-			e.Report[repo.RepoSlug].ReportMetric(ReportTypeLabels, len(labels))
+			e.Report[repo.RepoSlug].ReportMetric(report.ReportTypeLabels, len(labels))
 		}
 
 		// 7. get all data for each pr
@@ -366,7 +371,7 @@ func (e *Exporter) getData(ctx context.Context, path string) ([]*types.RepoData,
 			if err != nil {
 				return nil, fmt.Errorf("encountered error in getting pr: %w", err)
 			}
-			e.Report[repo.RepoSlug].ReportMetric(ReportTypePRs, len(prs))
+			e.Report[repo.RepoSlug].ReportMetric(report.ReportTypePRs, len(prs))
 
 			if e.flags.NoComment {
 				pullreqData := make([]*types.PullRequestData, len(prs))
@@ -474,11 +479,11 @@ func (e *Exporter) reportUserMetrics(repo string, users map[string]bool) {
 	unknownEmailsCount := 0
 	for user := range users {
 		if strings.HasSuffix(user, UnknownEmailSuffix) {
-			e.Report[repo].ReportError(ReportTypeUsers, user, "User mapped to new email")
+			e.Report[repo].ReportError(report.ReportTypeUsers, user, "User mapped to new email")
 			unknownEmailsCount++
 		}
 	}
-	e.Report[repo].ReportMetric(ReportTypeUsers, len(users)-unknownEmailsCount)
+	e.Report[repo].ReportMetric(report.ReportTypeUsers, len(users)-unknownEmailsCount)
 }
 
 func extractUsers(repo *types.RepoData, users map[string]bool) map[string]bool {
@@ -590,4 +595,19 @@ func deleteFolders(path string) error {
 func deleteFiles(path string) error {
 	// delete users.json skipping exporter json for now
 	return os.Remove(filepath.Join(path, externalTypes.UsersFileName))
+}
+
+func (e Exporter) reportSkippedMetadata(reporter *report.Report) {
+	reportTypesMap := map[string]bool{
+		report.ReportTypeWebhooks:    e.flags.NoWebhook,
+		report.ReportTypePRs:         e.flags.NoPR,
+		report.ReportTypeBranchRules: e.flags.NoRule,
+		report.ReportTypeLabels:      e.flags.NoLabel,
+	}
+
+	for reportType, isSkipped := range reportTypesMap {
+		if isSkipped {
+			reporter.ReportSkipped(reportType)
+		}
+	}
 }

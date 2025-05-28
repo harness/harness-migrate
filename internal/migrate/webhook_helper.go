@@ -20,6 +20,7 @@ import (
 
 	"github.com/drone/go-scm/scm"
 	"github.com/harness/harness-migrate/internal/gitexporter"
+	"github.com/harness/harness-migrate/internal/report"
 	"github.com/harness/harness-migrate/internal/types/enum"
 )
 
@@ -42,7 +43,7 @@ func MapWebhooks(
 	return convertedHooks, notSupportedHooks
 }
 
-func LogNotSupportedWebhookEvents(repoSlug string, notSupportedHooks []*scm.Hook, logger gitexporter.Logger) error {
+func LogNotSupportedWebhookEvents(repoSlug string, notSupportedHooks []*scm.Hook, logger gitexporter.Logger, reporter *report.Report) error {
 	if len(notSupportedHooks) == 0 {
 		return nil
 	}
@@ -58,6 +59,7 @@ func LogNotSupportedWebhookEvents(repoSlug string, notSupportedHooks []*scm.Hook
 		return fmt.Errorf("failed to log the not supported webhooks for repo %q: %w", repoSlug, err)
 	}
 
+	reporter.ReportErrors(report.ReportTypeWebhooks, repoSlug, logs)
 	return nil
 }
 

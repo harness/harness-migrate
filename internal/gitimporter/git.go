@@ -13,6 +13,7 @@ import (
 	"github.com/harness/harness-migrate/internal/command"
 	"github.com/harness/harness-migrate/internal/common"
 	"github.com/harness/harness-migrate/internal/harness"
+	"github.com/harness/harness-migrate/internal/report"
 	"github.com/harness/harness-migrate/internal/tracer"
 	"github.com/harness/harness-migrate/types"
 )
@@ -41,6 +42,7 @@ type goGitPusher struct {
 
 func (m *Importer) Push(
 	ctx context.Context,
+	repoRef string,
 	repoPath string,
 	repo *harness.Repository,
 	gitLFSDisabled bool,
@@ -70,6 +72,7 @@ func (m *Importer) Push(
 			tracer.Stop(common.ErrGitLFSPush, err)
 			return err
 		}
+		m.Report[repoRef].ReportMetric(report.ReportTypeGitLFSObjects, lfsObjectCount)
 	}
 
 	params := pushParams{

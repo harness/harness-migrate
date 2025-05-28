@@ -25,6 +25,7 @@ import (
 
 	"github.com/harness/harness-migrate/internal/common"
 	"github.com/harness/harness-migrate/internal/harness"
+	"github.com/harness/harness-migrate/internal/report"
 	"github.com/harness/harness-migrate/internal/tracer"
 	"github.com/harness/harness-migrate/internal/types/enum"
 	"github.com/harness/harness-migrate/internal/util"
@@ -45,6 +46,7 @@ type Importer struct {
 
 	Gitness bool
 	Tracer  tracer.Tracer
+	Report  map[string]*report.Report
 
 	RequestId string
 	flags     Flags
@@ -69,7 +71,9 @@ func NewImporter(
 	gitness,
 	trace bool,
 	flags Flags,
-	tracer tracer.Tracer) *Importer {
+	tracer tracer.Tracer,
+	report map[string]*report.Report,
+) *Importer {
 	spaceParts := strings.Split(space, "/")
 
 	client := harness.New(spaceParts[0], token, harness.WithAddress(baseURL), harness.WithTracing(trace))
@@ -84,6 +88,7 @@ func NewImporter(
 		HarnessRepo:     repo,
 		HarnessToken:    token,
 		Tracer:          tracer,
+		Report:          report,
 		RequestId:       requestId,
 		Endpoint:        baseURL,
 		Gitness:         gitness,
@@ -125,6 +130,9 @@ func (m *Importer) Import(ctx context.Context) error {
 		}
 
 		repoRef := util.JoinPaths(m.HarnessSpace, repository.Name)
+
+		m.Report[repoRef] = report.Init(repoRef)
+		m.reportSkippedMetadata(m.Report[repoRef])
 
 		if err := m.createRepoAndDoPush(ctx, f, &repository); err != nil {
 			m.Tracer.LogError("failed to create or push git data for %q: %s", repoRef, err.Error())
@@ -172,6 +180,7 @@ func (m *Importer) Import(ctx context.Context) error {
 		}
 	}
 
+	report.PublishReports(m.Report)
 	m.Tracer.Log(common.MsgCompleteImport, len(folders))
 	return nil
 }
@@ -231,7 +240,11 @@ func (m *Importer) createRepoAndDoPush(ctx context.Context, repoFolder string, r
 		}
 	}
 
-	err = m.Push(ctx, repoFolder, hRepo, repo.GitLFSDisabled, repo.LfsObjectCount, m.Tracer)
+	if repo.GitLFSDisabled {
+		m.Report[repoRef].ReportSkipped(report.ReportTypeGitLFSObjects)
+	}
+
+	err = m.Push(ctx, repoRef, repoFolder, hRepo, repo.GitLFSDisabled, repo.LfsObjectCount, m.Tracer)
 	if err != nil {
 		return fmt.Errorf("failed to push to repo: %w", err)
 	}
@@ -250,8 +263,7 @@ func (m *Importer) createRepoAndDoPush(ctx context.Context, repoFolder string, r
 
 func (m *Importer) importRepoMetaData(_ context.Context, repoRef, repoFolder string) error {
 	if !m.flags.NoLabel {
-		// CODE-2404: ignore Not Found as migrate labels API on server might not be deployed yet (e.g, H0).
-		if err := m.ImportLabels(repoRef, repoFolder); err != nil && !errors.Is(err, harness.ErrNotFound) {
+		if err := m.ImportLabels(repoRef, repoFolder); err != nil {
 			return fmt.Errorf("failed to import labels for '%s': %w", repoRef, err)
 		}
 	}
@@ -330,4 +342,19 @@ func getRepoBaseFolders(directory string, singleRepo string) ([]string, error) {
 	}
 
 	return folders, nil
+}
+
+func (m *Importer) reportSkippedMetadata(reporter *report.Report) {
+	reportTypesMap := map[string]bool{
+		report.ReportTypeWebhooks:    m.flags.NoWebhook,
+		report.ReportTypePRs:         m.flags.NoPR,
+		report.ReportTypeBranchRules: m.flags.NoRule,
+		report.ReportTypeLabels:      m.flags.NoLabel,
+	}
+
+	for reportType, isSkipped := range reportTypesMap {
+		if isSkipped {
+			reporter.ReportSkipped(reportType)
+		}
+	}
 }

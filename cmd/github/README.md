@@ -61,13 +61,13 @@ When they are exported, supported Github branch protection rules and webhooks ar
 ## Commands 
 As a quick start you can run 
 ```
-./migrator github git-export --project <project name> --repository <repo-name> --host <host-url> --username <github-username> --token <token> <zip-folder-path> 
+./harness-migrate github git-export --project <project name> --repository <repo-name> --host <host-url> --username <github-username> --token <token> <zip-folder-path> 
 ```
 where you have to replace all values enclosed in brackets `<>`.
 
 You can also provide more advanced options. You can look at those via help: 
 ```
-./migrator github git-export --help
+./harness-migrate github git-export --help
 ```
 
 Application also supports advanced option like `resume` which can help you resume run from last successful run and avoid overhead of re-running the same commands.

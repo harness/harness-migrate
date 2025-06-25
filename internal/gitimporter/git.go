@@ -94,9 +94,9 @@ func (m *Importer) Push(
 }
 
 func (m *Importer) selectGitPusher(params pushParams, gitLFSDisabled bool) gitPusher {
-	if gitLFSDisabled {
-		return &goGitPusher{params: params, tracer: m.Tracer}
-	}
+	// if gitLFSDisabled {
+	// 	return &goGitPusher{params: params, tracer: m.Tracer}
+	// }
 	return &nativeGitPusher{params: params, tracer: m.Tracer}
 }
 

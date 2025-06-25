@@ -23,7 +23,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/harness/harness-migrate/internal/checkpoint"
 	"github.com/harness/harness-migrate/internal/command"
 	"github.com/harness/harness-migrate/internal/common"
 	"github.com/harness/harness-migrate/internal/report"
@@ -87,7 +86,8 @@ func NewExporter(
 
 // Export calls exporter methods in order and serialize an object for import.
 func (e *Exporter) Export(ctx context.Context) error {
-	path := filepath.Join(".", e.zipLocation)
+	//path := filepath.Join(".", e.zipLocation)
+	path := e.zipLocation
 	err := util.CreateFolder(path)
 	if err != nil {
 		return fmt.Errorf(common.ErrCannotCreateFolder, err)
@@ -122,10 +122,10 @@ func (e *Exporter) Export(ctx context.Context) error {
 		return fmt.Errorf("error writing users json: %w", err)
 	}
 
-	err = checkpoint.CleanupCheckpoint(path)
-	if err != nil {
-		log.Printf("error cleaning checkpoint: %v", err)
-	}
+	// err = checkpoint.CleanupCheckpoint(path)
+	// if err != nil {
+	// 	log.Printf("error cleaning checkpoint: %v", err)
+	// }
 
 	err = zipFolder(path)
 	if err != nil {
@@ -134,15 +134,15 @@ func (e *Exporter) Export(ctx context.Context) error {
 
 	e.Tracer.Log(common.MsgCompleteExport, len(data))
 
-	err = deleteFolders(path)
-	if err != nil {
-		log.Printf("error cleaning up folder: %v", err)
-	}
+	// err = deleteFolders(path)
+	// if err != nil {
+	// 	log.Printf("error cleaning up folder: %v", err)
+	// }
 
-	err = deleteFiles(path)
-	if err != nil && !os.IsNotExist(err) {
-		log.Printf("error cleaning up files: %v", err)
-	}
+	// err = deleteFiles(path)
+	// if err != nil && !os.IsNotExist(err) {
+	// 	log.Printf("error cleaning up files: %v", err)
+	// }
 
 	report.PublishReports(e.Report)
 	return nil

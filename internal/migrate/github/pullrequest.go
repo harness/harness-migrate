@@ -25,17 +25,26 @@ import (
 	"github.com/drone/go-scm/scm"
 )
 
+// IMPORT STEP 1
+//const skipUpTo = 60646
+
+// PR range limits
+const maxPR = 33755 // 32817 //32818 //30999
+const minPR = 32103 // 32102 //31000 // 1
+
 func (e *Export) ListPullRequests(
 	ctx context.Context,
 	repoSlug string,
 	params types.PullRequestListOptions,
 ) ([]types.PRResponse, error) {
 	e.tracer.Start(common.MsgStartExportPRs, repoSlug)
+	// IMPORT STEP 1
+	//params.Open = false
 	opts := scm.PullRequestListOptions{
 		Page:   params.Page,
 		Size:   params.Size,
-		Open:   params.Open,
-		Closed: params.Closed,
+		Open:   true, // params.Open, //params.Open,
+		Closed: true, // params.Closed,
 	}
 	var allPrs []types.PRResponse
 	msgPrExport := common.MsgCompleteExportPRs
@@ -74,6 +83,9 @@ func (e *Export) ListPullRequests(
 			return nil, fmt.Errorf("cannot list prs: %w", err)
 		}
 		mappedPrs := common.MapPullRequest(prs)
+		// Filter PRs to only include those in our desired range (1-30999)
+		mappedPrs = filterPRsInRange(mappedPrs, minPR, maxPR)
+
 		mappedPrsWithAuthor, err := e.addEmailToPRAuthor(ctx, mappedPrs)
 		if err != nil {
 			return nil, fmt.Errorf("cannot add email to author: %w", err)
@@ -90,7 +102,14 @@ func (e *Export) ListPullRequests(
 			e.tracer.LogError(common.ErrCheckpointPrPageSave, err)
 		}
 
+		// Break if no more pages
 		if resp.Page.Next == 0 {
+			break
+		}
+
+		// If all PRs in this page have numbers less than our minimum range, we can stop
+		// This assumes GitHub returns PRs in descending order by default
+		if len(prs) > 0 && prs[len(prs)-1].Number <= minPR {
 			break
 		}
 		opts.Page = resp.Page.Next
@@ -114,4 +133,15 @@ func (e *Export) addEmailToPRAuthor(ctx context.Context, prs []types.PRResponse)
 		prs[i] = pr
 	}
 	return prs, nil
+}
+
+// filterPRsInRange filters PRs to only include those with numbers in the specified range
+func filterPRsInRange(prs []types.PRResponse, minPRNumber, maxPRNumber int) []types.PRResponse {
+	var filteredPRs []types.PRResponse
+	for _, pr := range prs {
+		if pr.Number >= minPRNumber && pr.Number <= maxPRNumber {
+			filteredPRs = append(filteredPRs, pr)
+		}
+	}
+	return filteredPRs
 }

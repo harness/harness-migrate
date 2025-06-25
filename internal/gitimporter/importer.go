@@ -138,7 +138,7 @@ func (m *Importer) Import(ctx context.Context) error {
 			m.Tracer.LogError("failed to create or push git data for %q: %s", repoRef, err.Error())
 			if !errors.Is(err, harness.ErrDuplicate) {
 				// only cleanup if repo is not already existed (meaning was created by the migrator)
-				m.cleanup(repoRef)
+				//m.cleanup(repoRef)
 			}
 			if notRecoverableError(err) {
 				return ErrAbortMigration
@@ -147,7 +147,7 @@ func (m *Importer) Import(ctx context.Context) error {
 			continue
 		}
 
-		// update the repo state to migrate data import
+		//update the repo state to migrate data import
 		_, err = m.Harness.UpdateRepositoryState(
 			repoRef,
 			&harness.UpdateRepositoryStateInput{State: enum.RepoStateMigrateDataImport},
@@ -161,7 +161,7 @@ func (m *Importer) Import(ctx context.Context) error {
 			if err != nil {
 				m.Tracer.LogError("failed to import repo meta data for %q: %s", repoRef, err.Error())
 				// best effort delete the repo on server
-				m.cleanup(repoRef)
+				//m.cleanup(repoRef)
 
 				if notRecoverableError(err) {
 					return ErrAbortMigration
@@ -226,6 +226,14 @@ func (m *Importer) createRepoAndDoPush(ctx context.Context, repoFolder string, r
 		return nil
 	}
 
+	// hRepo := &harness.Repository{
+	// 	Identifier:    "harness-pl-infra",
+	// 	ParentID:      1,
+	// 	Description:   "",
+	// 	IsPublic:      false,
+	// 	DefaultBranch: "master",
+	// 	GitURL:        "https://git0.harness.io/l7B_kbSEQD2wjrM7PShm5w/harness-pl-infra.git",
+	// }
 	repoRef := util.JoinPaths(m.HarnessSpace, repo.Name)
 	originalLimit, err := m.getFileSizeLimit(repoRef, m.Tracer)
 	if err != nil {
@@ -291,14 +299,14 @@ func (m *Importer) importRepoMetaData(_ context.Context, repoRef, repoFolder str
 
 // Cleanup cleans up the repo best effort.
 func (m *Importer) cleanup(repoRef string) {
-	m.Tracer.Start(common.MsgStartRepoCleanup, repoRef)
-	err := m.Harness.DeleteRepository(repoRef)
-	if err != nil {
-		m.Tracer.LogError(common.ErrCleanupRepo, err)
-		return
-	}
+	// m.Tracer.Start(common.MsgStartRepoCleanup, repoRef)
+	// err := m.Harness.DeleteRepository(repoRef)
+	// if err != nil {
+	// 	m.Tracer.LogError(common.ErrCleanupRepo, err)
+	// 	return
+	// }
 
-	m.Tracer.Stop(common.MsgCompleteRepoCleanup, repoRef)
+	// m.Tracer.Stop(common.MsgCompleteRepoCleanup, repoRef)
 }
 
 // notRecoverableError checks if error is not recoverable, otherwise migration can continue

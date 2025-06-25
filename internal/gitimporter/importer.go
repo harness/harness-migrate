@@ -122,6 +122,7 @@ func (m *Importer) Import(ctx context.Context) error {
 		return err
 	}
 
+	importedRepos := 0
 	for _, f := range folders {
 		repository, err := m.ReadRepoInfo(f)
 		if err != nil {
@@ -178,10 +179,12 @@ func (m *Importer) Import(ctx context.Context) error {
 		if err != nil {
 			return fmt.Errorf("failed to update the repo state to %s: %w", enum.RepoStateActive, err)
 		}
+
+		importedRepos++
 	}
 
 	report.PublishReports(m.Report)
-	m.Tracer.Log(common.MsgCompleteImport, len(folders))
+	m.Tracer.Log(common.MsgCompleteImport, importedRepos)
 	return nil
 }
 

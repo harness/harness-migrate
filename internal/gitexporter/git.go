@@ -101,16 +101,18 @@ func (e *Exporter) CloneRepository(
 		return isEmpty, lfsObjectCount, nil
 	}
 
-	err = command.FetchLFSObjects(ctx, gitPath)
-	if err != nil {
-		tracer.Stop(common.ErrFetchLFSObjects, err)
-		return isEmpty, lfsObjectCount, fmt.Errorf("failed to pull LFS objects for repo %s: %w", repoSlug, err)
-	}
+	if !isEmpty {
+		err = command.FetchLFSObjects(ctx, gitPath)
+		if err != nil {
+			tracer.Stop(common.ErrFetchLFSObjects, err)
+			return isEmpty, lfsObjectCount, fmt.Errorf("failed to pull LFS objects for repo %s: %w", repoSlug, err)
+		}
 
-	lfsObjectCount, err = e.countLFSObjects(ctx, gitPath, repoSlug, tracer)
-	if err != nil {
-		tracer.Stop(common.ErrFetchLFSObjects, err)
-		return isEmpty, 0, err
+		lfsObjectCount, err = e.countLFSObjects(ctx, gitPath, repoSlug, tracer)
+		if err != nil {
+			tracer.Stop(common.ErrFetchLFSObjects, err)
+			return isEmpty, 0, err
+		}
 	}
 
 	e.Report[repoSlug].ReportMetric(report.ReportTypeGitLFSObjects, lfsObjectCount)
@@ -176,12 +178,13 @@ func (c *nativeGitCloner) clone(ctx context.Context) (bool, error) {
 		"clone", "--bare",
 		cloneURL, ".")
 	if err != nil {
-		if strings.Contains(string(output), "You appear to have cloned an empty repository.") {
-			c.tracer.Stop(common.MsgGitCloneEmptyRepo, c.params.repoSlug)
-			return true, nil
-		}
 		c.tracer.LogError(common.ErrGitClone, c.params.repoSlug, err, string(output))
 		return false, fmt.Errorf("failed to clone repo %s: %w", c.params.repoSlug, err)
+	}
+
+	if strings.Contains(string(output), "You appear to have cloned an empty repository.") {
+		c.tracer.Stop(common.MsgGitCloneEmptyRepo, c.params.repoSlug)
+		return true, nil
 	}
 
 	fetchArgs := []string{

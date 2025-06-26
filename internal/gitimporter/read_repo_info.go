@@ -10,9 +10,15 @@ import (
 )
 
 func (m *Importer) ReadRepoInfo(dir string) (types.Repository, error) {
+	dirInfo, err := os.Stat(dir)
+	if err != nil || !dirInfo.IsDir() {
+		return types.Repository{}, ErrInvalidRepoDir
+	}
+
 	infoFile := filepath.Join(dir, types.InfoFileName)
-	if _, err := os.Stat(infoFile); os.IsNotExist(err) {
-		return types.Repository{}, fmt.Errorf("%s not found in '%s': %w", types.InfoFileName, dir, err)
+	_, err = os.Stat(infoFile)
+	if os.IsNotExist(err) {
+		return types.Repository{}, ErrInvalidRepoDir
 	}
 
 	data, err := os.ReadFile(infoFile)

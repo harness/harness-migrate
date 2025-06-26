@@ -32,7 +32,10 @@ import (
 	"github.com/harness/harness-migrate/types"
 )
 
-var ErrAbortMigration = errors.New("aborting the migration. please checkout your command and try again")
+var (
+	ErrAbortMigration = errors.New("aborting the migration. please checkout your command and try again")
+	ErrInvalidRepoDir = errors.New("directory doesn't contain repo metadata")
+)
 
 // Importer imports data from gitlab to Harness.
 type Importer struct {
@@ -125,8 +128,12 @@ func (m *Importer) Import(ctx context.Context) error {
 	importedRepos := 0
 	for _, f := range folders {
 		repository, err := m.ReadRepoInfo(f)
-		if err != nil {
+		if err != nil && !errors.Is(err, ErrInvalidRepoDir) {
 			m.Tracer.LogError("failed to read repo info from %q: %s", f, err.Error())
+			continue
+		}
+
+		if errors.Is(err, ErrInvalidRepoDir) {
 			continue
 		}
 

@@ -182,9 +182,9 @@ func (c *nativeGitCloner) clone(ctx context.Context) (bool, error) {
 		return false, fmt.Errorf("failed to clone repo %s: %w", c.params.repoSlug, err)
 	}
 
-	// check if the repository is empty by looking for refs
-	refsOutput, _ := command.RunGitCommand(ctx, c.params.gitPath, []string{}, "show-ref")
-	if len(strings.TrimSpace(string(refsOutput))) == 0 {
+	// check if the repository is empty by looking for at least one ref
+	refsOutput, _ := command.RunGitCommand(ctx, c.params.gitPath, []string{}, "for-each-ref", "--count", "1")
+	if len(refsOutput) == 0 {
 		c.tracer.Stop(common.MsgGitCloneEmptyRepo, c.params.repoSlug)
 		return true, nil
 	}

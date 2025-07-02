@@ -11,7 +11,10 @@ import (
 
 func (m *Importer) ReadRepoInfo(dir string) (types.Repository, error) {
 	dirInfo, err := os.Stat(dir)
-	if err != nil || !dirInfo.IsDir() {
+	if err != nil {
+		return types.Repository{}, fmt.Errorf("failed to read directory %q: %w", dir, err)
+	}
+	if !dirInfo.IsDir() {
 		return types.Repository{}, ErrInvalidRepoDir
 	}
 

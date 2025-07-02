@@ -128,12 +128,11 @@ func (m *Importer) Import(ctx context.Context) error {
 	importedRepos := 0
 	for _, f := range folders {
 		repository, err := m.ReadRepoInfo(f)
-		if err != nil && !errors.Is(err, ErrInvalidRepoDir) {
-			m.Tracer.LogError("failed to read repo info from %q: %s", f, err.Error())
+		if errors.Is(err, ErrInvalidRepoDir) {
 			continue
 		}
-
-		if errors.Is(err, ErrInvalidRepoDir) {
+		if err != nil {
+			m.Tracer.LogError("failed to read repo info from %q: %s", f, err.Error())
 			continue
 		}
 

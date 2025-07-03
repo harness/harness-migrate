@@ -99,7 +99,8 @@ func (u *Updater) processPRFile(filePath string, mapping UserMapping) error {
 
 		err = util.WriteFile(filePath, prJson)
 		if err != nil {
-			return err
+			u.tracer.Log("Error updating the PR file %s: %v", filePath, err)
+			return fmt.Errorf("failed to write updated PR file: %w", err)
 		}
 
 		u.tracer.Log("Updated user emails in %d PR entries.", updatedPRCount)

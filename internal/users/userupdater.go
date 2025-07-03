@@ -119,7 +119,7 @@ func (u *Updater) processDirectory(rootDir string, mapping UserMapping) error {
 	var orgDirs []string
 	// find the organization directory
 	for _, entry := range entries {
-		if !entry.IsDir() || strings.HasPrefix(entry.Name(), ".") {
+		if !entry.IsDir() {
 			continue
 		}
 
@@ -147,14 +147,14 @@ func (u *Updater) processDirectory(rootDir string, mapping UserMapping) error {
 		if hasRepos {
 			orgDirs = append(orgDirs, potentialOrgDir)
 		}
+
+		if len(orgDirs) > 1 {
+			return fmt.Errorf("multiple organization directories found in %s. it should be only one", rootDir)
+		}
 	}
 
 	if len(orgDirs) == 0 {
 		return fmt.Errorf("no valid organization directories found in %s", rootDir)
-	}
-
-	if len(orgDirs) > 1 {
-		return fmt.Errorf("multiple organization directories found in %s. it should be only one", rootDir)
 	}
 
 	orgDir := orgDirs[0]

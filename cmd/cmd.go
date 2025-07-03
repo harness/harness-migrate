@@ -28,6 +28,7 @@ import (
 	"github.com/harness/harness-migrate/cmd/stash"
 	"github.com/harness/harness-migrate/cmd/terraform"
 	"github.com/harness/harness-migrate/cmd/travis"
+	"github.com/harness/harness-migrate/cmd/users"
 
 	"github.com/alecthomas/kingpin/v2"
 )
@@ -59,6 +60,8 @@ func Command() {
 	stash.Register(app)
 
 	gitimporter.Register(app)
+
+	users.Register(app)
 
 	app.Version(version)
 	kingpin.MustParse(app.Parse(os.Args[1:]))

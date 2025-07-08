@@ -96,11 +96,13 @@ func (e *Exporter) CloneRepository(
 
 	var lfsObjectCount int
 
-	if e.flags.NoLFS {
+	if e.flags.NoLFS || isEmpty {
+		e.Report[repoSlug].ReportMetric(report.ReportTypeGitLFSObjects, lfsObjectCount)
 		tracer.Stop(common.MsgCompleteGitClone, repoSlug)
 		return isEmpty, lfsObjectCount, nil
 	}
 
+	// only fetch lfs objects if the repo is not empty as git-lfs fails if default branch does not exist
 	err = command.FetchLFSObjects(ctx, gitPath)
 	if err != nil {
 		tracer.Stop(common.ErrFetchLFSObjects, err)
@@ -176,12 +178,15 @@ func (c *nativeGitCloner) clone(ctx context.Context) (bool, error) {
 		"clone", "--bare",
 		cloneURL, ".")
 	if err != nil {
-		if strings.Contains(string(output), "You appear to have cloned an empty repository.") {
-			c.tracer.Stop(common.MsgGitCloneEmptyRepo, c.params.repoSlug)
-			return true, nil
-		}
 		c.tracer.LogError(common.ErrGitClone, c.params.repoSlug, err, string(output))
 		return false, fmt.Errorf("failed to clone repo %s: %w", c.params.repoSlug, err)
+	}
+
+	// check if the repository is empty by looking for at least one ref
+	refsOutput, _ := command.RunGitCommand(ctx, c.params.gitPath, []string{}, "for-each-ref", "--count", "1")
+	if len(refsOutput) == 0 {
+		c.tracer.Stop(common.MsgGitCloneEmptyRepo, c.params.repoSlug)
+		return true, nil
 	}
 
 	fetchArgs := []string{

@@ -8,9 +8,11 @@ continuous integration pipelines from other providers to Harness CI. You can use
 
 ## Migrate Repositories
 
-Migrating repositoires is a two-step process. 
+Migrating repositories is a two-step process. 
 
 1. **Export**: Use `git-export` to export repositories with metadata from your current SCM provider. Guidlines for [Bitbucket On-perm](cmd/stash/README.md), [GitHub](cmd/github/README.md), [Gitlab](cmd/gitlab/README.md), and [Bitbucket](cmd/bitbucket/README.md). The exported data will be saved in a zip file.
+
+   **[OPTIONAL]** Use the `update-users` command to map user emails in the exported data to their corresponding Harness emails. See [documentation](cmd/users/README.md) for details. Without this step, unmatched emails will default to the migrator user.
 
 2. **Import**: Import the exported data into Harness CODE using `git-import` command as explained [here](cmd/gitimporter/README.md).
 

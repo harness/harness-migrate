@@ -37,7 +37,7 @@ import (
 const (
 	maxChunkSize       = 25 * 1024 * 1024 // 25 MB
 	prFileName         = "pr%d.json"
-	zipFileName        = "harness.zip"
+	ZipFileName        = "harness.zip"
 	maxParallelism     = 20 // TODO: make this configurable by the user
 	UnknownEmailSuffix = "@unknownemail.harness.io"
 )
@@ -580,7 +580,7 @@ func zipFolder(path string) error {
 }
 
 func getZipFilePath(path string) string {
-	return filepath.Join(path, zipFileName)
+	return filepath.Join(path, ZipFileName)
 }
 
 func deleteFolders(path string) error {

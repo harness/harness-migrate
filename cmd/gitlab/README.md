@@ -73,7 +73,7 @@ Code comments attached to specific lines will be visible in the "Changes" tab of
 ## Commands 
 As a quick start you can run 
 ```
-./harness-migrate gitlab git-export --group <group name/including subgroups> --project <project-name> --host <host-url> --username <gitlab-username> --token <token> <zip-folder-path> 
+./migrator gitlab git-export --group <group name/including subgroups> --project <project-name> --host <host-url> --username <gitlab-username> --token <token> <zip-folder-path> 
 ```
 where you have to replace all values enclosed in brackets `<>`. You can pass Gitlab Personal Access Token or Group/Project Access token given your use cases. Please include subgroups for `--group` arg if you are exporting an individual project otherwise only include the group name (w/o subgroups).
 
@@ -81,7 +81,7 @@ If exporting from Gitlab deployed on premise, the `--host` flag with the Gitlab 
 
 You can also provide more advanced options. You can look at those via help: 
 ```
-./harness-migrate gitlab git-export --help
+./migrator gitlab git-export --help
 ```
 
 Application also supports advanced option like `resume` which can help you resume run from last successful run and avoid overhead of re-running the same commands.

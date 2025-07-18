@@ -62,6 +62,7 @@ type (
 		NoComment bool // to not export pull request comments
 		NoLabel   bool // to not export repo/space labels
 		NoLFS     bool // to not export LFS objects
+		NoIssues  bool // to not export issues
 	}
 )
 
@@ -603,6 +604,7 @@ func (e Exporter) reportSkippedMetadata(reporter *report.Report) {
 		report.ReportTypePRs:         e.flags.NoPR,
 		report.ReportTypeBranchRules: e.flags.NoRule,
 		report.ReportTypeLabels:      e.flags.NoLabel,
+		report.ReportTypeIssues:      e.flags.NoIssues,
 	}
 
 	for reportType, isSkipped := range reportTypesMap {

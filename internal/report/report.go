@@ -30,6 +30,7 @@ const (
 	ReportTypeLabels        = "labels"
 	ReportTypeUsers         = "users"
 	ReportTypeGitLFSObjects = "LFS objects"
+	ReportTypeIssues        = "issues"
 )
 
 type Report struct {

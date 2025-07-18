@@ -111,6 +111,7 @@ func (c *exportCommand) run(*kingpin.ParseContext) error {
 		NoRule:    c.flags.NoRule,
 		NoLabel:   c.flags.NoLabel,
 		NoLFS:     c.flags.NoLFS,
+		NoIssues:  c.flags.NoIssues,
 	}
 
 	e := github.New(client, c.org, repository, checkpointManager, fileLogger, tracer_, reporter)
@@ -180,6 +181,10 @@ func registerGit(app *kingpin.CmdClause) {
 	cmd.Flag("no-lfs", "do NOT export LFS objects").
 		Default("false").
 		BoolVar(&c.flags.NoLFS)
+
+	cmd.Flag("skip-issues", "do NOT export issues").
+		Default("false").
+		BoolVar(&c.flags.NoIssues)
 
 	cmd.Flag("debug", "enable debug logging").
 		BoolVar(&c.debug)

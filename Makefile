@@ -1,3 +1,3 @@
 build:
-	@echo "Building migrator cli"
-	go build -o migrator main.go
+	@echo "Building Harness migrator cli"
+	go build -o harness-migrate main.go

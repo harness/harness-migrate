@@ -35,7 +35,7 @@ ENV CGO_ENABLED=0 \
     GOARCH=amd64
 
 # build the application
-RUN go build -o migrator main.go
+RUN go build -o harness-migrate main.go
 
 # set git config for the container
 RUN git config --system credential.helper cache && \
@@ -44,15 +44,15 @@ RUN git config --system credential.helper cache && \
     git config --system core.compression 9
 
 # create non-root user and set permissions
-RUN adduser -D -u 1001 migrator && \
+RUN adduser -D -u 1001 harness-migrate && \
     mkdir -p /data && \
-    chown -R migrator:migrator /app /data && \
+    chown -R harness-migrate:harness-migrate /app /data && \
     chmod 755 /app
 
 # switch to non-root user
-USER migrator
+USER harness-migrate
 
-# add migrator to PATH
+# add harness-migrate to PATH
 ENV PATH="/app:${PATH}"
 
 # set the entrypoint

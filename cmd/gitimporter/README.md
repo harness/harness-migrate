@@ -14,21 +14,21 @@ You need to export the repository first using the same migrator tool. Supported 
 As a quick start you can run 
 
 ```sh
-./migrator git-import <zip-folder-path>  --space <target acc/org/project> --endpoint <harness-url> --token <token>
+./harness-migrate git-import <zip-folder-path>  --space <target acc/org/project> --endpoint <harness-url> --token <token>
 ```
 
 where you have to replace all values enclosed in brackets `<>`.
 
 You can also provide more advanced options. You can look at those via help: 
 ```
-./migrator git-import --help
+./harness-migrate git-import --help
 ```
 ## Examples
 
 Importing a repository without mapping users, skip the meta data, and increase the file-size-limit on server to 102MB.
 ```sh
 export harness_TOKEN={harness-pat}
-./migrator git-import ./harness/harness.zip  --space "acc/MyOrg/Myproject" --endpoint "https://app.harness.io/"  --skip-users  --skip-pr --skip-webhook --skip-rule --file-size-limit 102000000
+./harness-migrate git-import ./harness/harness.zip  --space "acc/MyOrg/Myproject" --endpoint "https://app.harness.io/"  --skip-users  --skip-pr --skip-webhook --skip-rule --file-size-limit 102000000
 ```
 
 ## Troubleshooting

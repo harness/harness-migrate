@@ -72,4 +72,4 @@ obj/
 # Profiling data
 *.pprof
 
-migrator
+harness-migrate

@@ -22,18 +22,18 @@ The migrator is available as a Docker image with all required dependencies pre-i
 
 1. Build and run the container:
 ```sh
-docker build -t harness-migrator .
+docker build -t harness-migrate .
 docker volume create migrator-data
-docker run -it --name migrator -v migrator-data:/data harness-migrator
+docker run -it --name harness-migrate -v migrator-data:/data harness-migrate
 ```
 
 2. Inside the container, run your export/import commands:
 ```sh
 # Export example
-migrator [SCM-Provider] git-export [flags]
+harness-migrate [SCM-Provider] git-export [flags]
 
 # Import example
-migrator git-import [flags]
+harness-migrate git-import [flags]
 ```
 
 Note: All data is stored in the Docker volume `migrator-data` which persists even if you stop or remove the container. To clean up after you're done:

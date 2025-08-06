@@ -61,7 +61,7 @@ When they are exported, supported Github branch protection rules and webhooks ar
 ## Commands 
 As a quick start you can run 
 ```
-./migrator github git-export --project <project name> --repository <repo-name> --host <host-url> --username <github-username> --token <token> <zip-folder-path> 
+./migrator github git-export --org <organization name> --repository <repo-name> --host <host-url> --username <github-username> --token <token> <zip-folder-path> 
 ```
 where you have to replace all values enclosed in brackets `<>`.
 

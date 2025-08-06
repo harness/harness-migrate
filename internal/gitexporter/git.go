@@ -151,6 +151,15 @@ func refSpecsToStrings(refs []config.RefSpec) []string {
 }
 
 func (c *nativeGitCloner) clone(ctx context.Context) (bool, error) {
+	// check if repo already exists ref: https://github.com/go-git/go-git/blob/main/repository.go#L134-L141
+	headPath := filepath.Join(c.params.gitPath, "HEAD")
+	if _, err := os.Stat(headPath); err == nil {
+		c.tracer.Log(common.MsgRepoAlreadyExists, c.params.repoSlug)
+		return false, nil
+	} else if !os.IsNotExist(err) {
+		return false, fmt.Errorf("failed to check if repo %s already exists: %w", c.params.repoSlug, err)
+	}
+
 	if err := util.CreateFolder(c.params.gitPath); err != nil {
 		return false, err
 	}

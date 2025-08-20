@@ -15,7 +15,7 @@
 package github
 
 import (
-	"github.com/go-git/go-git/v5/config"
+	"github.com/go-git/go-git/v6/config"
 )
 
 func (e *Export) PullRequestRefs() []config.RefSpec {

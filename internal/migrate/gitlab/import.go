@@ -26,11 +26,11 @@ import (
 	"github.com/harness/harness-migrate/internal/types"
 	"github.com/harness/harness-migrate/internal/util"
 
-	git "github.com/go-git/go-git/v5"
+	git "github.com/go-git/go-git/v6"
 
-	"github.com/go-git/go-git/v5/config"
-	"github.com/go-git/go-git/v5/plumbing"
-	"github.com/go-git/go-git/v5/plumbing/transport/http"
+	"github.com/go-git/go-git/v6/config"
+	"github.com/go-git/go-git/v6/plumbing"
+	"github.com/go-git/go-git/v6/plumbing/transport/http"
 	"github.com/gotidy/ptr"
 )
 
@@ -174,7 +174,8 @@ func (m *Importer) Import(ctx context.Context, data *types.Org) error {
 		if err != nil {
 			return fmt.Errorf("failed to create tempo dir for repo: %w", err)
 		}
-		gitRepo, err := git.PlainCloneContext(ctx, tmpRepoDir, true, &git.CloneOptions{
+		gitRepo, err := git.PlainCloneContext(ctx, tmpRepoDir, &git.CloneOptions{
+			Bare: true,
 			URL: srcProject.Repo,
 			Auth: &http.BasicAuth{
 				Username: m.ScmLogin,

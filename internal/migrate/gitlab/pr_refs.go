@@ -14,7 +14,7 @@
 
 package gitlab
 
-import "github.com/go-git/go-git/v5/config"
+import "github.com/go-git/go-git/v6/config"
 
 func (e *Export) PullRequestRefs() []config.RefSpec {
 	return []config.RefSpec{"refs/merge-requests/*/head:refs/pullreq/*/head"}

@@ -31,11 +31,11 @@ import (
 	"github.com/harness/harness-migrate/types"
 
 	"github.com/drone/go-scm/scm"
-	"github.com/go-git/go-git/v5"
-	"github.com/go-git/go-git/v5/config"
-	"github.com/go-git/go-git/v5/plumbing"
-	"github.com/go-git/go-git/v5/plumbing/transport"
-	"github.com/go-git/go-git/v5/plumbing/transport/http"
+	"github.com/go-git/go-git/v6"
+	"github.com/go-git/go-git/v6/config"
+	"github.com/go-git/go-git/v6/plumbing"
+	"github.com/go-git/go-git/v6/plumbing/transport"
+	"github.com/go-git/go-git/v6/plumbing/transport/http"
 )
 
 type gitCloner interface {
@@ -227,8 +227,9 @@ func (c *goGitCloner) clone(ctx context.Context) (bool, error) {
 	}
 
 	var cloneOutput bytes.Buffer
-	repo, err := git.PlainCloneContext(ctx, c.params.gitPath, true, &git.CloneOptions{
-		URL: c.params.repoData.Clone,
+	repo, err := git.PlainCloneContext(ctx, c.params.gitPath, &git.CloneOptions{
+		Bare: true,
+		URL:  c.params.repoData.Clone,
 		Auth: &http.BasicAuth{
 			Username: c.params.auth.username,
 			Password: c.params.auth.token,
@@ -239,7 +240,7 @@ func (c *goGitCloner) clone(ctx context.Context) (bool, error) {
 		Progress:     &cloneOutput,
 	})
 
-	if errors.Is(err, git.ErrRepositoryAlreadyExists) {
+	if errors.Is(err, git.ErrTargetDirNotEmpty) {
 		c.tracer.Log(common.MsgRepoAlreadyExists, c.params.repoSlug)
 		return false, nil
 	}

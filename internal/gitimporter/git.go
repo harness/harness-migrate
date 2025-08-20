@@ -7,9 +7,9 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/go-git/go-git/v5"
-	"github.com/go-git/go-git/v5/config"
-	"github.com/go-git/go-git/v5/plumbing/transport/http"
+	"github.com/go-git/go-git/v6"
+	"github.com/go-git/go-git/v6/config"
+	"github.com/go-git/go-git/v6/plumbing/transport/http"
 	"github.com/harness/harness-migrate/internal/command"
 	"github.com/harness/harness-migrate/internal/common"
 	"github.com/harness/harness-migrate/internal/harness"

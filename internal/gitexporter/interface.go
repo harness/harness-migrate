@@ -20,7 +20,7 @@ import (
 	"github.com/harness/harness-migrate/internal/types"
 	externalTypes "github.com/harness/harness-migrate/types"
 
-	"github.com/go-git/go-git/v5/config"
+	"github.com/go-git/go-git/v6/config"
 )
 
 // Interface helps to support a generic way of doing export for all git providers

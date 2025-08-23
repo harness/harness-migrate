@@ -31,7 +31,9 @@ type Interface interface {
 
 	ListPullRequestComments(ctx context.Context, repoSlug string, prNumber int, opts types.ListOptions) ([]*types.PRComment, error)
 
-	PullRequestReviewers(ctx context.Context, prNumber int) error
+	ListPullRequestReviews(ctx context.Context, repoSlug string, prNumber int, opts types.ListOptions) ([]*types.PRReview, error)
+
+	ListRequestedReviewers(ctx context.Context, repoSlug string, prNumber int) ([]*types.PRReviewer, error)
 
 	PullRequestRefs() []config.RefSpec
 

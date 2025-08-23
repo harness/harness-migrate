@@ -83,6 +83,20 @@ func (u *Updater) processPRFile(filePath string, mapping UserMapping) error {
 			}
 		}
 
+		for j := range prEntries[i].Reviews {
+			if newEmail, exists := mapping[prEntries[i].Reviews[j].Author.Email]; exists {
+				prEntries[i].Reviews[j].Author.Email = newEmail
+				entryUpdated = true
+			}
+		}
+
+		for j := range prEntries[i].Reviewers {
+			if newEmail, exists := mapping[prEntries[i].Reviewers[j].User.Email]; exists {
+				prEntries[i].Reviewers[j].User.Email = newEmail
+				entryUpdated = true
+			}
+		}
+
 		// count each PR only once, regardless of how many emails were updated in it
 		if entryUpdated {
 			updatedPRCount++
@@ -102,8 +116,6 @@ func (u *Updater) processPRFile(filePath string, mapping UserMapping) error {
 			u.tracer.Log("Error updating the PR file %s: %v", filePath, err)
 			return fmt.Errorf("failed to write updated PR file: %w", err)
 		}
-
-		u.tracer.Log("Updated user emails in %d PR entries.", updatedPRCount)
 	}
 
 	return nil

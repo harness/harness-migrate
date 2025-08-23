@@ -33,7 +33,7 @@ The `update-users` command:
 1. Extracts the exported zip file to a temporary directory
 2. Finds organization directories and repositories
 3. Updates user emails in:
-   - Pull request author and commenter information
+   - Pull request author, commenter, and reveiwer information
    - Branch rule bypass user emails
 4. Creates an updated zip file that replaces the original
 

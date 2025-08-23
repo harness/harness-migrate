@@ -378,17 +378,23 @@ func (e *Exporter) getData(ctx context.Context, path string) ([]*types.RepoData,
 				for j := range prs {
 					pullreqData[j] = &types.PullRequestData{
 						PullRequest: prs[j],
+						Reviews:     []*types.PRReview{},
+						Reviewers:   []*types.PRReviewer{},
 					}
 				}
 				repoData[i].PullRequestData = pullreqData
-				continue
+			} else {
+				prData, err := e.exportCommentsForPRs(ctx, prs, repo, e.Tracer)
+				if err != nil {
+					return nil, fmt.Errorf("error getting comments for pr: %w", err)
+				}
+				repoData[i].PullRequestData = prData
 			}
 
-			prData, err := e.exportCommentsForPRs(ctx, prs, repo, e.Tracer)
+			err = e.fetchPRMetadata(ctx, repo.RepoSlug, repoData[i].PullRequestData)
 			if err != nil {
-				return nil, fmt.Errorf("error getting comments for pr: %w", err)
+				return nil, fmt.Errorf("error getting PR metadata: %w", err)
 			}
-			repoData[i].PullRequestData = prData
 		}
 	}
 
@@ -430,6 +436,36 @@ func (e *Exporter) exportCommentsForPRs(
 	return prData, nil
 }
 
+// fetchPRMetadata fetches review and reviewer data for all PRs (no multi-threading needed)
+func (e *Exporter) fetchPRMetadata(ctx context.Context, repoSlug string, prData []*types.PullRequestData) error {
+	if len(prData) == 0 {
+		return nil
+	}
+
+	e.Tracer.Start("Starting fetching PR review metadata for repo %s", repoSlug)
+	defer e.Tracer.Stop("Completed fetching PR review metadata for repo %s", repoSlug)
+
+	for _, pr := range prData {
+		// Fetch reviews
+		reviews, err := e.exporter.ListPullRequestReviews(ctx, repoSlug, pr.PullRequest.Number,
+			types.ListOptions{Page: 1, Size: 25})
+		if err != nil {
+			return fmt.Errorf("encountered error in getting reviews for PR %d: %w",
+				pr.PullRequest.Number, err)
+		}
+		pr.Reviews = reviews
+
+		// Fetch requested reviewers
+		requestedReviewers, err := e.exporter.ListRequestedReviewers(ctx, repoSlug, pr.PullRequest.Number)
+		if err != nil {
+			return fmt.Errorf("encountered error in getting requested reviewers for PR %d: %w",
+				pr.PullRequest.Number, err)
+		}
+		pr.Reviewers = requestedReviewers
+	}
+	return nil
+}
+
 func (e *Exporter) createPRTask(j int, pr types.PRResponse, repo types.RepoResponse) *util.Task {
 	return &util.Task{
 		ID: j,
@@ -444,7 +480,8 @@ func (e *Exporter) createPRTask(j int, pr types.PRResponse, repo types.RepoRespo
 					return nil, fmt.Errorf("encountered error in getting comments for PR %d: %w",
 						pr.Number, err)
 				}
-				return mapPRData(pr, comments), nil
+
+				return mapPRData(pr, comments, []*types.PRReview{}, []*types.PRReviewer{}), nil
 			}
 		},
 	}
@@ -501,6 +538,20 @@ func extractUsers(repo *types.RepoData, users map[string]bool) map[string]bool {
 				repoUsers[comment.Author.Email] = true
 			}
 		}
+
+		for _, review := range prData.Reviews {
+			if review.Review.Author.Email != "" {
+				users[review.Review.Author.Email] = true
+				repoUsers[review.Review.Author.Email] = true
+			}
+		}
+
+		for _, requestedReviewer := range prData.Reviewers {
+			if requestedReviewer.User.Email != "" {
+				users[requestedReviewer.User.Email] = true
+				repoUsers[requestedReviewer.User.Email] = true
+			}
+		}
 	}
 
 	for _, rule := range repo.BranchRules {
@@ -544,10 +595,12 @@ func splitArray(arr []*externalTypes.PullRequestData) [][]*externalTypes.PullReq
 	return chunks
 }
 
-func mapPRData(pr types.PRResponse, comments []*types.PRComment) *types.PullRequestData {
+func mapPRData(pr types.PRResponse, comments []*types.PRComment, reviews []*types.PRReview, requestedReviewers []*types.PRReviewer) *types.PullRequestData {
 	return &types.PullRequestData{
 		PullRequest: pr,
 		Comments:    comments,
+		Reviews:     reviews,
+		Reviewers:   requestedReviewers,
 	}
 }
 
@@ -561,6 +614,8 @@ func mapRepoData(repoData *types.RepoData) *externalTypes.RepositoryData {
 		d.PullRequestData[i] = new(externalTypes.PullRequestData)
 		d.PullRequestData[i].PullRequest = mapPR(prData.PullRequest.PullRequest, repoData.Labels)
 		d.PullRequestData[i].Comments = mapPRComment(prData.Comments)
+		d.PullRequestData[i].Reviews = mapPRReview(prData.Reviews)
+		d.PullRequestData[i].Reviewers = mapPRReviewers(prData.Reviewers)
 	}
 
 	d.Webhooks.Hooks = mapHooks(repoData.Webhooks.ConvertedHooks)

@@ -176,4 +176,20 @@ type (
 	allowances struct {
 		TotalCount int `json:"totalCount"`
 	}
+
+	review struct {
+		ID                int       `json:"id"`
+		User              user      `json:"user"`
+		Body              string    `json:"body"`
+		State             string    `json:"state"`
+		HTMLUrl           string    `json:"html_url"`
+		PullRequestUrl    string    `json:"pull_request_url"`
+		AuthorAssociation string    `json:"author_association"`
+		CommitID          string    `json:"commit_id"`
+		SubmittedAt       time.Time `json:"submitted_at"`
+	}
+
+	requestedReviewersResponse struct {
+		Users []user `json:"users"`
+	}
 )

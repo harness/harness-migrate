@@ -3,11 +3,11 @@ package stash
 import (
 	"context"
 
-	"github.com/harness/harness-migrate/internal/codeerror"
+	"github.com/harness/harness-migrate/internal/types"
 )
 
-func (e *Export) PullRequestReviewers(
-	context.Context,
-	int) error {
-	return &codeerror.OpNotSupportedError{Name: "pullreqreview"}
+// ListRequestedReviewers implements gitexporter.Interface.
+func (e *Export) ListRequestedReviewers(ctx context.Context, repoSlug string, prNumber int) ([]*types.PRReviewer, error) {
+	// Stash does not support requested reviewers concept
+	return []*types.PRReviewer{}, nil
 }

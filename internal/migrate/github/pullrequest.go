@@ -29,8 +29,8 @@ import (
 //const skipUpTo = 60646
 
 // PR range limits
-const maxPR = 33755 // 32817 //32818 //30999
-const minPR = 32103 // 32102 //31000 // 1
+const maxPR = 11364 // 32817 //32818 //30999
+const minPR = 11201 // 32102 //31000 // 1
 
 func (e *Export) ListPullRequests(
 	ctx context.Context,

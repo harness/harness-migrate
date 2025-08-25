@@ -61,11 +61,11 @@ func (m *Importer) Push(
 	gitPath := filepath.Join(repoPath, types.GitDir)
 	const remoteName = "harnessRemote"
 
-	output, err := command.RunGitCommand(ctx, gitPath, []string{}, "remote", "add", remoteName, repo.GitURL)
-	if err != nil {
-		tracer.Stop(common.ErrGitRemoteAdd, err, string(output))
-		return fmt.Errorf("failed to add remote %q: %w", repo.GitURL, err)
-	}
+	// output, err := command.RunGitCommand(ctx, gitPath, []string{}, "remote", "add", remoteName, repo.GitURL)
+	// if err != nil {
+	// 	tracer.Stop(common.ErrGitRemoteAdd, err, string(output))
+	// 	return fmt.Errorf("failed to add remote %q: %w", repo.GitURL, err)
+	// }
 
 	if !gitLFSDisabled {
 		if err := m.handleLFSPush(ctx, gitPath, repo, remoteName, lfsObjectCount, tracer); err != nil {

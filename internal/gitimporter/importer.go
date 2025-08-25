@@ -134,18 +134,18 @@ func (m *Importer) Import(ctx context.Context) error {
 		m.Report[repoRef] = report.Init(repoRef)
 		m.reportSkippedMetadata(m.Report[repoRef])
 
-		if err := m.createRepoAndDoPush(ctx, f, &repository); err != nil {
-			m.Tracer.LogError("failed to create or push git data for %q: %s", repoRef, err.Error())
-			if !errors.Is(err, harness.ErrDuplicate) {
-				// only cleanup if repo is not already existed (meaning was created by the migrator)
-				//m.cleanup(repoRef)
-			}
-			if notRecoverableError(err) {
-				return ErrAbortMigration
-			}
+		// if err := m.createRepoAndDoPush(ctx, f, &repository); err != nil {
+		// 	m.Tracer.LogError("failed to create or push git data for %q: %s", repoRef, err.Error())
+		// 	if !errors.Is(err, harness.ErrDuplicate) {
+		// 		// only cleanup if repo is not already existed (meaning was created by the migrator)
+		// 		//m.cleanup(repoRef)
+		// 	}
+		// 	if notRecoverableError(err) {
+		// 		return ErrAbortMigration
+		// 	}
 
-			continue
-		}
+		// 	continue
+		// }
 
 		//update the repo state to migrate data import
 		_, err = m.Harness.UpdateRepositoryState(

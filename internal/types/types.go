@@ -126,9 +126,21 @@ type (
 		CodeComment *CodeComment
 	}
 
+	PRReview struct {
+		scm.Review
+		State enum.ReviewDecision `json:"state"`
+	}
+
+	PRReviewer struct {
+		scm.User
+		// skip team/user groups assigned as reviewers
+	}
+
 	PullRequestData struct {
 		PullRequest PRResponse
 		Comments    []*PRComment
+		Reviews     []*PRReview
+		Reviewers   []*PRReviewer
 	}
 
 	BranchRule struct {

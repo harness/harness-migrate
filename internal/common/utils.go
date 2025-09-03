@@ -41,6 +41,14 @@ func MapPRComment(comments []*scm.Comment) []*types.PRComment {
 	return r
 }
 
+func MapPRReviewer(reviews []*scm.Review) []*types.PRReview {
+	r := make([]*types.PRReview, len(reviews))
+	for i, review := range reviews {
+		r[i] = &types.PRReview{Review: *review}
+	}
+	return r
+}
+
 func FormatHunkHeader(source, sourceSpan, destination, destinationSpan int, sectionHeading string) string {
 	sb := strings.Builder{}
 	sb.Grow(20 + len(sectionHeading))

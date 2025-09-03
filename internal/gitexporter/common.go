@@ -37,6 +37,32 @@ func mapPRComment(comments []*types.PRComment) []externalTypes.Comment {
 	return r
 }
 
+func mapPRReview(reviewers []*types.PRReview) []externalTypes.Review {
+	r := make([]externalTypes.Review, len(reviewers))
+	for i, reviewer := range reviewers {
+		r[i] = externalTypes.Review{
+			ID:       reviewer.Review.ID,
+			Body:     reviewer.Review.Body,
+			Author:   externalTypes.User(reviewer.Review.Author),
+			Created:  reviewer.Review.Created,
+			Updated:  reviewer.Review.Updated,
+			SHA:      reviewer.Review.Sha,
+			Decision: string(reviewer.State),
+		}
+	}
+	return r
+}
+
+func mapPRReviewers(reviewers []*types.PRReviewer) []externalTypes.Reviewer {
+	r := make([]externalTypes.Reviewer, len(reviewers))
+	for i, reviewer := range reviewers {
+		r[i] = externalTypes.Reviewer{
+			User: externalTypes.User(reviewer.User),
+		}
+	}
+	return r
+}
+
 func mapCodeComment(c *types.CodeComment) *externalTypes.CodeComment {
 	if c == nil {
 		return nil

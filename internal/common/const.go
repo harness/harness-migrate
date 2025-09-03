@@ -8,6 +8,8 @@ const (
 	PullRequestCheckpointData = "%s/pr/data"
 	PRCommentCheckpointPage   = "%s/%d/comment"
 	PRCommentCheckpointData   = "%s/%d/comment/data"
+	PRReviewerCheckpointPage  = "%s/%d/reviewer"
+	PRReviewerCheckpointData  = "%s/%d/reviewer/data"
 	LabelCheckpointPage       = "%s/labels"
 	LabelCheckpointData       = "%s/labels/data"
 	WebhookCheckpointPage     = "%s/webhook"

@@ -16,11 +16,8 @@
 package bitbucket
 
 import (
-	"context"
-
 	"github.com/drone/go-scm/scm"
 	"github.com/harness/harness-migrate/internal/checkpoint"
-	"github.com/harness/harness-migrate/internal/codeerror"
 	"github.com/harness/harness-migrate/internal/gitexporter"
 	"github.com/harness/harness-migrate/internal/report"
 	"github.com/harness/harness-migrate/internal/tracer"
@@ -53,9 +50,4 @@ func New(
 		fileLogger:        logger,
 		report:            report,
 	}
-}
-
-// PullRequestReviewers implements gitexporter.Interface.
-func (e *Export) PullRequestReviewers(ctx context.Context, prNumber int) error {
-	return &codeerror.OpNotSupportedError{Name: "pullreqreview"}
 }

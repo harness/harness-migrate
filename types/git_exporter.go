@@ -133,6 +133,20 @@ type (
 		CodeComment *CodeComment `json:"code_comment"`
 	}
 
+	Review struct {
+		ID       int       `json:"id"`
+		Body     string    `json:"body"`
+		Author   User      `json:"author"`
+		Created  time.Time `json:"created"`
+		Updated  time.Time `json:"updated"`
+		SHA      string    `json:"sha"`
+		Decision string    `json:"decision"`
+	}
+
+	Reviewer struct {
+		User User `json:"user"`
+	}
+
 	RuleType string
 
 	BranchRule struct {
@@ -168,6 +182,8 @@ type (
 	PullRequestData struct {
 		PullRequest PullRequest `json:"pull_request"`
 		Comments    []Comment   `json:"comments"`
+		Reviews     []Review    `json:"reviews"`
+		Reviewers   []Reviewer  `json:"reviewers"`
 	}
 
 	WebhookData struct {

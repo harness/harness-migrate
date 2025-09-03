@@ -67,6 +67,46 @@ func (e *Export) ListPRComments(
 	return convertPRCommentsList(out, repoSlug, prNumber), res, err
 }
 
+func (e *Export) ListPRReviews(
+	ctx context.Context,
+	repoSlug string,
+	prNumber int,
+	opts types.ListOptions,
+) ([]*types.PRReview, *scm.Response, error) {
+	path := fmt.Sprintf("repos/%s/pulls/%d/reviews?%s", repoSlug, prNumber, encodeListOptions(opts))
+	var out []*review
+	res, err := e.do(ctx, "GET", path, nil, &out)
+	return convertPRReviewsList(out), res, err
+}
+
+func (e *Export) ListPRRequestedReviewers(
+	ctx context.Context,
+	repoSlug string,
+	prNumber int,
+) ([]*types.PRReviewer, *scm.Response, error) {
+	path := fmt.Sprintf("repos/%s/pulls/%d/requested_reviewers", repoSlug, prNumber)
+	var out requestedReviewersResponse
+	res, err := e.do(ctx, "GET", path, nil, &out)
+	if err != nil {
+		return nil, res, err
+	}
+	
+	reviewers := convertRequestedReviewersList(out)
+	
+	reviewersWithEmail, err := e.addEmailToRequestedReviewers(ctx, reviewers)
+	if err != nil {
+		return nil, res, fmt.Errorf("error getting emails for requested reviewers: %w", err)
+	}
+	
+	return reviewersWithEmail, res, nil
+}
+
+// ListRequestedReviewers implements gitexporter.Interface (without scm.Response for interface compliance)
+func (e *Export) ListRequestedReviewers(ctx context.Context, repoSlug string, prNumber int) ([]*types.PRReviewer, error) {
+	reviewers, _, err := e.ListPRRequestedReviewers(ctx, repoSlug, prNumber)
+	return reviewers, err
+}
+
 func (e *Export) GetUserByUserName(
 	ctx context.Context,
 	userName string,

@@ -17,6 +17,7 @@ package gitexporter
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -24,6 +25,7 @@ import (
 	"strings"
 
 	"github.com/harness/harness-migrate/internal/checkpoint"
+	"github.com/harness/harness-migrate/internal/codeerror"
 	"github.com/harness/harness-migrate/internal/command"
 	"github.com/harness/harness-migrate/internal/common"
 	"github.com/harness/harness-migrate/internal/report"
@@ -445,11 +447,15 @@ func (e *Exporter) fetchPRMetadata(ctx context.Context, repoSlug string, prData 
 	e.Tracer.Start("Starting fetching PR review metadata for repo %s", repoSlug)
 	defer e.Tracer.Stop("Completed fetching PR review metadata for repo %s", repoSlug)
 
+	var opNotSupportedErr *codeerror.OpNotSupportedError
 	for _, pr := range prData {
+		pr.Reviews = []*types.PRReview{}
+		pr.Reviewers = []*types.PRReviewer{}
+
 		// Fetch reviews
 		reviews, err := e.exporter.ListPullRequestReviews(ctx, repoSlug, pr.PullRequest.Number,
 			types.ListOptions{Page: 1, Size: 25})
-		if err != nil {
+		if err != nil && !errors.As(err, &opNotSupportedErr) {
 			return fmt.Errorf("encountered error in getting reviews for PR %d: %w",
 				pr.PullRequest.Number, err)
 		}
@@ -457,10 +463,11 @@ func (e *Exporter) fetchPRMetadata(ctx context.Context, repoSlug string, prData 
 
 		// Fetch requested reviewers
 		requestedReviewers, err := e.exporter.ListRequestedReviewers(ctx, repoSlug, pr.PullRequest.Number)
-		if err != nil {
+		if err != nil && !errors.As(err, &opNotSupportedErr) {
 			return fmt.Errorf("encountered error in getting requested reviewers for PR %d: %w",
 				pr.PullRequest.Number, err)
 		}
+
 		pr.Reviewers = requestedReviewers
 	}
 	return nil

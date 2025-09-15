@@ -8,7 +8,7 @@ Import repositories to Harness Code Repository with metadata including:
 You can install the migrator via github releases or run `make build` with latest go version present in your system. You can skip this step if you have the migrator installed already.
 
 ### NOTE 
-You need to export the repository first using the same migrator tool. Supported SCM providers are [Bitbucket Server (Stash)](../stash/README.md), and Github (coming soon).
+You need to export the repository first using the same migrator tool. Supported SCM providers are [Github](../github/README.md), [Gitlab](../gitlab/README.md), [Bitbucket](../bitbucket/README.md), and [Bitbucket Server (Stash)](../stash/README.md).
 
 ## Commands 
 As a quick start you can run 

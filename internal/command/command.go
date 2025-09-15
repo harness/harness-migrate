@@ -33,8 +33,8 @@ const (
 var (
 	ErrGitNotInstalled     = errors.New("git is not installed")
 	ErrGitLFSNotInstalled  = errors.New("git-lfs is not installed")
-	ErrGitVersionTooOld    = fmt.Errorf("git version must be %f or higher", MinVersionGit)
-	ErrGitLFSVersionTooOld = fmt.Errorf("git-lfs version must be %f or higher", MinVersionGitLFS)
+	ErrGitVersionTooOld    = fmt.Errorf("git version must be %.2f or higher", MinVersionGit)
+	ErrGitLFSVersionTooOld = fmt.Errorf("git-lfs version must be %.2f or higher", MinVersionGitLFS)
 
 	// handles both "git version 2.45.1" and "git-lfs/3.6.1"
 	versionRegex = regexp.MustCompile(`(?:version\s+|/)((?:\d+\.){1,2}\d+)`)

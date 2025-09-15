@@ -21,8 +21,10 @@ import (
 	"fmt"
 	"os"
 	filepath "path/filepath"
+	"regexp"
 	"strings"
 
+	"github.com/harness/harness-migrate/internal/command"
 	"github.com/harness/harness-migrate/internal/common"
 	"github.com/harness/harness-migrate/internal/harness"
 	"github.com/harness/harness-migrate/internal/report"
@@ -62,6 +64,7 @@ type Flags struct {
 	NoWebhook     bool
 	NoRule        bool
 	NoLabel       bool
+	NoGit         bool // for incremental migration - skip git operations
 }
 
 func NewImporter(
@@ -141,34 +144,38 @@ func (m *Importer) Import(ctx context.Context) error {
 		m.Report[repoRef] = report.Init(repoRef)
 		m.reportSkippedMetadata(m.Report[repoRef])
 
-		if err := m.createRepoAndDoPush(ctx, f, &repository); err != nil {
-			m.Tracer.LogError("failed to create or push git data for %q: %s", repoRef, err.Error())
-			if !errors.Is(err, harness.ErrDuplicate) {
-				// only cleanup if repo is not already existed (meaning was created by the migrator)
-				m.cleanup(repoRef)
-			}
-			if notRecoverableError(err) {
-				return ErrAbortMigration
-			}
+		if !m.flags.NoGit {
+			if err := m.createRepoAndDoPush(ctx, f, &repository); err != nil {
+				m.Tracer.LogError("failed to create or push git data for %q: %s", repoRef, err.Error())
+				if !errors.Is(err, harness.ErrDuplicate) {
+					m.cleanup(repoRef)
+				}
+				if notRecoverableError(err) {
+					return ErrAbortMigration
+				}
 
-			continue
-		}
-
-		// update the repo state to migrate data import
-		_, err = m.Harness.UpdateRepositoryState(
-			repoRef,
-			&harness.UpdateRepositoryStateInput{State: enum.RepoStateMigrateDataImport},
-		)
-		if err != nil {
-			return fmt.Errorf("failed to update the repo state to %s: %w", enum.RepoStateMigrateDataImport, err)
+				continue
+			}
+			// update the repo state to migrate data import
+			_, err = m.Harness.UpdateRepositoryState(
+				repoRef,
+				&harness.UpdateRepositoryStateInput{
+					State: enum.RepoStateMigrateDataImport,
+				},
+			)
+			if err != nil {
+				return fmt.Errorf("failed to update the repo state to %s: %w", enum.RepoStateMigrateDataImport, err)
+			}
 		}
 
 		if !repository.IsEmpty {
-			err := m.importRepoMetaData(ctx, repoRef, f)
+			err := m.importRepoMetaDataWithOffset(ctx, repoRef, f)
 			if err != nil {
 				m.Tracer.LogError("failed to import repo meta data for %q: %s", repoRef, err.Error())
-				// best effort delete the repo on server
-				m.cleanup(repoRef)
+				if !m.flags.NoGit {
+					// For full migration, best effort delete the repo on server
+					m.cleanup(repoRef)
+				}
 
 				if notRecoverableError(err) {
 					return ErrAbortMigration
@@ -180,7 +187,7 @@ func (m *Importer) Import(ctx context.Context) error {
 		// update the repo state to active
 		_, err = m.Harness.UpdateRepositoryState(
 			repoRef,
-			&harness.UpdateRepositoryStateInput{State: enum.RepoStateActive},
+			&harness.UpdateRepositoryStateInput{State: enum.RepoStateActive, Force: true},
 		)
 		if err != nil {
 			return fmt.Errorf("failed to update the repo state to %s: %w", enum.RepoStateActive, err)
@@ -366,4 +373,257 @@ func (m *Importer) reportSkippedMetadata(reporter *report.Report) {
 			reporter.ReportSkipped(reportType)
 		}
 	}
+}
+
+func (m *Importer) getOffsetForIncrementalMigration(
+	ctx context.Context,
+	repoRef, repoFolder string,
+) (int, error) {
+	m.Tracer.Log("Starting incremental migration for repository: %s", repoRef)
+
+	handler := NewIncrementalMigrationHandler(m.Harness, m.Tracer, repoRef)
+
+	err := handler.CheckRepositoryExists(ctx)
+	if err != nil {
+		return 0, err
+	}
+
+	prOffset, err := handler.GetPROffset(ctx)
+	if err != nil {
+		return 0, err
+	}
+
+	return prOffset, nil
+}
+
+// importRepoMetaDataWithOffset imports repository metadata with optional PR offset applied.
+func (m *Importer) importRepoMetaDataWithOffset(
+	ctx context.Context,
+	repoRef, repoFolder string,
+) error {
+	if !m.flags.NoGit {
+		return m.importRepoMetaData(ctx, repoRef, repoFolder)
+	}
+
+	// for incremental migration, ensure repo state is restored to active on any error.
+	var importErr error
+	defer func() {
+		if importErr != nil {
+			m.Tracer.Log("Error occurred during incremental migration, restoring repository state to active")
+			_, restoreErr := m.Harness.UpdateRepositoryState(
+				repoRef,
+				&harness.UpdateRepositoryStateInput{
+					State: enum.RepoStateActive,
+					Force: true,
+				},
+			)
+			if restoreErr != nil {
+				m.Tracer.LogError("Failed to restore repository %s to active state: %v", repoRef, restoreErr)
+			}
+		}
+	}()
+
+	prOffset, err := m.getOffsetForIncrementalMigration(ctx, repoRef, repoFolder)
+	if err != nil {
+		importErr = fmt.Errorf("failed to handle incremental migration for %q: %s", repoRef, err.Error())
+		return importErr
+	}
+
+	m.Tracer.Log("Importing metadata with PR offset: %d", prOffset)
+
+	if err := m.applyPROffsetToRepoData(repoFolder, prOffset); err != nil {
+		importErr = fmt.Errorf("failed to apply PR offset to repository data: %w", err)
+		return importErr
+	}
+
+	// For incremental migration, push the PR references AFTER offset is applied to JSON data
+	// but BEFORE importing metadata so the references exist when metadata is processed
+	if err := m.pushIncrementalPRReferences(ctx, repoRef, repoFolder, prOffset); err != nil {
+		importErr = fmt.Errorf("failed to push incremental PR references: %w", err)
+		return importErr
+	}
+
+	if err := m.importRepoMetaData(ctx, repoRef, repoFolder); err != nil {
+		importErr = err
+		return importErr
+	}
+
+	return nil
+}
+
+func (m *Importer) applyPROffsetToRepoData(repoFolder string, offset int) error {
+	if offset == 0 {
+		return nil
+	}
+
+	repository, err := m.ReadRepoInfo(repoFolder)
+	if err != nil {
+		return err
+	}
+
+	prDir := filepath.Join(repoFolder, types.PullRequestDir)
+	err = m.applyOffsetToPRFiles(prDir, offset)
+	if err != nil {
+		return fmt.Errorf("failed to apply offset to PR files: %w", err)
+	}
+
+	m.Tracer.Log("Successfully applied PR offset %d to repository data for %s", offset, repository.Name)
+	return nil
+}
+
+func (m *Importer) applyOffsetToPRFiles(prDir string, offset int) error {
+	pattern := regexp.MustCompile(`^pr\d+\.json$`)
+
+	if _, err := os.Stat(prDir); os.IsNotExist(err) {
+		m.Tracer.Log("No PR directory found, skipping PR offset application")
+		return nil
+	}
+
+	fileEntries, err := os.ReadDir(prDir)
+	if err != nil {
+		return fmt.Errorf("failed to read %s directory: %w", types.PullRequestDir, err)
+	}
+
+	for _, entry := range fileEntries {
+		if entry.IsDir() || !pattern.MatchString(entry.Name()) {
+			continue
+		}
+
+		prFilePath := filepath.Join(prDir, entry.Name())
+		err := m.applyOffsetToPRFile(prFilePath, offset)
+		if err != nil {
+			return fmt.Errorf("failed to apply offset to file %s: %w", entry.Name(), err)
+		}
+	}
+
+	return nil
+}
+
+func (m *Importer) applyOffsetToPRFile(filePath string, offset int) error {
+	data, err := os.ReadFile(filePath)
+	if err != nil {
+		return fmt.Errorf("failed to read file content: %w", err)
+	}
+
+	var prs []*types.PullRequestData
+	if err := json.Unmarshal(data, &prs); err != nil {
+		return fmt.Errorf("error parsing PR JSON: %w", err)
+	}
+
+	// apply offset to PR numbers
+	for _, pr := range prs {
+		if pr == nil {
+			continue
+		}
+
+		if pr.PullRequest.Number != 0 {
+			pr.PullRequest.Number += offset
+		}
+	}
+
+	modifiedData, err := json.MarshalIndent(prs, "", "  ")
+	if err != nil {
+		return fmt.Errorf("error marshaling PR data: %w", err)
+	}
+
+	if err := util.WriteFile(filePath, modifiedData); err != nil {
+		return fmt.Errorf("failed to write modified PR data: %w", err)
+	}
+
+	return nil
+}
+
+func (m *Importer) pushIncrementalPRReferences(
+	ctx context.Context,
+	repoRef, repoFolder string,
+	prOffset int,
+) error {
+	_, err := m.Harness.UpdateRepositoryState(
+		repoRef,
+		&harness.UpdateRepositoryStateInput{
+			State: enum.RepoStateMigrateGitPush,
+			Force: true, // Force the state transition for incremental migration
+		},
+	)
+	if err != nil {
+		return fmt.Errorf("failed to update repository state to migrate-git-push: %w", err)
+	}
+
+	repo, err := m.Harness.GetRepository(repoRef)
+	if err != nil {
+		return fmt.Errorf("failed to get repository info: %w", err)
+	}
+
+	gitDir := filepath.Join(repoFolder, types.GitDir)
+	if _, err := os.Stat(gitDir); os.IsNotExist(err) {
+		m.Tracer.Log("No git directory found in export, skipping PR reference push")
+	} else {
+		handler := NewIncrementalMigrationHandler(m.Harness, m.Tracer, repoRef)
+
+		err = handler.UpdatePRReferences(ctx, gitDir, prOffset)
+		if err != nil {
+			return fmt.Errorf("failed to update PR references with offset: %w", err)
+		}
+
+		err = m.pushPRReferencesOnly(ctx, repoRef, gitDir, repo.GitURL)
+		if err != nil {
+			return fmt.Errorf("failed to push PR references: %w", err)
+		}
+	}
+
+	_, err = m.Harness.UpdateRepositoryState(
+		repoRef,
+		&harness.UpdateRepositoryStateInput{
+			State: enum.RepoStateMigrateDataImport,
+		},
+	)
+	if err != nil {
+		return fmt.Errorf("failed to update repository state back to migrate-data-import: %w", err)
+	}
+
+	m.Tracer.Log("Successfully pushed incremental PR references for: %s", repoRef)
+	return nil
+}
+
+func (m *Importer) pushPRReferencesOnly(
+	ctx context.Context,
+	repoRef, gitPath, gitURL string,
+) error {
+	const remoteName = "harnessRemote"
+
+	output, err := command.RunGitCommand(ctx, gitPath, []string{}, "remote", "add", remoteName, gitURL)
+	if err != nil {
+		output, err = command.RunGitCommand(ctx, gitPath, []string{}, "remote", "set-url", remoteName, gitURL)
+		if err != nil {
+			return fmt.Errorf("failed to set remote %q: %w, output: %s", gitURL, err, string(output))
+		}
+	}
+
+	listOutput, err := command.RunGitCommand(ctx, gitPath, []string{},
+		"for-each-ref", "--format=%(refname)", "refs/pullreq/*/head")
+	if err != nil {
+		return fmt.Errorf("failed to list PR references: %w", err)
+	}
+
+	refs := strings.Split(strings.TrimSpace(string(listOutput)), "\n")
+	if len(refs) == 1 && refs[0] == "" {
+		return nil
+	}
+
+	for _, ref := range refs {
+		if ref == "" {
+			continue
+		}
+
+		refSpec := ref + ":" + ref
+		output, err = command.RunGitCommandWithAuth(ctx, gitPath,
+			command.Credentials{Username: "git-importer", Password: m.HarnessToken},
+			"push", remoteName, refSpec)
+		if err != nil {
+			errorMsg := fmt.Sprintf("failed to push %s: %v, output: %s", ref, err, string(output))
+			m.Tracer.LogError(errorMsg)
+		}
+	}
+
+	return nil
 }

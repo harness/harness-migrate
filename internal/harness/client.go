@@ -105,6 +105,9 @@ type Client interface {
 
 	// CheckUsers provides all email id to harness code of users which needs to be checked for existence.
 	CheckUsers(in *types.CheckUsersInput) (*types.CheckUsersOutput, error)
+
+	// GetRepository returns metadata about a repository for incremental migration.
+	GetRepository(repoRef string) (*Repository, error)
 }
 
 // WaitHarnessSecretManager blocks until the harness

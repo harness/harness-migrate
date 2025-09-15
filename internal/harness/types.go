@@ -52,12 +52,13 @@ type (
 
 	// Repository defines a resository.
 	Repository struct {
-		Identifier    string `json:"identifier"`
-		ParentID      int64  `json:"parent_id"`
-		Description   string `json:"description"`
-		IsPublic      bool   `json:"is_public"`
-		DefaultBranch string `json:"default_branch"`
-		GitURL        string `json:"git_url"`
+		Identifier        string `json:"identifier"`
+		ParentID          int64  `json:"parent_id"`
+		Description       string `json:"description"`
+		IsPublic          bool   `json:"is_public"`
+		DefaultBranch     string `json:"default_branch"`
+		GitURL            string `json:"git_url"`
+		PullRequestNumber int    `json:"num_pulls"`
 	}
 
 	// RepoSettings defines general repository settings which are externally accessible
@@ -273,6 +274,7 @@ type (
 	// UpdateRepositoryStateInput defines a repo update state request input.
 	UpdateRepositoryStateInput struct {
 		State enum.RepoState `json:"state"`
+		Force bool           `json:"force,omitempty"` // for incremental migration
 	}
 
 	UpdateDefaultBranchInput struct {

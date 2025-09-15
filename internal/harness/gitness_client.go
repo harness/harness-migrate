@@ -269,6 +269,22 @@ func (c *gitnessClient) CheckUsers(in *types.CheckUsersInput) (*types.CheckUsers
 	return out, nil
 }
 
+// GetRepository returns metadata about a repository.
+func (c *gitnessClient) GetRepository(repoRef string) (*Repository, error) {
+	repoRef = strings.ReplaceAll(repoRef, pathSeparator, encodedPathSeparator)
+	uri := fmt.Sprintf("%s/api/v1/repos/%s",
+		c.address,
+		repoRef,
+	)
+
+	var out Repository
+	if err := c.get(uri, &out); err != nil {
+		return nil, err
+	}
+
+	return &out, nil
+}
+
 // http request helper functions
 func (c *gitnessClient) setAuthHeader() func(h *http.Header) {
 	return func(h *http.Header) { h.Set("Authorization", c.token) }

@@ -48,6 +48,7 @@ type gitImport struct {
 	noWebhook bool
 	noRule    bool
 	noLabel   bool
+	noGit     bool // for incremental migration - skip git operations
 }
 
 type UserInvite bool
@@ -77,6 +78,7 @@ func (c *gitImport) run(*kingpin.ParseContext) error {
 			NoWebhook:     c.noWebhook,
 			NoRule:        c.noRule,
 			NoLabel:       c.noLabel,
+			NoGit:         c.noGit,
 		},
 		tracer_,
 		reporter)
@@ -163,6 +165,10 @@ func registerGitImporter(app *kingpin.CmdClause) {
 	cmd.Flag("skip-rule", "skip importing branch protection rules (--no-rule is an alias)").
 		Default("false").
 		BoolVar(&c.noRule)
+
+	cmd.Flag("no-git", "perform incremental migration - skip git operations and import PR with offset").
+		Default("false").
+		BoolVar(&c.noGit)
 
 	cmd.Flag("debug", "enable debug logging").
 		BoolVar(&c.debug)

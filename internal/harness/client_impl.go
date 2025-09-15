@@ -440,6 +440,26 @@ func (c *client) CheckUsers(in *types.CheckUsersInput) (*types.CheckUsersOutput,
 	return out, nil
 }
 
+// GetRepository returns metadata about a repository.
+func (c *client) GetRepository(repoRef string) (*Repository, error) {
+	queryParams, repoPath, err := getQueryParamsFromRepoRef(repoRef)
+	if err != nil {
+		return nil, err
+	}
+
+	uri := fmt.Sprintf("%s/gateway/code/api/v1/repos/%s/?%s",
+		c.address,
+		repoPath,
+		queryParams,
+	)
+	out := new(Repository)
+	if err := c.get(uri, out); err != nil {
+		return nil, err
+	}
+
+	return out, nil
+}
+
 // http request helper functions
 func (c *client) setAuthHeader() func(h *http.Header) {
 	return func(h *http.Header) { h.Set("x-api-key", c.token) }

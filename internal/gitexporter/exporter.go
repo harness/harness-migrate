@@ -58,12 +58,13 @@ type (
 	}
 
 	Flags struct {
-		NoPR      bool // to not export pull requests and comments
-		NoWebhook bool // to not export webhooks
-		NoRule    bool // to not export branch protection rules
-		NoComment bool // to not export pull request comments
-		NoLabel   bool // to not export repo/space labels
-		NoLFS     bool // to not export LFS objects
+		NoPR         bool // to not export pull requests and comments
+		NoWebhook    bool // to not export webhooks
+		NoRule       bool // to not export branch protection rules
+		NoComment    bool // to not export pull request comments - use NoPRMetadata instead
+		NoPRMetadata bool // to not export pull request comments and reviewers
+		NoLabel      bool // to not export repo/space labels
+		NoLFS        bool // to not export LFS objects
 	}
 )
 
@@ -96,6 +97,11 @@ func (e *Exporter) Export(ctx context.Context) error {
 	}
 
 	e.Tracer.Log(common.MsgStartExport)
+
+	// Backward compatibility: if NoComment is set, treat it as NoPRMetadata
+	if e.flags.NoComment {
+		e.flags.NoPRMetadata = true
+	}
 
 	if !e.flags.NoLFS {
 		if err := command.CheckGitDependencies(); err != nil {
@@ -375,11 +381,13 @@ func (e *Exporter) getData(ctx context.Context, path string) ([]*types.RepoData,
 			}
 			e.Report[repo.RepoSlug].ReportMetric(report.ReportTypePRs, len(prs))
 
-			if e.flags.NoComment {
+			if e.flags.NoPRMetadata {
+				// Skip both comments and reviewers when NoPRMetadata is true
 				pullreqData := make([]*types.PullRequestData, len(prs))
 				for j := range prs {
 					pullreqData[j] = &types.PullRequestData{
 						PullRequest: prs[j],
+						Comments:    []*types.PRComment{},
 						Reviews:     []*types.PRReview{},
 						Reviewers:   []*types.PRReviewer{},
 					}
@@ -391,11 +399,12 @@ func (e *Exporter) getData(ctx context.Context, path string) ([]*types.RepoData,
 					return nil, fmt.Errorf("error getting comments for pr: %w", err)
 				}
 				repoData[i].PullRequestData = prData
-			}
 
-			err = e.fetchPRMetadata(ctx, repo.RepoSlug, repoData[i].PullRequestData)
-			if err != nil {
-				return nil, fmt.Errorf("error getting PR metadata: %w", err)
+				// Fetch PR metadata (reviews and reviewers) only if NoPRMetadata is false
+				err = e.fetchPRMetadata(ctx, repo.RepoSlug, repoData[i].PullRequestData)
+				if err != nil {
+					return nil, fmt.Errorf("error getting PR metadata: %w", err)
+				}
 			}
 		}
 	}

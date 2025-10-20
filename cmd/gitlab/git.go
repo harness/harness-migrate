@@ -110,12 +110,13 @@ func (c *exportGitCommand) run(*kingpin.ParseContext) error {
 	reporter := make(map[string]*report.Report)
 
 	flags := gitexporter.Flags{
-		NoPR:      c.flags.NoPR,
-		NoComment: c.flags.NoComment,
-		NoWebhook: c.flags.NoWebhook,
-		NoRule:    c.flags.NoRule,
-		NoLabel:   c.flags.NoLabel,
-		NoLFS:     c.flags.NoLFS,
+		NoPR:         c.flags.NoPR,
+		NoComment:    c.flags.NoComment,
+		NoPRMetadata: c.flags.NoPRMetadata,
+		NoWebhook:    c.flags.NoWebhook,
+		NoRule:       c.flags.NoRule,
+		NoLabel:      c.flags.NoLabel,
+		NoLFS:        c.flags.NoLFS,
 	}
 
 	e := gitlab.New(client, c.group, repository, checkpointManager, fileLogger, tracer_, reporter)
@@ -169,6 +170,10 @@ func registerGit(app *kingpin.CmdClause) {
 	cmd.Flag("no-comment", "do NOT export pull request comments").
 		Default("false").
 		BoolVar(&c.flags.NoComment)
+
+	cmd.Flag("no-pr-metadata", "do NOT export pull request comments and reviewers").
+		Default("false").
+		BoolVar(&c.flags.NoPRMetadata)
 
 	cmd.Flag("no-webhook", "do NOT export webhooks").
 		Default("false").

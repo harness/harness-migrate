@@ -15,6 +15,7 @@
 package gitimporter
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -25,6 +26,12 @@ import (
 	"github.com/harness/harness-migrate/internal/common"
 	"github.com/harness/harness-migrate/internal/report"
 	"github.com/harness/harness-migrate/types"
+)
+
+const (
+	// DefaultPRBatchSize is the default number of PRs to import in a single batch
+	// This is to avoid 413 Payload Too Large errors
+	DefaultPRBatchSize = 100
 )
 
 func (m *Importer) ImportPullRequests(
@@ -45,13 +52,63 @@ func (m *Importer) ImportPullRequests(
 		return nil
 	}
 
-	if err := m.Harness.ImportPRs(repoRef, &types.PRsImportInput{PullRequestData: in}); err != nil {
+	batchSize := DefaultPRBatchSize
+	if m.flags.PRBatchSize > 0 {
+		batchSize = m.flags.PRBatchSize
+	}
+
+	if err := m.importPRsInBatches(context.Background(), repoRef, in, batchSize); err != nil {
 		m.Tracer.Stop(common.ErrImportPRs, repoRef, err)
 		return fmt.Errorf("failed to import pull requests and comments for repo '%s' : %w",
 			repoRef, err)
 	}
+
 	m.Report[repoRef].ReportMetric(report.ReportTypePRs, len(in))
 	m.Tracer.Stop(common.MsgCompleteImportPRs, len(in), repoRef)
+
+	return nil
+}
+
+func (m *Importer) importPRsInBatches(
+	ctx context.Context,
+	repoRef string,
+	prs []*types.PullRequestData,
+	batchSize int,
+) error {
+	totalPRs := len(prs)
+
+	if totalPRs <= batchSize {
+		m.Tracer.Log("Importing %d pull requests for %s", totalPRs, repoRef)
+		return m.Harness.ImportPRs(repoRef, &types.PRsImportInput{PullRequestData: prs})
+	}
+
+	var batches [][]*types.PullRequestData
+	for i := 0; i < totalPRs; i += batchSize {
+		end := i + batchSize
+		if end > totalPRs {
+			end = totalPRs
+		}
+		batches = append(batches, prs[i:end])
+	}
+
+	totalBatches := len(batches)
+	m.Tracer.Log("Importing %d pull requests for %s in %d batches of %d",
+		totalPRs, repoRef, totalBatches, batchSize)
+
+	// Process batches sequentially
+	for i, batch := range batches {
+		select {
+		case <-ctx.Done():
+			return fmt.Errorf("import cancelled: %w", ctx.Err())
+		default:
+		}
+
+		err := m.Harness.ImportPRs(repoRef, &types.PRsImportInput{PullRequestData: batch})
+		if err != nil {
+			m.Tracer.LogError("Failed to import PR batch %d/%d: %v", i+1, totalBatches, err)
+			return fmt.Errorf("failed to import batch %d/%d: %w", i+1, totalBatches, err)
+		}
+	}
 
 	return nil
 }

@@ -29,10 +29,11 @@ import (
 )
 
 var (
-	ErrDuplicate    = errors.New("Resource already exists")
-	ErrNotFound     = errors.New("Resource not found")
-	ErrUnauthorized = errors.New("Unauthorized")
-	ErrForbidden    = errors.New("Forbidden")
+	ErrDuplicate       = errors.New("Resource already exists")
+	ErrNotFound        = errors.New("Resource not found")
+	ErrUnauthorized    = errors.New("Unauthorized")
+	ErrForbidden       = errors.New("Forbidden")
+	ErrPayloadTooLarge = errors.New("Payload too large")
 )
 
 // helper function to make an http request
@@ -114,6 +115,8 @@ func Open(rawurl, method string, setAuth func(h *http.Header), in, out interface
 		return nil, fmt.Errorf("%w: %s", ErrNotFound, resperr.Message)
 	case 409:
 		return nil, fmt.Errorf("%w: %s", ErrDuplicate, resperr.Message)
+	case 413:
+		return nil, fmt.Errorf("%w: %s", ErrPayloadTooLarge, resperr.Message)
 	default:
 		// else return the error body as a string
 		return nil, fmt.Errorf("client error %d: %s", resp.StatusCode, resperr.Message)

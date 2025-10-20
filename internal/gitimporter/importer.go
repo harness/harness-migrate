@@ -65,6 +65,7 @@ type Flags struct {
 	NoRule        bool
 	NoLabel       bool
 	NoGit         bool // for incremental migration - skip git operations
+	PRBatchSize   int  // batch size for PR imports to avoid 413 errors (default: 100)
 }
 
 func NewImporter(

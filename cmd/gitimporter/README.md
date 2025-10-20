@@ -98,6 +98,7 @@ This will:
 | Unauthorized/Forbidden | Provided token must be able to create and edit a repository. |
 | Forbidden | Contact support to enable `CODE_IMPORTER_V2_ENABLED` FF for your account. |
 | Push contains files exceeding the size limit | Increase `--file-size-limit`, default is 100MB. |
+| `failed to import pull requests and comments for repo 'TARGET-SPACE/REPO' : client error 413:` | The pull requests payload is too large. Use `--batch-size` with a smaller value (e.g., `--batch-size 50`). The default is 100. |
 
 ### Users
 When exporting repositories, we collect information about users who have interacted with them. This data is saved in a `users.json` file within the exported zip. During the import process, if a user exists on the Harness platform with the same email, their activities will be preserved. However, if the user is missing, you have two options: using `--skip-users` which skips mapping their activities to the migrator (determined by the token you provided) or manually create the user on the target platform first before the import.

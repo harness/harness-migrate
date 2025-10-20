@@ -44,11 +44,12 @@ type gitImport struct {
 	filePath string
 
 	// optional flags to skip import repo meta data
-	noPR      bool
-	noWebhook bool
-	noRule    bool
-	noLabel   bool
-	noGit     bool // for incremental migration - skip git operations
+	noPR        bool
+	noWebhook   bool
+	noRule      bool
+	noLabel     bool
+	noGit       bool // for incremental migration - skip git operations
+	prBatchSize int  // batch size for PR imports to avoid 413 errors
 }
 
 type UserInvite bool
@@ -79,6 +80,7 @@ func (c *gitImport) run(*kingpin.ParseContext) error {
 			NoRule:        c.noRule,
 			NoLabel:       c.noLabel,
 			NoGit:         c.noGit,
+			PRBatchSize:   c.prBatchSize,
 		},
 		tracer_,
 		reporter)
@@ -169,6 +171,10 @@ func registerGitImporter(app *kingpin.CmdClause) {
 	cmd.Flag("no-git", "perform incremental migration - skip git operations and import PR with offset").
 		Default("false").
 		BoolVar(&c.noGit)
+
+	cmd.Flag("batch-size", "number of pull requests to import per batch (default: 100). Use a smaller value if encountering 413 errors.").
+		Default("100").
+		IntVar(&c.prBatchSize)
 
 	cmd.Flag("debug", "enable debug logging").
 		BoolVar(&c.debug)

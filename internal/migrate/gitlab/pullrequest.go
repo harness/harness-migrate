@@ -16,10 +16,12 @@ package gitlab
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/harness/harness-migrate/internal/checkpoint"
 	"github.com/harness/harness-migrate/internal/common"
+	"github.com/harness/harness-migrate/internal/harness"
 	"github.com/harness/harness-migrate/internal/types"
 )
 
@@ -60,16 +62,21 @@ func (e *Export) ListPullRequests(
 		return allPrs, nil
 	}
 
-	count, err := e.GetPRCounts(ctx, repoSlug)
+	count, err := e.GetHighestMRNumber(ctx, repoSlug)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get total count of merge requests in project %s: %w", repoSlug, err)
 	}
 
 	for prNumber <= count {
 		pr, _, err := e.FindPR(ctx, repoSlug, prNumber)
-		if err != nil {
+		if err != nil && !errors.Is(err, harness.ErrNotFound) {
 			e.tracer.LogError(common.ErrListPr, err)
 			return nil, fmt.Errorf("cannot find pr %d: %w", prNumber, err)
+		}
+
+		if pr == nil {
+			prNumber++
+			continue
 		}
 
 		mappedPrWithAuthor, err := e.addEmailToPRAuthor(ctx, pr)

@@ -51,16 +51,25 @@ type (
 	}
 )
 
-func (e *Export) GetPRCounts(
+func (e *Export) GetHighestMRNumber(
 	ctx context.Context,
 	repoSlug string,
 ) (int, error) {
-	path := fmt.Sprintf("api/v4/projects/%s/merge_requests?state=all&per_page=1", encode(repoSlug))
-	res, err := e.do(ctx, "GET", path, nil, nil)
+	path := fmt.Sprintf("api/v4/projects/%s/merge_requests?state=all&sort=desc&per_page=1", encode(repoSlug))
+
+	var out []struct {
+		IID int `json:"iid"`
+	}
+	_, err := e.do(ctx, "GET", path, nil, &out)
 	if err != nil {
 		return 0, err
 	}
-	return strconv.Atoi(res.Header.Get("X-Total"))
+
+	if len(out) == 0 {
+		return 0, nil
+	}
+
+	return out[0].IID, nil
 }
 
 func (e *Export) FindPR(
@@ -71,6 +80,9 @@ func (e *Export) FindPR(
 	path := fmt.Sprintf("api/v4/projects/%s/merge_requests/%d", encode(repoSlug), prNumber)
 	var out mergeRequest
 	res, err := e.do(ctx, "GET", path, nil, &out)
+	if res.Status == 404 {
+		return nil, res, fmt.Errorf("merge request not found: %w", harness.ErrNotFound)
+	}
 	return convertPR(out), res, err
 }
 

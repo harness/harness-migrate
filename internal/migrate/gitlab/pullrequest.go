@@ -62,12 +62,12 @@ func (e *Export) ListPullRequests(
 		return allPrs, nil
 	}
 
-	count, err := e.GetHighestMRNumber(ctx, repoSlug)
+	maxMRNumber, err := e.GetHighestMRNumber(ctx, repoSlug)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get total count of merge requests in project %s: %w", repoSlug, err)
 	}
 
-	for prNumber <= count {
+	for prNumber <= maxMRNumber {
 		pr, _, err := e.FindPR(ctx, repoSlug, prNumber)
 		if err != nil && !errors.Is(err, harness.ErrNotFound) {
 			e.tracer.LogError(common.ErrListPr, err)

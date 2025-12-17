@@ -64,7 +64,7 @@ func (e *Export) ListPRComments(
 	path := fmt.Sprintf("repos/%s/pulls/%d/comments?%s", repoSlug, prNumber, encodeListOptions(opts))
 	var out []*codeComment
 	res, err := e.do(ctx, "GET", path, nil, &out)
-	return convertPRCommentsList(out, repoSlug, prNumber), res, err
+	return e.convertPRCommentsList(out, repoSlug, prNumber), res, err
 }
 
 func (e *Export) ListPRReviews(
@@ -90,14 +90,11 @@ func (e *Export) ListPRRequestedReviewers(
 	if err != nil {
 		return nil, res, err
 	}
-	
 	reviewers := convertRequestedReviewersList(out)
-	
 	reviewersWithEmail, err := e.addEmailToRequestedReviewers(ctx, reviewers)
 	if err != nil {
 		return nil, res, fmt.Errorf("error getting emails for requested reviewers: %w", err)
 	}
-	
 	return reviewersWithEmail, res, nil
 }
 

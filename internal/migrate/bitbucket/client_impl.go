@@ -57,7 +57,7 @@ func (e *Export) ListPRComments(
 	var out comments
 	res, err := e.do(ctx, "GET", path, nil, &out)
 	copyPagination(out.pagination, res)
-	return convertPRCommentsList(out.Values, prNumber, repoSlug), res, err
+	return e.convertPRCommentsList(out.Values, prNumber, repoSlug), res, err
 }
 
 func (e *Export) ListBranchRulesInternal(

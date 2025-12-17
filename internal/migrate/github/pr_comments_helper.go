@@ -18,7 +18,6 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
-	"log"
 	"strings"
 
 	"github.com/drone/go-scm/scm"
@@ -38,15 +37,15 @@ const (
 
 const logMessage = "[%s] Skipped mapping %q branch rule for pattern %q of repo %q as we do not support it as of now."
 
-func convertPRCommentsList(from []*codeComment, repo string, pr int) []*types.PRComment {
+func (e *Export) convertPRCommentsList(from []*codeComment, repo string, pr int) []*types.PRComment {
 	var to []*types.PRComment
 	for _, v := range from {
-		to = append(to, convertPRComment(v, repo, pr))
+		to = append(to, e.convertPRComment(v, repo, pr))
 	}
 	return to
 }
 
-func convertPRComment(from *codeComment, repo string, pr int) *types.PRComment {
+func (e *Export) convertPRComment(from *codeComment, repo string, pr int) *types.PRComment {
 	var parentID int
 	var metadata *types.CodeComment
 	// If the comment is a reply, we don't need the metadata
@@ -56,7 +55,7 @@ func convertPRComment(from *codeComment, repo string, pr int) *types.PRComment {
 	} else if from.OriginalLine != nil && from.SubjectType != "file" {
 		hunkHeader, err := extractHunkInfo(from)
 		if err != nil {
-			log.Default().Printf("Importing code comment %d on PR %d of repo %s as a PR comment: %v", from.ID, pr, repo, err)
+			e.fileLogger.Log(fmt.Sprintf("Importing code comment %d on PR %d of repo %s as a PR comment: %v", from.ID, pr, repo, err))
 		} else {
 			metadata = &types.CodeComment{
 				Path:         from.Path,
@@ -156,7 +155,13 @@ func extractHunkInfo(comment *codeComment) (string, error) {
 			newSpan = otherSpan
 		}
 	}
-	return common.FormatHunkHeader(int(oldLine), int(oldSpan), int(newLine), int(newSpan), ""), nil
+
+	hunkHeader, err := common.FormatHunkHeader(int(oldLine), int(oldSpan), int(newLine), int(newSpan), "")
+	if err != nil {
+		return "", fmt.Errorf("invalid hunk header values: %w", err)
+	}
+
+	return hunkHeader, nil
 }
 
 func getOtherSideLineAndSpan(rawHunk string, newSide bool, line, span int) (int, int, error) {

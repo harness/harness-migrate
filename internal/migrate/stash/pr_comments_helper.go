@@ -133,7 +133,10 @@ func extractSnippetInfo(diff codeDiff) types.Hunk {
 		return types.Hunk{}
 	}
 	hunk := diff.Hunks[0]
-	header := common.FormatHunkHeader(hunk.SourceLine, hunk.SourceSpan, hunk.DestinationLine, hunk.DestinationSpan, "")
+	header, err := common.FormatHunkHeader(hunk.SourceLine, hunk.SourceSpan, hunk.DestinationLine, hunk.DestinationSpan, "")
+	if err != nil {
+		log.Default().Printf("invalid hunk header values: %v", err)
+	}
 	var lines []string
 	for _, segment := range hunk.Segments {
 		l := ""
@@ -175,7 +178,11 @@ func extractHunkInfo(anchor commentAnchor, diff codeDiff) string {
 			if segment.Type == segmentRemoved {
 				destinationSpan = 0
 			}
-			return common.FormatHunkHeader(line.Source, sourceSpan, line.Destination, destinationSpan, "")
+			hunkHeader, err := common.FormatHunkHeader(line.Source, sourceSpan, line.Destination, destinationSpan, "")
+			if err != nil {
+				log.Default().Printf("invalid hunk header values: %v", err)
+			}
+			return hunkHeader
 		}
 	}
 	return ""

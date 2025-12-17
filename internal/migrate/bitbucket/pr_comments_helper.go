@@ -18,7 +18,6 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
-	"log"
 	"strings"
 
 	"github.com/drone/go-scm/scm"
@@ -29,15 +28,15 @@ import (
 
 const commentFields = "values.id,values.type,values.parent.id,values.content.raw,values.user.account_id,values.user.display_name,values.created_on,values.updated_on,values.inline.*"
 
-func convertPRCommentsList(from []codeComment, prNumber int, repoSlug string) []*types.PRComment {
+func (e *Export) convertPRCommentsList(from []codeComment, prNumber int, repoSlug string) []*types.PRComment {
 	var to []*types.PRComment
 	for _, v := range from {
-		to = append(to, convertPRComment(v, prNumber, repoSlug))
+		to = append(to, e.convertPRComment(v, prNumber, repoSlug))
 	}
 	return to
 }
 
-func convertPRComment(from codeComment, prNumber int, repo string) *types.PRComment {
+func (e *Export) convertPRComment(from codeComment, prNumber int, repo string) *types.PRComment {
 	if from.Type != "pullrequest_comment" {
 		return nil
 	}
@@ -51,7 +50,7 @@ func convertPRComment(from codeComment, prNumber int, repo string) *types.PRComm
 	if from.Inline != nil {
 		hunkHeader, err := extractHunkInfo(from.Inline, isReply)
 		if err != nil {
-			log.Default().Printf("Failed to export code comment %d on PR %d of repo %s as a PR comment: %v", from.ID, prNumber, repo, err)
+			e.fileLogger.Log(fmt.Sprintf("Importing code comment %d on PR %d of repo %s as a PR comment: %v", from.ID, prNumber, repo, err))
 		} else {
 			metadata = &types.CodeComment{
 				Path:         from.Inline.Path,
@@ -150,5 +149,10 @@ func extractHunkInfo(inline *inline, isReply bool) (string, error) {
 		newSpan = 1
 	}
 
-	return common.FormatHunkHeader(oldLine, oldSpan, newLine, newSpan, ""), nil
+	hunkHeader, err := common.FormatHunkHeader(oldLine, oldSpan, newLine, newSpan, "")
+	if err != nil {
+		return "", fmt.Errorf("invalid hunk header values: %w", err)
+	}
+
+	return hunkHeader, nil
 }

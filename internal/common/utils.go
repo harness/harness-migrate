@@ -1,6 +1,7 @@
 package common
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 
@@ -49,7 +50,13 @@ func MapPRReviewer(reviews []*scm.Review) []*types.PRReview {
 	return r
 }
 
-func FormatHunkHeader(source, sourceSpan, destination, destinationSpan int, sectionHeading string) string {
+func FormatHunkHeader(source, sourceSpan, destination, destinationSpan int, sectionHeading string) (string, error) {
+	// Validate inputs - line numbers must be positive, spans must be non-negative
+	if source < 0 || sourceSpan < 0 || destination < 0 || destinationSpan < 0 {
+		return "", fmt.Errorf("invalid hunk header parameters: source=%d, sourceSpan=%d, destination=%d, destinationSpan=%d (all must be non-negative)",
+			source, sourceSpan, destination, destinationSpan)
+	}
+
 	sb := strings.Builder{}
 	sb.Grow(20 + len(sectionHeading))
 
@@ -72,5 +79,5 @@ func FormatHunkHeader(source, sourceSpan, destination, destinationSpan int, sect
 		sb.WriteString(sectionHeading)
 	}
 
-	return sb.String()
+	return sb.String(), nil
 }

@@ -15,6 +15,7 @@
 package gitlab
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 
@@ -23,15 +24,15 @@ import (
 	"github.com/harness/harness-migrate/internal/types"
 )
 
-func convertPRCommentsList(from []*discussion, pr int) []*types.PRComment {
+func (e *Export) convertPRCommentsList(from []*discussion, pr int) []*types.PRComment {
 	var to []*types.PRComment
 	for _, v := range from {
-		to = append(to, convertPRComments(v, pr)...)
+		to = append(to, e.convertPRComments(v, pr)...)
 	}
 	return to
 }
 
-func convertPRComments(from *discussion, pr int) []*types.PRComment {
+func (e *Export) convertPRComments(from *discussion, pr int) []*types.PRComment {
 	var parentID int
 	var comments []*types.PRComment
 	for _, note := range from.Notes {
@@ -56,6 +57,11 @@ func convertPRComments(from *discussion, pr int) []*types.PRComment {
 		}
 
 		if note.Type == "DiffNote" && note.Position != nil {
+			hunkHeader := extractHunkInfo(note)
+			if hunkHeader == "" {
+				e.fileLogger.Log(fmt.Sprintf("Importing comment %d on PR %d of repo %s as a PR comment due to invalid hunk header values", note.ID, pr, e.project))
+				continue // add comment as regular comment
+			}
 			comment.CodeComment = &types.CodeComment{
 				Path: note.Position.NewPath,
 				// Gitlab doesnt return code diffs on discussion API
@@ -63,7 +69,7 @@ func convertPRComments(from *discussion, pr int) []*types.PRComment {
 					Header: "",
 					Lines:  []string{},
 				},
-				HunkHeader:   extractHunkInfo(note),
+				HunkHeader:   hunkHeader,
 				Side:         getSide(*note.Position),
 				SourceSHA:    note.Position.HeadSHA,
 				MergeBaseSHA: note.Position.BaseSHA,
@@ -84,7 +90,12 @@ func extractHunkInfo(comment codeComment) string {
 	sourceSpan := leftLineEnd - leftLineStart + 1
 	desSpan := rightLineEnd - rightLineStart + 1
 
-	return common.FormatHunkHeader(leftLineStart, sourceSpan, rightLineStart, desSpan, "")
+	hunkHeader, err := common.FormatHunkHeader(leftLineStart, sourceSpan, rightLineStart, desSpan, "")
+	if err != nil {
+		// Return empty string if validation fails - caller will handle by converting to regular comment
+		return ""
+	}
+	return hunkHeader
 }
 
 func getOldNewLines(lineCode string) (int, int) {

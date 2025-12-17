@@ -105,7 +105,7 @@ func (e *Export) ListPRComments(
 	path := fmt.Sprintf("api/v4/projects/%s/merge_requests/%d/discussions?%s", encode(repoSlug), prNumber, encodeListOptions(opts))
 	var out []*discussion
 	res, err := e.do(ctx, "GET", path, nil, &out)
-	return convertPRCommentsList(out, prNumber), res, err
+	return e.convertPRCommentsList(out, prNumber), res, err
 }
 
 func (e *Export) ListRepoLabels(

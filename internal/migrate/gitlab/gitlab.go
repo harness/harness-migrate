@@ -31,6 +31,7 @@ func New(
 	logger *gitexporter.FileLogger,
 	tracer tracer.Tracer,
 	report map[string]*report.Report,
+	includeSubgroups bool,
 ) *Export {
 	ckpt := make(map[string]user)
 	c, ok, err := checkpoint.GetCheckpointData[map[string]user](checkpointer, CheckpointKeyUsers)
@@ -44,6 +45,7 @@ func New(
 		gitlab:            client,
 		group:             group,
 		project:           project,
+		includeSubgroups:  includeSubgroups,
 		checkpointManager: checkpointer,
 		tracer:            tracer,
 		userMap:           ckpt,

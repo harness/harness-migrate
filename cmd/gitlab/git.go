@@ -47,6 +47,8 @@ type exportGitCommand struct {
 
 	checkpoint bool
 	flags      gitexporter.Flags
+
+	includeSubgroups bool
 }
 
 func (c *exportGitCommand) run(*kingpin.ParseContext) error {
@@ -119,7 +121,7 @@ func (c *exportGitCommand) run(*kingpin.ParseContext) error {
 		NoLFS:        c.flags.NoLFS,
 	}
 
-	e := gitlab.New(client, c.group, repository, checkpointManager, fileLogger, tracer_, reporter)
+	e := gitlab.New(client, c.group, repository, checkpointManager, fileLogger, tracer_, reporter, c.includeSubgroups)
 
 	exporter := gitexporter.NewExporter(e, c.file, c.user, c.token, tracer_, reporter, flags)
 	return exporter.Export(ctx)
@@ -145,6 +147,11 @@ func registerGit(app *kingpin.CmdClause) {
 		Required().
 		Envar("gitlab_GROUP").
 		StringVar(&c.group)
+
+	cmd.Flag("include-subgroups", "when listing a group, include projects in descendant subgroups").
+		Default("false").
+		Envar("GITLAB_INCLUDE_SUBGROUPS").
+		BoolVar(&c.includeSubgroups)
 
 	cmd.Flag("project", "optional name of the project to export").
 		Envar("gitlab_PROJECT").

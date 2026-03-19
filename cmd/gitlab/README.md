@@ -75,7 +75,14 @@ As a quick start you can run
 ```
 ./harness-migrate gitlab git-export --group <group name/including subgroups> --project <project-name> --host <host-url> --username <gitlab-username> --token <token> <zip-folder-path> 
 ```
+
+To list and export every project in a group and its subgroups:
+```
+./harness-migrate gitlab git-export --group <group> --include-subgroups --token <token> <zip-folder-path>
+```
 where you have to replace all values enclosed in brackets `<>`. You can pass Gitlab Personal Access Token or Group/Project Access token given your use cases. Please include subgroups for `--group` arg if you are exporting an individual project otherwise only include the group name (w/o subgroups).
+
+When exporting all projects under a group, the default list only includes projects directly in that group. To also export projects in nested subgroups, pass **`--include-subgroups`**.
 
 If exporting from Gitlab deployed on premise, the `--host` flag with the Gitlab host URL is required.
 

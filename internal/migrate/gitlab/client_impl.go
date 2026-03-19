@@ -37,9 +37,10 @@ import (
 
 type (
 	Export struct {
-		gitlab  *scm.Client
-		group   string
-		project string
+		gitlab           *scm.Client
+		group            string
+		project          string
+		includeSubgroups bool
 
 		checkpointManager *checkpoint.CheckpointManager
 

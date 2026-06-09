@@ -381,10 +381,19 @@ func (e *Exporter) getData(ctx context.Context, path string) ([]*types.RepoData,
 			}
 			e.Report[repo.RepoSlug].ReportMetric(report.ReportTypePRs, len(prs))
 
+			// Open PRs whose source/target lack a single merge base are closed
+			// as they'll be rejected by CODE.
+			gitPath := filepath.Join(repoPath, externalTypes.GitDir)
+			checker := e.selectMergeBaseChecker(gitPath)
+			var mergeBaseLogs []string
+
 			if e.flags.NoPRMetadata {
 				// Skip both comments and reviewers when NoPRMetadata is true
 				pullreqData := make([]*types.PullRequestData, len(prs))
 				for j := range prs {
+					if e.checkMergeBase(ctx, checker, &prs[j]) {
+						mergeBaseLogs = append(mergeBaseLogs, mergeBaseClosedLog(repo.RepoSlug, prs[j].Number))
+					}
 					pullreqData[j] = &types.PullRequestData{
 						PullRequest: prs[j],
 						Comments:    []*types.PRComment{},
@@ -394,11 +403,12 @@ func (e *Exporter) getData(ctx context.Context, path string) ([]*types.RepoData,
 				}
 				repoData[i].PullRequestData = pullreqData
 			} else {
-				prData, err := e.exportCommentsForPRs(ctx, prs, repo, e.Tracer)
+				prData, logs, err := e.exportCommentsForPRs(ctx, prs, repo, checker, e.Tracer)
 				if err != nil {
 					return nil, fmt.Errorf("error getting comments for pr: %w", err)
 				}
 				repoData[i].PullRequestData = prData
+				mergeBaseLogs = logs
 
 				// Fetch PR metadata (reviews and reviewers) only if NoPRMetadata is false
 				err = e.fetchPRMetadata(ctx, repo.RepoSlug, repoData[i].PullRequestData)
@@ -406,6 +416,8 @@ func (e *Exporter) getData(ctx context.Context, path string) ([]*types.RepoData,
 					return nil, fmt.Errorf("error getting PR metadata: %w", err)
 				}
 			}
+
+			e.flushMergeBaseClosures(repo.RepoSlug, mergeBaseLogs)
 		}
 	}
 
@@ -416,10 +428,11 @@ func (e *Exporter) exportCommentsForPRs(
 	ctx context.Context,
 	prs []types.PRResponse,
 	repo types.RepoResponse,
+	checker mergeBaseChecker,
 	t tracer.Tracer,
-) ([]*types.PullRequestData, error) {
+) ([]*types.PullRequestData, []string, error) {
 	if len(prs) == 0 {
-		return make([]*types.PullRequestData, 0), nil
+		return make([]*types.PullRequestData, 0), nil, nil
 	}
 
 	e.Tracer.Start(common.MsgStartCommentsFetch, repo.RepoSlug)
@@ -427,11 +440,14 @@ func (e *Exporter) exportCommentsForPRs(
 	taskPool := util.NewTaskPool(ctx, min(maxParallelism, len(prs)))
 	err := taskPool.Start()
 	if err != nil {
-		return nil, fmt.Errorf("error starting thread pool: %w", err)
+		return nil, nil, fmt.Errorf("error starting thread pool: %w", err)
 	}
 
 	prData := make([]*types.PullRequestData, len(prs))
-	g := e.startResultChannel(ctx, taskPool, prData, t)
+	// mergeBaseLogs is appended to only by the single result-reader goroutine
+	// started below, so it needs no locking.
+	var mergeBaseLogs []string
+	g := e.startResultChannel(ctx, taskPool, prData, checker, repo.RepoSlug, &mergeBaseLogs, t)
 
 	for j, pr := range prs {
 		task := e.createPRTask(j, pr, repo)
@@ -441,10 +457,10 @@ func (e *Exporter) exportCommentsForPRs(
 	taskPool.Shutdown()
 	err = g.Wait()
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	return prData, nil
+	return prData, mergeBaseLogs, nil
 }
 
 // fetchPRMetadata fetches review and reviewer data for all PRs (no multi-threading needed)
@@ -507,6 +523,9 @@ func (e *Exporter) startResultChannel(
 	ctx context.Context,
 	taskPool *util.TaskPool,
 	prData []*types.PullRequestData,
+	checker mergeBaseChecker,
+	repoSlug string,
+	mergeBaseLogs *[]string,
 	tracer tracer.Tracer,
 ) *errgroup.Group {
 	g, _ := errgroup.WithContext(ctx)
@@ -519,7 +538,11 @@ func (e *Exporter) startResultChannel(
 				os.Exit(1)
 			}
 			if result.Data != nil {
-				prData[result.ID] = result.Data.(*types.PullRequestData)
+				data := result.Data.(*types.PullRequestData)
+				prData[result.ID] = data
+				if e.checkMergeBase(ctx, checker, &data.PullRequest) {
+					*mergeBaseLogs = append(*mergeBaseLogs, mergeBaseClosedLog(repoSlug, data.PullRequest.Number))
+				}
 			}
 			taskPool.MarkResultRead()
 		}

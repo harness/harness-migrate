@@ -60,10 +60,12 @@ func (c *convertCommand) run(ctx *kingpin.ParseContext) error {
 	var err error
 
 	// detect URI input if passed
-	u, _ := url.ParseRequestURI(c.input)
+	u, parseErr := url.ParseRequestURI(c.input)
 
-	// download file if the URL is absolute (not a local path)
-	if u.IsAbs() {
+	// download file if the URL is absolute (not a local path). A relative
+	// path (the common case) fails to parse as a request URI and returns a
+	// nil URL, so guard against dereferencing it.
+	if parseErr == nil && u.IsAbs() {
 		// download the jenkins xml file
 		before, err = httpGetRequest(c)
 		if err != nil {

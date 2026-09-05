@@ -666,19 +666,21 @@ func mapRepoData(repoData *types.RepoData) *externalTypes.RepositoryData {
 }
 
 func zipFolder(path string) error {
-	err := util.ZipFolder(path, getZipFilePath(path))
+	err := util.ZipFolder(path, ZipFilePath(path))
 	if err != nil {
 		return fmt.Errorf("error zipping folder: %w", err)
 	}
 	return nil
 }
 
-func getZipFilePath(path string) string {
+// ZipFilePath returns the zip an export of the folder at path writes, and is the
+// one rule for where a bundle's zip lives — importers resolve it the same way.
+func ZipFilePath(path string) string {
 	return filepath.Join(path, ZipFileName)
 }
 
 func deleteFolders(path string) error {
-	err := util.DeleteDirsExcept(path, getZipFilePath(path))
+	err := util.DeleteDirsExcept(path, ZipFilePath(path))
 	if err != nil {
 		return fmt.Errorf("error cleaning up already zipped folders: %w", err)
 	}

@@ -1,0 +1,442 @@
+spec_version: 1
+module_type: plugin
+module_desc: Migrate repositories and their pull requests into Harness Code from another SCM
+help_text: |
+  ## Migration (migrate)
+
+  Migrates git repositories and their metadata from another source-control
+  provider into Harness Code. This plugin wraps the harness-migrate engine
+  (https://github.com/harness/harness-migrate). It does not migrate pipelines
+  or any other CI data.
+
+  ### Two phases, not one
+
+  Migration is deliberately two steps with a zip file on disk between them:
+
+  1. **Export** — read everything out of the source provider (repos, pull
+     requests, comments, webhooks, branch rules, labels, LFS objects) into a
+     local folder.
+  2. **Import** — push that folder into Harness Code.
+
+  The phases are often separated by hours of runtime, so they are separate
+  commands. Exports are checkpointed: re-run with `--resume` to pick up where an
+  interrupted run left off.
+
+      harness migrate github_organization:scm_bundle --from myorg --github-token ...
+      harness migrate scm_bundle:repository --from harness
+
+  The export writes `./harness/harness.zip` and needs no Harness login; the
+  import reads it and creates repositories in the current profile's scope.
+
+  Because the bundle sits on disk between the two, it can be edited. When the
+  emails in the source provider are not the emails those people have in Harness,
+  rewrite them before importing — otherwise the import stops on a user it cannot
+  find:
+
+      harness update scm_bundle:users harness --user-mapping users.json
+
+  If an email doesn't match a Harness user, the import stops. Fix it first
+  with `update scm_bundle:users`, or pass --skip-users on
+  `migrate scm_bundle:repository` to continue anyway — unmapped pull requests,
+  comments and branch rule members are then credited to the importing
+  profile's account instead. Commit authors always come from the git objects
+  the export wrote, never from the importing identity. Use a service account
+  profile to avoid unmapped history being credited to you personally.
+
+  ### Nouns
+
+  {{nouns}}
+
+nouns:
+  - noun: scm_bundle
+    short_desc: A local bundle of git data (repos, PRs, webhooks, rules) written by a migration, ready to import into Harness Code.
+  - noun: github_organization
+    noun_aliases: [github_org]
+    short_desc: A GitHub organization, read live over the GitHub API.
+  - noun: gitlab_group
+    short_desc: A GitLab group, read live over the GitLab API.
+  - noun: bitbucket_workspace
+    short_desc: A Bitbucket Cloud workspace, read live over the Bitbucket API.
+  - noun: stash_project
+    noun_aliases: [bitbucket_server_project]
+    short_desc: A Bitbucket Server (Stash) project, read live over the Bitbucket Server API.
+
+commands:
+  - command: migrate github_organization:scm_bundle
+    verb: migrate
+    noun: github_organization
+    noun_to: scm_bundle
+    short: Migrate a GitHub organization's git data (repos, pull requests, webhooks, rules) into a local bundle
+    long: |
+      Reads repositories and their metadata out of a GitHub organization and
+      writes them to a local bundle for a later import into Harness Code.
+
+      `--from` is the GitHub organization; `--to` is the folder to write, and
+      defaults to ./harness. Nothing lands in Harness — the `:to` endpoint is a
+      local bundle, so no Harness login is needed. Import it with
+      `harness migrate scm_bundle:repository`.
+
+      Requires a GitHub token with read access to the org, and the `git` and
+      `git-lfs` binaries on PATH.
+    no_auth: true
+    handler_type: workflow
+    workflow_id: migrate_github_organization_scm_bundle
+    migrate_from:
+      presence: required
+      label: "GitHub organization to migrate"
+      id_label: "<org>"
+    migrate_to:
+      label: "Folder to write the bundle to (default ./harness)"
+      id_label: "<folder>"
+    # --out, --format, --json, --yaml and --raw are added to every workflow
+    # command, and --org/--project/--profile/--debug/--timeout are global, so
+    # none of those names are available here.
+    flags:
+      - name: github-token
+        description: "GitHub token with read access to the organization"
+        required: true
+      - name: repo
+        description: "Migrate only this repository instead of the whole org"
+      - name: github-user
+        description: "GitHub username, used for git clones"
+      - name: github-host
+        description: "GitHub API base URL, for GitHub Enterprise"
+      - name: resume
+        description: "Resume from the last checkpoint in the output folder"
+        is_bool: true
+      - name: no-pr
+        description: "Do NOT export pull requests and comments"
+        is_bool: true
+      - name: no-comment
+        description: "Do NOT export pull request comments"
+        is_bool: true
+      - name: no-pr-metadata
+        description: "Do NOT export pull request comments and reviewers"
+        is_bool: true
+      - name: no-webhook
+        description: "Do NOT export webhooks"
+        is_bool: true
+      - name: no-rule
+        description: "Do NOT export branch protection rules"
+        is_bool: true
+      - name: no-label
+        description: "Do NOT export labels"
+        is_bool: true
+      - name: no-lfs
+        description: "Do NOT export LFS objects"
+        is_bool: true
+      - name: no-progress
+        description: "Print plain progress lines instead of an animated progress bar"
+        is_bool: true
+
+  - command: migrate gitlab_group:scm_bundle
+    verb: migrate
+    noun: gitlab_group
+    noun_to: scm_bundle
+    short: Migrate a GitLab group's git data (repos, pull requests, webhooks, rules) into a local bundle
+    long: |
+      Reads projects and their metadata out of a GitLab group and writes them to
+      a local bundle for a later import into Harness Code.
+
+      `--from` is the GitLab group; `--to` is the folder to write, and defaults
+      to ./harness. Nothing lands in Harness — the `:to` endpoint is a local
+      bundle, so no Harness login is needed. Import it with
+      `harness migrate scm_bundle:repository`.
+
+      Requires a GitLab token with read access to the group, and the `git` and
+      `git-lfs` binaries on PATH.
+    no_auth: true
+    handler_type: workflow
+    workflow_id: migrate_gitlab_group_scm_bundle
+    migrate_from:
+      presence: required
+      label: "GitLab group to migrate"
+      id_label: "<group>"
+    migrate_to:
+      label: "Folder to write the bundle to (default ./harness)"
+      id_label: "<folder>"
+    # --out, --format, --json, --yaml and --raw are added to every workflow
+    # command, and --org/--project/--profile/--debug/--timeout are global, so
+    # none of those names are available here. GitLab calls a repository a
+    # project, but --repo matches the other three providers, and --project is
+    # global anyway.
+    flags:
+      - name: gitlab-token
+        description: "GitLab token with read access to the group"
+        required: true
+      - name: include-subgroups
+        description: "Include projects in descendant subgroups of the group"
+        is_bool: true
+      - name: repo
+        description: "Migrate only this project instead of the whole group"
+      - name: gitlab-user
+        description: "GitLab username, used for git clones"
+      - name: gitlab-host
+        description: "GitLab API base URL, for self-managed GitLab"
+      - name: resume
+        description: "Resume from the last checkpoint in the output folder"
+        is_bool: true
+      - name: no-pr
+        description: "Do NOT export pull requests and comments"
+        is_bool: true
+      - name: no-comment
+        description: "Do NOT export pull request comments"
+        is_bool: true
+      - name: no-pr-metadata
+        description: "Do NOT export pull request comments and reviewers"
+        is_bool: true
+      - name: no-webhook
+        description: "Do NOT export webhooks"
+        is_bool: true
+      - name: no-rule
+        description: "Do NOT export branch protection rules"
+        is_bool: true
+      - name: no-label
+        description: "Do NOT export labels"
+        is_bool: true
+      - name: no-lfs
+        description: "Do NOT export LFS objects"
+        is_bool: true
+      - name: no-progress
+        description: "Print plain progress lines instead of an animated progress bar"
+        is_bool: true
+
+  - command: migrate bitbucket_workspace:scm_bundle
+    verb: migrate
+    noun: bitbucket_workspace
+    noun_to: scm_bundle
+    short: Migrate a Bitbucket workspace's git data (repos, pull requests, webhooks, rules) into a local bundle
+    long: |
+      Reads repositories and their metadata out of a Bitbucket Cloud workspace
+      and writes them to a local bundle for a later import into Harness Code.
+
+      `--from` is the Bitbucket workspace; `--to` is the folder to write, and
+      defaults to ./harness. Nothing lands in Harness — the `:to` endpoint is a
+      local bundle, so no Harness login is needed. Import it with
+      `harness migrate scm_bundle:repository`.
+
+      Requires a Bitbucket token with read access to the workspace, and the
+      `git` and `git-lfs` binaries on PATH.
+    no_auth: true
+    handler_type: workflow
+    workflow_id: migrate_bitbucket_workspace_scm_bundle
+    migrate_from:
+      presence: required
+      label: "Bitbucket workspace to migrate"
+      id_label: "<workspace>"
+    migrate_to:
+      label: "Folder to write the bundle to (default ./harness)"
+      id_label: "<folder>"
+    # --out, --format, --json, --yaml and --raw are added to every workflow
+    # command, and --org/--project/--profile/--debug/--timeout are global, so
+    # none of those names are available here.
+    flags:
+      - name: bitbucket-token
+        description: "Bitbucket token with read access to the workspace"
+        required: true
+      - name: repo
+        description: "Migrate only this repository instead of the whole workspace"
+      - name: bitbucket-host
+        description: "Bitbucket API base URL, for Bitbucket Server"
+      - name: resume
+        description: "Resume from the last checkpoint in the output folder"
+        is_bool: true
+      - name: no-pr
+        description: "Do NOT export pull requests and comments"
+        is_bool: true
+      - name: no-comment
+        description: "Do NOT export pull request comments"
+        is_bool: true
+      - name: no-pr-metadata
+        description: "Do NOT export pull request comments and reviewers"
+        is_bool: true
+      - name: no-webhook
+        description: "Do NOT export webhooks"
+        is_bool: true
+      - name: no-rule
+        description: "Do NOT export branch protection rules"
+        is_bool: true
+      - name: no-lfs
+        description: "Do NOT export LFS objects"
+        is_bool: true
+      - name: no-progress
+        description: "Print plain progress lines instead of an animated progress bar"
+        is_bool: true
+
+  - command: update scm_bundle:users
+    verb: update
+    noun: scm_bundle
+    noun_variant: users
+    short: Rewrite the email addresses in a local bundle from a mapping file
+    long: |
+      Replaces email addresses throughout a bundle — pull request authors,
+      commenters, reviewers and branch rule members — with the ones a mapping
+      file names, and rewrites the bundle in place.
+
+      Run it between the export and the import, when the emails a source
+      provider reports are not the ones the same people have in Harness. The
+      import matches users by email, so unmapped addresses are what make
+      `migrate scm_bundle:repository` stop on a missing user.
+
+      The id is the bundle: pass the folder an export wrote (`./harness`) or the
+      zip inside it, the same as the import's `--from`. `--user-mapping` is a
+      JSON object of old address to new:
+
+          {"old@source.example": "new@harness.example"}
+
+      Nothing lands in Harness and no login is needed — the only effect is on
+      the bundle on disk. The original is replaced once the rewrite succeeds, so
+      an interrupted run leaves it untouched.
+    no_auth: true
+    handler_type: workflow
+    workflow_id: update_scm_bundle_users
+    # A bundle is named by a path, so the id holds slashes; without
+    # id_allow_slash the framework rejects anything but a bare name.
+    id_label: "<folder-or-zip>"
+    id_allow_slash: true
+    flags:
+      - name: user-mapping
+        description: "Path to a JSON file mapping old email addresses to new ones"
+        required: true
+      - name: no-progress
+        description: "Print plain progress lines instead of an animated progress bar"
+        is_bool: true
+
+  - command: migrate scm_bundle:repository
+    verb: migrate
+    noun: scm_bundle
+    noun_to: repository
+    short: Import a local bundle written by an export into Harness Code repositories
+    long: |
+      Reads a bundle produced by one of the `migrate <provider>:scm_bundle`
+      commands and creates the repositories, pull requests, comments, webhooks,
+      branch rules and labels it describes in Harness Code.
+
+      `--from` is the bundle: pass the folder an export wrote (`./harness`) or the
+      zip inside it. There is no `--to` — the destination is the scope of the
+      current profile, so the repositories are created under the account, org and
+      project that `harness auth setscope` or the global `--org`/`--project`
+      flags select.
+
+      If a pull request author, commenter or branch rule member's email
+      doesn't match a Harness user, the import stops. Fix it first with
+      `update scm_bundle:users`, or pass --skip-users to continue anyway —
+      unmapped pull requests, comments and branch rule members are then
+      credited to the profile's own account instead. Commit authors always
+      come from the git objects the export wrote, never from the importing
+      identity. Use a service account profile to avoid unmapped history being
+      credited to you personally.
+
+      Requires an API token profile and the `git` and `git-lfs` binaries on PATH.
+    handler_type: workflow
+    workflow_id: migrate_scm_bundle_repository
+    migrate_from:
+      presence: required
+      label: "Bundle folder or zip file to import (e.g. ./harness)"
+      id_label: "<folder-or-zip>"
+    migrate_to:
+      presence: none
+    # --out, --format, --json, --yaml and --raw are added to every workflow
+    # command, and --org/--project/--profile/--debug/--timeout are global, so
+    # none of those names are available here. --org and --project are what
+    # select the destination scope, which is why there is no --to.
+    flags:
+      - name: repo
+        description: "Import only this repository from the bundle (e.g. myorg/myrepo)"
+      - name: skip-users
+        description: "Attribute pull requests and comments from unmapped users to the profile's own account instead of failing the import"
+        is_bool: true
+      - name: file-size-limit
+        description: "Temporarily raise the git push file size limit, in bytes, for large repositories"
+        default: "100000000"
+      - name: batch-size
+        description: "Pull requests to import per request; lower it if the API returns 413"
+        default: "100"
+      - name: no-pr
+        description: "Do NOT import pull requests and comments"
+        is_bool: true
+      - name: no-webhook
+        description: "Do NOT import webhooks"
+        is_bool: true
+      - name: no-rule
+        description: "Do NOT import branch protection rules"
+        is_bool: true
+      - name: no-label
+        description: "Do NOT import labels"
+        is_bool: true
+      - name: no-git
+        description: "Skip all git operations and import only pull requests, for topping up a repository that is already migrated"
+        is_bool: true
+      - name: trace
+        description: "Log every Harness API request and response"
+        is_bool: true
+      - name: no-progress
+        description: "Print plain progress lines instead of an animated progress bar"
+        is_bool: true
+
+  - command: migrate stash_project:scm_bundle
+    verb: migrate
+    noun: stash_project
+    noun_to: scm_bundle
+    short: Migrate a Bitbucket Server (Stash) project's git data (repos, pull requests, webhooks, rules) into a local bundle
+    long: |
+      Reads repositories and their metadata out of a Bitbucket Server (Stash)
+      project and writes them to a local bundle for a later import into
+      Harness Code.
+
+      `--from` is the Bitbucket Server project; `--to` is the folder to write,
+      and defaults to ./harness. Nothing lands in Harness — the `:to` endpoint
+      is a local bundle, so no Harness login is needed. Import it with
+      `harness migrate scm_bundle:repository`.
+
+      Requires a Bitbucket Server token with read access to the project, and the
+      `git` and `git-lfs` binaries on PATH.
+    no_auth: true
+    handler_type: workflow
+    workflow_id: migrate_stash_project_scm_bundle
+    migrate_from:
+      presence: required
+      label: "Bitbucket Server project to migrate"
+      id_label: "<project>"
+    migrate_to:
+      label: "Folder to write the bundle to (default ./harness)"
+      id_label: "<folder>"
+    # --out, --format, --json, --yaml and --raw are added to every workflow
+    # command, and --org/--project/--profile/--debug/--timeout are global, so
+    # none of those names are available here.
+    flags:
+      - name: stash-host
+        description: "Bitbucket Server base URL"
+        required: true
+      - name: stash-token
+        description: "Bitbucket Server token with read access to the project"
+        required: true
+      - name: stash-user
+        description: "Bitbucket Server username, used to authenticate and for git clones"
+        required: true
+      - name: repo
+        description: "Migrate only this repository instead of the whole project"
+      - name: resume
+        description: "Resume from the last checkpoint in the output folder"
+        is_bool: true
+      - name: no-pr
+        description: "Do NOT export pull requests and comments"
+        is_bool: true
+      - name: no-comment
+        description: "Do NOT export pull request comments"
+        is_bool: true
+      - name: no-pr-metadata
+        description: "Do NOT export pull request comments and reviewers"
+        is_bool: true
+      - name: no-webhook
+        description: "Do NOT export webhooks"
+        is_bool: true
+      - name: no-rule
+        description: "Do NOT export branch protection rules"
+        is_bool: true
+      - name: no-lfs
+        description: "Do NOT export LFS objects"
+        is_bool: true
+      - name: no-progress
+        description: "Print plain progress lines instead of an animated progress bar"
+        is_bool: true

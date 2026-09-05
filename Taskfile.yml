@@ -1,0 +1,147 @@
+version: "3"
+
+# Plugin builds only.
+#
+# The root Makefile and .drone.yml build and release the standalone kingpin
+# binary. That front-end is on its way out, so nothing here references it and
+# nothing there references this — no shared targets, no delegating shims. New
+# plugin work goes in this file; the old build keeps working untouched until it
+# is retired.
+
+vars:
+  PLUGIN: migrate
+  # The unified CLI requires the binary be named harness-<plugin>. That is also
+  # the standalone binary's name, so this builds into plugin/bin/ rather than
+  # the repo root.
+  BINARY: harness-migrate
+  MAIN: ./cmd/harness-migrate
+
+  # An isolated HARNESS_CLI_HOME for dev installs: plugin binaries land in
+  # devhome/bin and their specs (grammar + provenance) in devhome/spec, exactly
+  # as ~/.harness would hold them. Keeps `task dev` out of your real home.
+  DEVHOME: '{{.ROOT_DIR}}/plugin/devhome'
+
+  # The host CLI, used as the installer. Override when it is not on PATH:
+  #   task install HARNESS=../cli/bin/harness
+  # A relative path resolves from the repo root — see the install/dev tasks.
+  HARNESS: '{{default "harness" (env "HARNESS")}}'
+
+  # Reported by --identity and `harness-migrate version`. No "v" prefix: the host
+  # compares this against what it recorded at install time. Override for a real
+  # release build with `task build PLUGIN_VERSION=0.1.0` or the env var.
+  #
+  # The plugin has its own tag series, prefixed so it does not collide with the
+  # standalone binary's v* tags — migrate/v0.1.0, mirroring core's har/v0.9.0.
+  # Dev builds report the *next* patch after the newest such tag, which is what
+  # core's getversion --next --prefix=migrate/ does. go run needs no go.mod
+  # entry, and getversion reads `git tag` from the working directory, so it
+  # sees this repo's tags.
+  PLUGIN_VERSION:
+    sh: |
+      if [ -n "$PLUGIN_VERSION" ]; then echo "$PLUGIN_VERSION"; exit 0; fi
+      echo "$(go run github.com/harness/cli/v3/cmd/getversion@v3.7.0 --next --prefix=migrate/)-dev"
+  BUILD_TIME:
+    sh: date -u +%Y%m%d%H%MZ
+
+  LDFLAGS: >-
+    -X github.com/harness/cli/v3/pkg/hbase.Version={{.PLUGIN_VERSION}}
+    -X github.com/harness/cli/v3/pkg/hbase.BuildTime={{.BUILD_TIME}}
+
+tasks:
+  default:
+    desc: List the available plugin tasks
+    silent: true
+    cmds:
+      - task --list
+
+  build:
+    desc: Build the harness-migrate plugin binary into plugin/bin
+    dir: plugin
+    cmds:
+      - go build -ldflags "{{.LDFLAGS}}" -o bin/{{.BINARY}} {{.MAIN}}
+      - echo "built plugin/bin/{{.BINARY}} {{.PLUGIN_VERSION}} ({{.BUILD_TIME}})"
+
+  # install and dev deliberately run from the repo root, not plugin/, so a
+  # relative HARNESS override resolves the way you'd type it.
+  install:
+    desc: Install the plugin into your real ~/.harness via `harness install plugin`
+    deps: [build]
+    cmds:
+      - '{{.HARNESS}} install plugin ./plugin/bin/{{.BINARY}}'
+
+  dev:
+    desc: Install the plugin into plugin/devhome, leaving ~/.harness alone
+    deps: [build]
+    cmds:
+      # The real installer path: `install plugin` runs the identity gate and
+      # captures the spec via --spec, so this exercises what a user gets.
+      - HARNESS_CLI_HOME={{.DEVHOME}} {{.HARNESS}} install plugin ./plugin/bin/{{.BINARY}}
+      - echo "Run with HARNESS_CLI_HOME={{.DEVHOME}} {{.HARNESS}} ..."
+
+  check:
+    desc: Run all plugin checks (fmt, vet, spec validation, tests)
+    cmds:
+      - task: fmt
+      - task: vet
+      - task: checkspecs
+      - task: test
+
+  fmt:
+    desc: Report unformatted plugin sources
+    dir: plugin
+    cmds:
+      # gofmt -l exits 0 even when it finds files, so fail explicitly.
+      - test -z "$(gofmt -l .)" || { gofmt -l .; exit 1; }
+
+  vet:
+    desc: Run go vet over the plugin module
+    dir: plugin
+    cmds:
+      - go vet ./...
+
+  test:
+    desc: Run the plugin module's tests
+    dir: plugin
+    cmds:
+      - go test ./...
+
+  checkspecs:
+    desc: Validate migrate.spec.yaml against the registry
+    deps: [build]
+    dir: plugin
+    cmds:
+      - HARNESS_CHECKSPECS=1 ./bin/{{.BINARY}}
+
+  identity:
+    desc: Print the identity JSON the host reads at install time
+    deps: [build]
+    dir: plugin
+    cmds:
+      - ./bin/{{.BINARY}} --identity
+
+  spec:
+    desc: Dump the grammar YAML the host captures at install time
+    deps: [build]
+    dir: plugin
+    cmds:
+      - ./bin/{{.BINARY}} --spec
+
+  # Deliberately a thin shim over the script rather than a task that builds the
+  # six platform archives itself: the release build must also be runnable from a
+  # bare CI container with no task binary, so the script is the real thing and
+  # this is the convenience entry point.
+  release:
+    desc: 'Build a migrate/vX.Y.Z release into plugin/dist: task release -- migrate/v0.1.0 [--publish]'
+    cmds:
+      - ./plugin/scripts/release-migrate.sh {{.CLI_ARGS}}
+
+  tidy:
+    desc: Tidy the plugin module's dependencies
+    dir: plugin
+    cmds:
+      - go mod tidy
+
+  clean:
+    desc: Remove plugin build output and the dev home
+    cmds:
+      - rm -rf plugin/bin plugin/dist {{.DEVHOME}}

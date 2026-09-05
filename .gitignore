@@ -72,4 +72,21 @@ obj/
 # Profiling data
 *.pprof
 
-harness-migrate
+# The standalone binary from `make build`. Anchored with a leading slash: an
+# unanchored pattern also matches directories at any depth, which hid the
+# plugin's cmd/harness-migrate/ source dir.
+/harness-migrate
+
+# Isolated HARNESS_CLI_HOME for plugin dev installs (see Taskfile.yml)
+plugin/devhome/
+
+# Release artifacts built by plugin/scripts/release-migrate.sh. Already covered
+# by the *.tar.gz / *.zip patterns above, but named so the whole directory is
+# out of the way, checksums.txt included.
+plugin/dist/
+
+# Checked-in tooling that the blanket *.sh ignore above would otherwise hide.
+!plugin/scripts/*.sh
+
+# Claude Code local settings
+.claude/settings.local.json
